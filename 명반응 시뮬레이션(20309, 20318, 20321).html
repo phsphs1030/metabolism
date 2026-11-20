@@ -1,0 +1,923 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>명반응 · 비순환적 전자흐름과 광인산화</title>
+
+<style>
+:root {
+--bg:#f4f6f2;--fg:#1c2a22;--mut:#5a6b60;
+--card:#fff;--line:#d5dcd4;--acc:#2e7d4f;--bt:#fff;
+box-sizing:border-box;
+}
+
+@media(prefers-color-scheme:dark) {
+:root:not([data-theme="light"]) {
+--bg:#111815;--fg:#e8efe9;--mut:#9db0a3;
+--card:#1a241f;--line:#2b3a32;
+--acc:#5fcf8c;--bt:#06210f;
+}
+}
+
+:root[data-theme="dark"] {
+--bg:#111815;--fg:#e8efe9;--mut:#9db0a3;
+--card:#1a241f;--line:#2b3a32;
+--acc:#5fcf8c;--bt:#06210f;
+}
+
+*{box-sizing:border-box}
+
+body {
+margin:0;background:var(--bg);color:var(--fg);
+font:15px/1.5 "Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+}
+
+.wrap{max-width:980px;margin:0 auto;padding:12px}
+h1{font-size:19px;margin:6px 0 2px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 10px}
+
+.stage {
+border:1px solid var(--line);
+border-radius:12px;overflow:hidden;background:#fff;
+}
+
+canvas{display:block;width:100%;height:auto}
+
+.cap {
+background:var(--card);border:1px solid var(--line);
+border-left:4px solid var(--acc);border-radius:10px;
+padding:10px 12px;margin:10px 0;
+min-height:70px;font-size:14px;
+}
+
+.ctl {
+display:flex;gap:8px;align-items:center;
+flex-wrap:wrap;margin-bottom:10px;
+font-size:13px;color:var(--mut);
+}
+
+button {
+background:var(--acc);color:var(--bt);border:0;
+border-radius:8px;padding:8px 14px;
+font:inherit;font-weight:600;cursor:pointer;
+}
+
+button.g {
+background:var(--card);color:var(--fg);
+border:1px solid var(--line);
+}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+
+.chip {
+font-size:12.5px;padding:4px 9px;border-radius:99px;
+border:1px solid var(--line);color:var(--mut);
+background:var(--card);transition:background .25s;
+}
+
+.chip.on{background:var(--acc);color:var(--bt);border-color:var(--acc)}
+
+.stats {
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
+gap:8px;
+}
+
+.st {
+background:var(--card);border:1px solid var(--line);
+border-radius:10px;padding:8px 10px;
+font-size:12.5px;color:var(--mut);
+}
+
+.st b{display:block;font-size:20px;color:var(--fg)}
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+<h1>명반응 · 비순환적 전자흐름 + 광인산화</h1>
+<p class="sub">엽록체 타이라코이드 막에서 일어나는 과정입니다. 화면이 작으면 폰을 가로로 돌려 보세요.</p>
+
+<div class="stage"><canvas id="c"></canvas></div>
+
+<div class="cap" id="cap"></div>
+
+<div class="ctl">
+<button id="pp">⏸ 일시정지</button>
+<button class="g" id="rs">처음부터</button>
+<label>속도
+<input type="range" id="sp" min="0.4" max="2" step="0.1" value="1">
+<span id="spv">1.0×</span>
+</label>
+</div>
+
+<div class="chips" id="chips"></div>
+
+<div class="stats">
+<div class="st">스트로마 H⁺<b id="sS">0</b></div>
+<div class="st">타이라코이드 내부 H⁺<b id="sL">0</b><span id="sP"></span></div>
+<div class="st">합성된 ATP<b id="sA">0</b></div>
+<div class="st">생성된 NADPH<b id="sN">0</b></div>
+<div class="st">방출된 O₂<b id="sO">0</b></div>
+</div>
+
+</div>
+
+<script>
+"use strict";
+
+const W=840,H=560,MY0=300,MY1=336,CYC=21;
+const F='Arial, "Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+
+const cv=document.getElementById('c');
+const ctx=cv.getContext('2d');
+
+function fit(){
+const w=cv.parentElement.clientWidth;
+const d=window.devicePixelRatio||1;
+cv.width=W*d;
+cv.height=H*d;
+cv.style.height=(w*H/W)+'px';
+ctx.setTransform(d,0,0,d,0,0);
+}
+
+window.addEventListener('resize',fit);
+fit();
+
+const ST=[
+['광계 Ⅱ가 빛에너지를 흡수','안테나 색소가 빛에너지를 흡수하고, 그 에너지가 반응 중심 색소(P680)로 모입니다.'],
+['P680의 전자가 고에너지 전자로 들뜸','에너지를 받은 P680의 전자가 높은 에너지 상태로 들떠 1차 전자수용체로 넘어갑니다. P680은 전자를 잃어 P680⁺가 됩니다.'],
+['물의 광분해','H₂O → ½O₂ + 2H⁺ + 2e⁻ : 물에서 나온 전자가 P680⁺에 공급되고, O₂는 방출, H⁺는 타이라코이드 내부에 쌓입니다.'],
+['전자전달계 · H⁺ 능동수송','전자가 전자운반체를 차례로 거치며 에너지를 방출하고, 이 에너지로 H⁺가 스트로마에서 타이라코이드 내부로 능동수송됩니다.'],
+['광인산화 · ATP 합성','H⁺ 농도 기울기에 따라 H⁺가 ATP 합성효소를 통해 내부에서 스트로마로 확산하며 ADP + Pi가 ATP로 합성됩니다.'],
+['광계 Ⅰ이 빛을 흡수 · P700 들뜸','전자전달계를 거친 전자가 P700⁺를 환원시키고, 광계 Ⅰ이 흡수한 빛에너지로 P700의 전자가 다시 고에너지 상태가 됩니다.'],
+['NADP⁺ 환원 → NADPH','들뜬 전자가 전자수용체(페레독신)를 거쳐 NADP⁺에 전달되고, NADP⁺ + 2e⁻ + H⁺ → NADPH 가 됩니다.']
+];
+
+const CH=[
+'① 광계Ⅱ 빛 흡수','② P680 들뜸','③ 물의 광분해',
+'④ 전자전달계·H⁺ 수송','⑤ ATP 합성',
+'⑥ 광계Ⅰ 들뜸','⑦ NADPH 생성'
+];
+
+const chipsEl=document.getElementById('chips');
+chipsEl.innerHTML=CH.map(t=>'<span class="chip">'+t+'</span>').join('');
+const chips=[...chipsEl.children];
+const $=id=>document.getElementById(id);
+
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const lerp=(a,b,t)=>a+(b-a)*t;
+const eCol=(e,a=1)=>`hsla(${210-e*170},95%,${52+e*8}%,${a})`;
+
+function rr(g,x,y,w,h,r){
+g.beginPath();
+g.moveTo(x+r,y);
+g.arcTo(x+w,y,x+w,y+h,r);
+g.arcTo(x+w,y+h,x,y+h,r);
+g.arcTo(x,y+h,x,y,r);
+g.arcTo(x,y,x+w,y,r);
+g.closePath();
+}
+
+function txt(g,s,x,y,sz,col,al='center',wt='bold'){
+g.fillStyle=col;
+g.font=wt+' '+sz+'px '+F;
+g.textAlign=al;
+g.fillText(s,x,y);
+}
+
+const mk=(x,y)=>({
+x,y,vx:rnd(-20,20),vy:rnd(-20,20)
+});
+
+let ents=[],clock=0,playing=true,speed=1;
+let stageT=[],cur=0,lumenH=[],stromaH=[];
+let cnt={atp:0,nadph:0,o2:0};
+let busy=0,synT=0,rot=0;
+
+const nadp={n:0,s:0,t:0};
+
+const PS2={x:110,n:'P680',t:'광계 Ⅱ',pos:0,lit:Array(7).fill(0)};
+const PS1={x:500,n:'P700',t:'광계 Ⅰ',pos:0,lit:Array(7).fill(0)};
+
+const AO=[[-34,-14],[-14,-24],[10,-26],[32,-16],[38,2],[-32,6]];
+
+function setStage(i,cool){
+if(cool!==undefined&&clock-stageT[i]<cool)return;
+cur=i;
+stageT[i]=clock;
+$('cap').innerHTML='<b>'+(i+1)+'. '+ST[i][0]+'</b><br>'+ST[i][1];
+}
+
+function later(d,f){
+let t=0;
+ents.push({
+u(dt){
+t+=dt;
+if(t>=d){f();return false}
+return true;
+},
+d(){}
+});
+}
+
+function ring(x,y,c,R=34){
+let t=0;
+ents.push({
+u(dt){t+=dt*1.5;return t<1},
+d(g){
+g.save();
+g.strokeStyle=c;
+g.globalAlpha=1-t;
+g.lineWidth=3;
+g.beginPath();
+g.arc(x,y,4+R*t,0,Math.PI*2);
+g.stroke();
+g.restore();
+}
+});
+}
+
+function ftext(x,y,s,c,dy=-24,life=2.2){
+let t=0;
+ents.push({
+u(dt){t+=dt/life;return t<1},
+d(g){
+g.save();
+g.globalAlpha=Math.min(1,(1-t)*2.2);
+txt(g,s,x,y+dy*t,15,c);
+g.restore();
+}
+});
+}
+
+function photon(x0,y0,x1,y1,dur){
+let t=0;
+ents.push({
+u(dt){t+=dt/dur;return t<1},
+d(g){
+const x=lerp(x0,x1,t);
+const y=lerp(y0,y1,t);
+const a=Math.atan2(y1-y0,x1-x0);
+g.save();
+g.translate(x,y);
+g.rotate(a);
+g.strokeStyle='#f0a500';
+g.lineWidth=3.5;
+g.shadowColor='#ffcc33';
+g.shadowBlur=10;
+g.beginPath();
+for(let i=-46;i<=0;i+=2){
+const yy=Math.sin(i*.45-t*40)*5;
+if(i===-46)g.moveTo(i,yy);
+else g.lineTo(i,yy);
+}
+g.stroke();
+g.restore();
+}
+});
+}
+
+function Hd(g,x,y){
+g.save();
+g.shadowColor='#ff8a80';
+g.shadowBlur=6;
+g.fillStyle='#ef5350';
+g.beginPath();
+g.arc(x,y,9,0,Math.PI*2);
+g.fill();
+g.restore();
+txt(g,'H⁺',x,y+4,11,'#fff');
+}
+
+function follow(path,spd,kind,end){
+let p=0,s=0;
+let x=path[0][0],y=path[0][1],e=path[0][2]||0;
+let tr=[],fade=0,done=false;
+
+const lengths=path.slice(1).map((n,i)=>
+Math.hypot(n[0]-path[i][0],n[1]-path[i][1])
+);
+
+ents.push({
+u(dt){
+if(done){
+fade+=dt*3;
+return fade<1;
+}
+
+p+=spd*dt;
+
+while(s<lengths.length&&p>=lengths[s]){
+p-=lengths[s];
+s++;
+if(path[s]&&path[s][3])path[s][3]();
+}
+
+if(s>=lengths.length){
+done=true;
+const q=path[path.length-1];
+x=q[0];y=q[1];
+if(end)end();
+return kind!=='h';
+}
+
+const t=lengths[s]>0?p/lengths[s]:0;
+const a=path[s],b=path[s+1];
+
+x=lerp(a[0],b[0],t);
+y=lerp(a[1],b[1],t);
+e=lerp(a[2]||0,b[2]||0,t);
+
+if(kind==='e'){
+tr.push([x,y,e]);
+if(tr.length>16)tr.shift();
+}
+
+return true;
+},
+
+d(g){
+g.save();
+g.globalAlpha=1-fade;
+
+if(kind==='e'){
+tr.forEach((q,i)=>{
+g.fillStyle=eCol(q[2],i/tr.length*.5);
+g.beginPath();
+g.arc(q[0],q[1],2+i*.3,0,Math.PI*2);
+g.fill();
+});
+
+g.shadowColor=eCol(e);
+g.shadowBlur=14;
+g.fillStyle=eCol(e);
+g.beginPath();
+g.arc(x,y,8.5,0,Math.PI*2);
+g.fill();
+g.shadowBlur=0;
+txt(g,'e⁻',x,y+4,11,'#1b1b1b');
+}
+
+else if(kind==='h'){
+Hd(g,x,y);
+}
+
+else if(kind==='o2'){
+g.fillStyle='rgba(255,255,255,.85)';
+g.strokeStyle='#1b5e8a';
+g.lineWidth=2;
+g.beginPath();
+g.arc(x,y,12,0,Math.PI*2);
+g.fill();
+g.stroke();
+txt(g,'O₂',x,y+4,12,'#1b5e8a');
+}
+
+else{
+g.fillStyle='#ffb300';
+rr(g,x-19,y-10,38,20,8);
+g.fill();
+txt(g,'ATP',x,y+5,13,'#3a2300');
+}
+
+g.restore();
+}
+});
+}
+
+function cascade(P){
+for(let i=0;i<6;i++)later(i*.18,()=>P.lit[i]=1);
+later(1.2,()=>P.lit[6]=1);
+}
+
+function pump(){
+const s=stromaH.length>2
+?stromaH.splice(Math.floor(Math.random()*stromaH.length),1)[0]
+:{x:300,y:240};
+
+const lx=rnd(300,400),ly=rnd(385,450);
+
+follow([
+[s.x,s.y],[330,296],[330,338],[lx,ly]
+],80,'h',()=>lumenH.push(mk(lx,ly)));
+}
+
+function water(k){
+if(!k)setStage(2);
+
+ring(110,458,'#4aa3e0',30);
+
+if(!k){
+ftext(235,478,'H₂O → ½O₂ + 2H⁺ + 2e⁻','#1b5e8a',-10,3.2);
+}
+
+follow([
+[110,440,.1],[110,346,.2,()=>{PS2.pos--}]
+],80,'e');
+
+const tx=rnd(40,220),ty=rnd(400,520);
+
+follow([
+[125,458],[tx,ty]
+],45,'h',()=>lumenH.push(mk(tx,ty)));
+
+if(k){
+follow([[92,470],[30,525]],35,'o2');
+cnt.o2++;
+}
+}
+
+function exciteII(k){
+PS2.pos++;
+PS2.lit[6]=1;
+ring(110,338,'#ff9f1c',38);
+
+if(!k){
+setStage(1);
+ftext(125,252,'고에너지 전자로 들뜸','#c25b00',-22,2.4);
+}
+
+follow([
+[110,338,.2],
+[110,268,.97],
+[190,266,.93],
+[250,292,.78],
+[330,318,.58,()=>{
+if(!k)setStage(3);
+ring(330,318,'#ff7a00',46);
+ftext(330,266,'에너지 방출','#d35400',-18,1.8);
+pump();
+later(.4,pump);
+}],
+[415,372,.34],
+[500,338,.22]
+],56,'e',()=>{PS1.pos--});
+}
+
+function exciteI(k){
+PS1.pos++;
+PS1.lit[6]=1;
+ring(500,338,'#ff9f1c',38);
+
+follow([
+[500,338,.25],
+[500,268,.99],
+[575,266,.95],
+[625,254,.82],
+[675,262,.62,()=>{
+setStage(6);
+nadp.n++;
+
+if(nadp.n===2){
+const s=stromaH.length>2
+?stromaH.splice(0,1)[0]
+:{x:640,y:140};
+
+follow([[s.x,s.y],[677,212]],90,'h');
+
+later(.5,()=>{
+nadp.s=1;
+nadp.t=0;
+cnt.nadph++;
+ring(677,205,'#2ecc71',44);
+});
+}
+}]
+],80,'e');
+}
+
+function cycle(){
+for(let k=0;k<2;k++){
+const s=k*1.8;
+
+later(s,()=>{
+if(!k)setStage(0);
+photon(PS2.x-110,60,PS2.x-26,298,1.6);
+});
+
+later(s+1.6,()=>cascade(PS2));
+later(s+2.9,()=>exciteII(k));
+later(s+3.5,()=>water(k));
+
+later(s+8.3,()=>{
+if(!k)setStage(5);
+photon(PS1.x-110,60,PS1.x-26,298,1.6);
+});
+
+later(s+9.9,()=>cascade(PS1));
+later(s+11.1,()=>exciteI(k));
+}
+
+later(CYC,cycle);
+}
+
+function makeATP(){
+ring(770,268,'#ffb300',40);
+cnt.atp++;
+setStage(4,7);
+
+follow([
+[775,255],[800,205],[815,150]
+],45,'atp');
+}
+
+function init(){
+ents=[];
+clock=0;
+stageT=Array(7).fill(-99);
+lumenH=[];
+stromaH=[];
+cnt={atp:0,nadph:0,o2:0};
+
+for(let i=0;i<2;i++)
+lumenH.push(mk(rnd(40,700),rnd(380,530)));
+
+for(let i=0;i<9;i++)
+stromaH.push(mk(rnd(20,820),rnd(95,280)));
+
+PS1.pos=0;
+PS2.pos=0;
+PS1.lit.fill(0);
+PS2.lit.fill(0);
+
+nadp.n=0;
+nadp.s=0;
+nadp.t=0;
+
+busy=0;
+synT=0;
+rot=0;
+
+setStage(0);
+cycle();
+}
+
+function jig(a,dt,x0,x1,y0,y1){
+for(const h of a){
+h.vx=Math.max(-32,Math.min(32,h.vx+rnd(-90,90)*dt));
+h.vy=Math.max(-32,Math.min(32,h.vy+rnd(-90,90)*dt));
+
+h.x+=h.vx*dt;
+h.y+=h.vy*dt;
+
+if(h.x<x0||h.x>x1)h.vx*=-1;
+if(h.y<y0||h.y>y1)h.vy*=-1;
+
+h.x=Math.max(x0,Math.min(x1,h.x));
+h.y=Math.max(y0,Math.min(y1,h.y));
+}
+}
+
+function step(dt){
+clock+=dt;
+
+const c=ents;
+ents=[];
+
+for(const e of c){
+if(e.u(dt))ents.push(e);
+}
+
+jig(lumenH,dt,30,810,366,535);
+jig(stromaH,dt,20,820,95,285);
+
+for(const P of [PS1,PS2]){
+for(let i=0;i<7;i++){
+P.lit[i]=Math.max(0,P.lit[i]-dt*1.1);
+}
+}
+
+synT+=dt;
+rot+=dt*(busy?9:0);
+
+if(busy<2&&synT>1.4&&lumenH.length>=5){
+busy++;
+synT=0;
+
+let bi=0;
+
+lumenH.forEach((h,i)=>{
+if(h.x>lumenH[bi].x)bi=i;
+});
+
+const h=lumenH.splice(bi,1)[0];
+
+follow([
+[h.x,h.y],[770,395],[770,340],[770,298],[772,262]
+],120,'h',()=>{
+stromaH.push(mk(790,rnd(190,240)));
+busy--;
+makeATP();
+});
+}
+
+if(nadp.s){
+nadp.t+=dt;
+if(nadp.t>3){
+nadp.s=0;
+nadp.n=0;
+}
+}
+}
+
+function scene(g){
+g.fillStyle='#eef7df';
+g.fillRect(0,0,W,MY0);
+
+g.fillStyle='#d3e8f6';
+g.fillRect(0,MY1,W,H-MY1);
+
+g.fillStyle='#f6e7bd';
+g.fillRect(0,MY0,W,MY1-MY0);
+
+for(let x=7;x<W;x+=14){
+g.strokeStyle='#c48a4d';
+g.lineWidth=1.5;
+
+g.beginPath();
+g.moveTo(x,MY0+9);
+g.lineTo(x,MY0+17);
+g.moveTo(x,MY1-9);
+g.lineTo(x,MY1-17);
+g.stroke();
+
+g.fillStyle='#e0a96d';
+
+for(const y of [MY0+5,MY1-5]){
+g.beginPath();
+g.arc(x,y,5,0,Math.PI*2);
+g.fill();
+}
+}
+
+g.fillStyle='#fff6dc';
+rr(g,566,306,148,24,12);
+g.fill();
+
+txt(g,'타이라코이드 막',640,323,14,'#6b4a1a');
+txt(g,'스트로마',10,24,18,'#2f5d2f','left');
+txt(g,'타이라코이드 내부',10,H-12,17,'#1d5a85','left');
+
+txt(g,'빛에너지',14,46,15,'#b36b00','left');
+txt(g,'빛에너지',404,46,15,'#b36b00','left');
+
+g.fillStyle='#fff';
+g.strokeStyle='#4aa3e0';
+g.lineWidth=2;
+g.beginPath();
+g.arc(110,458,20,0,Math.PI*2);
+g.fill();
+g.stroke();
+
+txt(g,'H₂O',110,464,15,'#1b5e8a');
+
+const gr=g.createLinearGradient(600,0,720,0);
+gr.addColorStop(0,eCol(0));
+gr.addColorStop(1,eCol(1));
+
+g.fillStyle=gr;
+rr(g,600,520,120,9,4);
+g.fill();
+
+txt(g,'전자 에너지',595,529,13,'#244','right','normal');
+txt(g,'낮음',600,546,12,'#244','left','normal');
+txt(g,'높음',720,546,12,'#244','right','normal');
+}
+
+function dps(g,P){
+const x=P.x;
+
+g.fillStyle='#bcd8a3';
+rr(g,x-50,280,100,78,12);
+g.fill();
+
+g.strokeStyle='rgba(0,0,0,.25)';
+g.lineWidth=1;
+g.stroke();
+
+AO.forEach((o,i)=>{
+const l=P.lit[i];
+
+g.save();
+
+if(l>.05){
+g.shadowColor='#ffd400';
+g.shadowBlur=14*l;
+}
+
+g.fillStyle=l>.05
+?`rgba(255,${Math.round(225-30*(1-l))},60,${.5+.5*l})`
+:'#5fb04d';
+
+g.beginPath();
+g.arc(x+o[0],318+o[1],7,0,Math.PI*2);
+g.fill();
+g.restore();
+});
+
+const l=P.lit[6];
+
+g.save();
+
+if(l>.05){
+g.shadowColor='#ffd400';
+g.shadowBlur=18*l;
+}
+
+g.fillStyle=P.pos>0?'#e24b4b':l>.05?'#ffd23f':'#2e8b57';
+
+g.beginPath();
+g.ellipse(x,338,21,11,0,0,Math.PI*2);
+g.fill();
+
+g.restore();
+
+txt(g,P.n+(P.pos>0?'⁺':''),x,342,12,P.pos>0||l<=.05?'#fff':'#1b1b1b');
+txt(g,P.t,x,378,16,'#2f4a2f');
+}
+
+function carriers(g){
+txt(g,'안테나',PS2.x-78,296,12,'#2f4a2f');
+txt(g,'색소',PS2.x-78,310,12,'#2f4a2f');
+
+txt(g,'안테나',PS1.x-78,296,12,'#2f4a2f');
+txt(g,'색소',PS1.x-78,310,12,'#2f4a2f');
+
+g.fillStyle='#cbbbea';
+rr(g,290,282,80,76,12);
+g.fill();
+g.strokeStyle='rgba(0,0,0,.25)';
+g.stroke();
+
+txt(g,'전자전달계',330,378,15,'#3d2f66');
+
+for(const [x,y,s] of [[250,292,'PQ'],[415,372,'PC']]){
+g.fillStyle='#cbbbea';
+g.strokeStyle='#6d58a6';
+g.lineWidth=1.5;
+g.beginPath();
+g.arc(x,y,11,0,Math.PI*2);
+g.fill();
+g.stroke();
+txt(g,s,x,y+4,11,'#3d2f66');
+}
+
+txt(g,'전자운반체',250,268,12,'#3d2f66','center','normal');
+
+for(const [x,y] of [[190,266],[575,266]]){
+g.fillStyle='#f6c28b';
+g.strokeStyle='#b8741f';
+g.lineWidth=1.5;
+g.beginPath();
+g.arc(x,y,12,0,Math.PI*2);
+g.fill();
+g.stroke();
+}
+
+txt(g,'1차 전자수용체',190,240,13,'#7a4a0a');
+txt(g,'1차 전자수용체',575,240,13,'#7a4a0a');
+
+g.fillStyle='#f6c28b';
+g.strokeStyle='#b8741f';
+g.beginPath();
+g.arc(625,254,11,0,Math.PI*2);
+g.fill();
+g.stroke();
+
+txt(g,'Fd',625,258,11,'#7a4a0a');
+
+g.fillStyle='#e8c07a';
+rr(g,652,248,48,28,10);
+g.fill();
+g.stroke();
+
+txt(g,'NADP⁺ 환원효소',676,294,12,'#7a4a0a','center','normal');
+
+g.fillStyle='#98a6dd';
+rr(g,753,298,34,40,6);
+g.fill();
+
+g.fillStyle='#d6dcf7';
+rr(g,763,298,14,40,4);
+g.fill();
+
+g.fillStyle='#7b8bd1';
+g.beginPath();
+g.ellipse(770,285,27,18,0,0,Math.PI*2);
+g.fill();
+
+g.strokeStyle='#fff';
+g.lineWidth=4;
+g.beginPath();
+g.moveTo(770-14*Math.cos(rot),285-9*Math.sin(rot));
+g.lineTo(770+14*Math.cos(rot),285+9*Math.sin(rot));
+g.stroke();
+
+txt(g,'ATP 합성효소',770,374,14,'#2c3a85');
+txt(g,'ADP + Pi',738,246,13,'#2c3a85','right');
+}
+
+function token(){
+let y=205,s='NADP⁺',a=1;
+
+if(nadp.s){
+y-=Math.min(nadp.t*28,70);
+s='NADPH';
+a=nadp.t>2?Math.max(0,3-nadp.t):1;
+}
+
+ctx.save();
+ctx.globalAlpha=a;
+ctx.fillStyle=nadp.s?'#4cd98a':'#fff';
+ctx.strokeStyle='#555';
+ctx.lineWidth=1.5;
+
+rr(ctx,643,y-14,68,28,14);
+ctx.fill();
+ctx.stroke();
+
+txt(ctx,s,677,y+5,14,'#111');
+
+if(nadp.n>0&&!nadp.s){
+txt(ctx,'+'+nadp.n+'e⁻',677,y+30,13,'#1565c0');
+}
+
+if(nadp.s&&nadp.t>.6){
+txt(ctx,'→ 캘빈 회로',677,y-20,13,'#1b5e20');
+}
+
+ctx.restore();
+}
+
+function render(){
+const g=ctx;
+
+scene(g);
+dps(g,PS2);
+dps(g,PS1);
+carriers(g);
+token();
+
+for(const h of stromaH)Hd(g,h.x,h.y);
+for(const h of lumenH)Hd(g,h.x,h.y);
+
+for(const e of ents)e.d(g);
+
+$('sS').textContent=stromaH.length;
+$('sL').textContent=lumenH.length;
+$('sA').textContent=cnt.atp;
+$('sN').textContent=cnt.nadph;
+$('sO').textContent=cnt.o2;
+
+$('sP').textContent=
+lumenH.length>stromaH.length
+?'내부 pH ↓ (더 산성)':'';
+
+chips.forEach((c,i)=>{
+c.classList.toggle('on',clock-stageT[i]<4);
+});
+}
+
+/* 수정: 애니메이션 시간 변수 선언 */
+let last = 0;
+
+function frame(now){
+const dt=Math.min(.05,(now-last)/1000);
+last=now;
+
+if(playing){
+step(dt*speed);
+}
+
+render();
+requestAnimationFrame(frame);
+}
+
+$('pp').onclick=()=>{
+playing=!playing;
+$('pp').textContent=playing?'⏸ 일시정지':'▶ 재생';
+};
+
+$('rs').onclick=()=>{
+init();
+last=0;
+playing=true;
+$('pp').textContent='⏸ 일시정지';
+};
+
+$('sp').oninput=e=>{
+speed=Number(e.target.value);
+$('spv').textContent=speed.toFixed(1)+'×';
+};
+
+init();
+requestAnimationFrame(frame);
+
+</script>
+</body>
+</html>

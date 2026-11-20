@@ -1,0 +1,627 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>광합성 전체 단계 인터랙티브 시뮬레이션</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-green: #22c55e;
+            --accent-yellow: #eab308;
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: var(--accent-green);
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .canvas-container {
+            position: relative;
+            background-color: #132a1c;
+            border: 3px solid #2d6a4f;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .controls {
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-radius: 16px;
+            width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-green);
+            cursor: pointer;
+        }
+
+        .stats-box {
+            background-color: #0f172a;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: var(--accent-green);
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.8rem;
+            background-color: #0f172a;
+            padding: 12px;
+            border-radius: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .equation {
+            background-color: #1e293b;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            font-size: 1rem;
+            text-align: center;
+            border: 1px solid #334155;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .stage-info {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            line-height: 1.5;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🌿 엽록체 광합성 전체 단계 시뮬레이션</h1>
+        <p>빛 에너지가 화학 에너지(포도당)로 전환되는 명반응과 캘빈 회로를 관찰해보세요.</p>
+    </header>
+
+    <div class="container">
+        <!-- 시뮬레이션 캔버스 -->
+        <div class="canvas-container">
+            <canvas id="simCanvas" width="800" height="520"></canvas>
+        </div>
+
+        <!-- 제어판 -->
+        <div class="controls">
+            <div class="control-group">
+                <div class="control-header">
+                    <span>☀️ 빛의 세기 (광량)</span>
+                    <span id="lightVal">70%</span>
+                </div>
+                <input type="range" id="lightSlider" min="0" max="100" value="70">
+            </div>
+
+            <div class="control-group">
+                <div class="control-header">
+                    <span>💨 이산화탄소 ($CO_2$) 농도</span>
+                    <span id="co2Val">60%</span>
+                </div>
+                <input type="range" id="co2Slider" min="0" max="100" value="60">
+            </div>
+
+            <div class="control-group">
+                <div class="control-header">
+                    <span>🌡️ 온도 (효소 활성)</span>
+                    <span id="tempVal">25°C</span>
+                </div>
+                <input type="range" id="tempSlider" min="0" max="50" value="25">
+            </div>
+
+            <div class="stats-box">
+                <div class="stat-item">
+                    <span>현재 광합성 효율:</span>
+                    <span class="stat-value" id="rateVal">0%</span>
+                </div>
+                <div class="stat-item">
+                    <span>생성된 산소 ($O_2$):</span>
+                    <span class="stat-value" id="o2Count" style="color: #38bdf8;">0 분자</span>
+                </div>
+                <div class="stat-item">
+                    <span>합성된 포도당 ($C_6H_{12}O_6$):</span>
+                    <span class="stat-value" id="glucoseCount" style="color: #facc15;">0 분자</span>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item"><span class="dot" style="background:#fde047;"></span>광자 (빛 에너지)</div>
+                <div class="legend-item"><span class="dot" style="background:#3b82f6;"></span>물 ($H_2O$)</div>
+                <div class="legend-item"><span class="dot" style="background:#38bdf8;"></span>산소 ($O_2$)</div>
+                <div class="legend-item"><span class="dot" style="background:#f97316;"></span>ATP / NADPH</div>
+                <div class="legend-item"><span class="dot" style="background:#94a3b8;"></span>이산화탄소 ($CO_2$)</div>
+                <div class="legend-item"><span class="dot" style="background:#facc15; border-radius: 2px;"></span>포도당 (양분)</div>
+            </div>
+
+            <div class="stage-info" id="statusDesc">
+                <strong>상태 분석:</strong> 적정한 빛과 $CO_2$, 온도가 유지되어 명반응과 캘빈 회로가 원활하게 작동 중입니다.
+            </div>
+        </div>
+    </div>
+
+    <div class="equation">
+        <strong>광합성 전체 화학 반응식:</strong> &nbsp;
+        <span style="color:#94a3b8;">6CO₂</span> + 
+        <span style="color:#3b82f6;">12H₂O</span> + 
+        <span style="color:#fde047;">빛 에너지</span> 
+        &nbsp;⟶&nbsp; 
+        <span style="color:#facc15;">C₆H₁₂O₆ (포도당)</span> + 
+        <span style="color:#38bdf8;">6O₂</span> + 
+        <span style="color:#3b82f6;">6H₂O</span>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI 요소
+        const lightSlider = document.getElementById('lightSlider');
+        const co2Slider = document.getElementById('co2Slider');
+        const tempSlider = document.getElementById('tempSlider');
+
+        const lightVal = document.getElementById('lightVal');
+        const co2Val = document.getElementById('co2Val');
+        const tempVal = document.getElementById('tempVal');
+        const rateVal = document.getElementById('rateVal');
+        const o2CountEl = document.getElementById('o2Count');
+        const glucoseCountEl = document.getElementById('glucoseCount');
+        const statusDesc = document.getElementById('statusDesc');
+
+        // 시뮬레이션 상태 변수
+        let lightIntensity = 70;
+        let co2Level = 60;
+        let temperature = 25;
+
+        let o2Produced = 0;
+        let glucoseProduced = 0;
+        let calvinAngle = 0;
+        let energyPool = 0; // 명반응에서 생성되어 캘빈회로로 전달되는 ATP/NADPH 축적량
+        let co2Pool = 0;    // 캘빈회로에 유입된 CO2 축적량
+
+        // 입자 배열
+        let particles = [];
+
+        // 슬라이더 이벤트 리스너
+        lightSlider.addEventListener('input', (e) => {
+            lightIntensity = parseInt(e.target.value);
+            lightVal.textContent = `${lightIntensity}%`;
+        });
+
+        co2Slider.addEventListener('input', (e) => {
+            co2Level = parseInt(e.target.value);
+            co2Val.textContent = `${co2Level}%`;
+        });
+
+        tempSlider.addEventListener('input', (e) => {
+            temperature = parseInt(e.target.value);
+            tempVal.textContent = `${temperature}°C`;
+        });
+
+        // 온도 효율 계산 (25~30도 최적, 40도 이상 효소 변성으로 급감)
+        function getTempEfficiency(temp) {
+            if (temp <= 30) {
+                return Math.max(0.1, temp / 30);
+            } else {
+                return Math.max(0, 1 - (temp - 30) / 15);
+            }
+        }
+
+        // 전체 광합성 속도 계산 (제한 요인 법칙 적용)
+        function calculatePhotosynthesisRate() {
+            const tempEff = getTempEfficiency(temperature);
+            const lightEff = lightIntensity / 100;
+            const co2Eff = co2Level / 100;
+
+            // 명반응 속도는 빛에 의존, 암반응(캘빈회로)은 CO2와 온도(효소)에 의존
+            const lightReactionRate = lightEff;
+            const darkReactionRate = Math.min(co2Eff, tempEff);
+
+            // 전체 효율은 두 단계 중 느린 단계(제한 요인)에 의해 결정됨
+            const overall = Math.min(lightReactionRate, darkReactionRate) * tempEff;
+            return {
+                overall: Math.round(overall * 100),
+                lightRate: lightReactionRate,
+                darkRate: darkReactionRate,
+                tempEff: tempEff
+            };
+        }
+
+        // 입자 클래스
+        class Particle {
+            constructor(type, x, y, vx, vy) {
+                this.type = type; // 'photon', 'h2o', 'o2', 'energy', 'co2', 'glucose'
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.alpha = 1;
+                this.radius = type === 'glucose' ? 9 : (type === 'energy' ? 7 : 5);
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // 타입별 특수 이동 및 소멸 조건
+                if (this.type === 'photon') {
+                    // 틸라코이드(x: 210, y: 260)에 도달하면 명반응 에너지 생성
+                    if (this.x >= 180 && this.y >= 200) {
+                        this.alpha = 0;
+                        if (Math.random() < 0.7) {
+                            spawnEnergyCarrier();
+                        }
+                    }
+                } else if (this.type === 'h2o') {
+                    // 틸라코이드 하단(x: 210, y: 340) 도달 시 광분해 -> O2 방출
+                    if (this.y <= 340) {
+                        this.alpha = 0;
+                        spawnO2();
+                    }
+                } else if (this.type === 'energy') {
+                    // 명반응에서 캘빈 회로(x: 560, y: 260)로 이동
+                    if (this.x >= 470) {
+                        this.alpha = 0;
+                        energyPool = Math.min(10, energyPool + 1);
+                    }
+                } else if (this.type === 'co2') {
+                    // 캘빈 회로로 유입
+                    if (this.x <= 630 && this.y >= 200) {
+                        this.alpha = 0;
+                        co2Pool = Math.min(10, co2Pool + 1);
+                    }
+                } else if (this.type === 'o2' || this.type === 'glucose') {
+                    if (this.y < -20 || this.y > canvas.height + 20 || this.x > canvas.width + 20) {
+                        this.alpha = 0;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+
+                if (this.type === 'photon') {
+                    ctx.fillStyle = '#fde047';
+                    ctx.shadowColor = '#fde047';
+                    ctx.shadowBlur = 10;
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.type === 'h2o') {
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '9px sans-serif';
+                    ctx.fillText('H₂O', this.x - 9, this.y - 7);
+                } else if (this.type === 'o2') {
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '10px sans-serif';
+                    ctx.fillText('O₂', this.x - 6, this.y - 7);
+                } else if (this.type === 'energy') {
+                    ctx.fillStyle = '#f97316';
+                    ctx.shadowColor = '#f97316';
+                    ctx.shadowBlur = 8;
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 9px sans-serif';
+                    ctx.fillText('ATP/NADPH', this.x - 24, this.y - 9);
+                } else if (this.type === 'co2') {
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.font = '9px sans-serif';
+                    ctx.fillText('CO₂', this.x - 9, this.y - 7);
+                } else if (this.type === 'glucose') {
+                    // 육각형 포도당 표현
+                    ctx.fillStyle = '#facc15';
+                    ctx.strokeStyle = '#ca8a04';
+                    ctx.lineWidth = 2;
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (Math.PI / 3) * i;
+                        const px = this.x + this.radius * Math.cos(angle);
+                        const py = this.y + this.radius * Math.sin(angle);
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#fef08a';
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.fillText('포도당(C₆H₁₂O₆)', this.x - 36, this.y + 22);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function spawnEnergyCarrier() {
+            particles.push(new Particle('energy', 270, 220 + (Math.random() * 60 - 30), 2.5, 0));
+        }
+
+        function spawnO2() {
+            o2Produced++;
+            o2CountEl.textContent = `${o2Produced} 분자`;
+            particles.push(new Particle('o2', 210 + (Math.random() * 30 - 15), 170, -0.5, -1.8));
+        }
+
+        function spawnGlucose() {
+            glucoseProduced++;
+            glucoseCountEl.textContent = `${glucoseProduced} 분자`;
+            particles.push(new Particle('glucose', 570, 360, 0.4, 1.5));
+        }
+
+        // 배경(엽록체, 틸라코이드 그라나, 스트로마) 그리기
+        function drawChloroplastBackground() {
+            // 엽록체 외막 & 내막
+            ctx.save();
+            ctx.fillStyle = '#1b4332';
+            ctx.strokeStyle = '#52b788';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.roundRect(30, 40, 740, 440, 120);
+            ctx.fill();
+            ctx.stroke();
+
+            // 스트로마 라벨
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText('스트로마 (Stroma)', 480, 90);
+
+            // 좌측: 명반응 영역 (틸라코이드 그라나 스택)
+            ctx.fillStyle = 'rgba(34, 197, 94, 0.1)';
+            ctx.strokeStyle = 'rgba(74, 222, 128, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(80, 130, 260, 270);
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#86efac';
+            ctx.font = 'bold 15px sans-serif';
+            ctx.fillText('1단계: 명반응 (틸라코이드 막)', 110, 155);
+
+            // 틸라코이드 원반 그리기
+            for (let i = 0; i < 5; i++) {
+                const yPos = 200 + i * 32;
+                ctx.fillStyle = '#2d6a4f';
+                ctx.strokeStyle = '#74c69d';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(140, yPos, 140, 22, 11);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // 우측: 캘빈 회로 영역
+            ctx.strokeStyle = 'rgba(250, 204, 21, 0.3)';
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(430, 130, 280, 270);
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#fde047';
+            ctx.font = 'bold 15px sans-serif';
+            ctx.fillText('2단계: 캘빈 회로 (스트로마)', 475, 155);
+
+            // 캘빈 회로 회전 링 그리기
+            const cx = 570;
+            const cy = 265;
+            const radius = 65;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(calvinAngle);
+
+            ctx.strokeStyle = '#eab308';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 회전 화살표 노드 3개
+            for (let i = 0; i < 3; i++) {
+                const a = (Math.PI * 2 / 3) * i;
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(Math.cos(a) * radius, Math.sin(a) * radius, 7, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // 캘빈 회로 중앙 텍스트
+            ctx.fillStyle = '#fef9c3';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('탄소 고정', cx, cy - 5);
+            ctx.fillText('포도당 합성', cx, cy + 12);
+            ctx.textAlign = 'left';
+
+            // 에너지/CO2 풀 게이지 표시
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '11px sans-serif';
+            ctx.fillText(`축적 ATP/NADPH: ${'■'.repeat(energyPool)}${'□'.repeat(10 - energyPool)}`, 450, 385);
+            ctx.fillText(`유입 CO₂ 대기량: ${'■'.repeat(co2Pool)}${'□'.repeat(10 - co2Pool)}`, 450, 402);
+
+            ctx.restore();
+        }
+
+        // 상태 설명 업데이트
+        function updateStatusText(rates) {
+            if (temperature >= 42) {
+                statusDesc.innerHTML = `<strong style="color:#ef4444;">⚠️ 고온 경고:</strong> 온도가 너무 높아 캘빈 회로의 효소(루비스코 등)가 변성되어 광합성이 중단되었습니다.`;
+            } else if (lightIntensity === 0) {
+                statusDesc.innerHTML = `<strong style="color:#eab308;">🌙 암흑 상태:</strong> 빛이 없어 명반응이 일어나지 않으며, ATP와 NADPH가 공급되지 않아 전체 광합성이 멈췄습니다.`;
+            } else if (co2Level === 0) {
+                statusDesc.innerHTML = `<strong style="color:#94a3b8;">💨 CO₂ 부족:</strong> 이산화탄소가 없어 캘빈 회로에서 포도당을 합성할 수 없습니다.`;
+            } else if (lightIntensity < co2Level - 25) {
+                statusDesc.innerHTML = `<strong style="color:#38bdf8;">💡 제한 요인 (빛):</strong> CO₂는 충분하지만 빛의 세기가 약해 명반응 속도가 전체 광합성을 제한하고 있습니다.`;
+            } else if (co2Level < lightIntensity - 25) {
+                statusDesc.innerHTML = `<strong style="color:#38bdf8;">☁️ 제한 요인 (CO₂):</strong> 빛은 강하지만 이산화탄소 농도가 낮아 캘빈 회로 속도가 제한되고 있습니다.`;
+            } else {
+                statusDesc.innerHTML = `<strong style="color:#22c55e;">✅ 최적 가동 중:</strong> 명반응과 캘빈 회로가 균형을 이루며 활발하게 포도당과 산소를 생성하고 있습니다.`;
+            }
+        }
+
+        let frameCount = 0;
+
+        // 메인 애니메이션 루프
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const rates = calculatePhotosynthesisRate();
+            rateVal.textContent = `${rates.overall}%`;
+
+            if (frameCount % 15 === 0) {
+                updateStatusText(rates);
+            }
+
+            drawChloroplastBackground();
+
+            // 1. 광자(빛) 생성
+            if (lightIntensity > 0 && Math.random() < (lightIntensity / 100) * 0.25) {
+                particles.push(new Particle('photon', 40 + Math.random() * 60, 20, 2.2, 2.5));
+            }
+
+            // 2. 물(H2O) 유입 (빛이 있을 때 광분해 활발)
+            if (lightIntensity > 5 && Math.random() < (lightIntensity / 100) * 0.12) {
+                particles.push(new Particle('h2o', 180 + Math.random() * 60, 490, 0, -1.8));
+            }
+
+            // 3. 이산화탄소(CO2) 유입
+            if (co2Level > 0 && Math.random() < (co2Level / 100) * 0.18) {
+                particles.push(new Particle('co2', 760, 120 + Math.random() * 80, -2.2, 1.2));
+            }
+
+            // 4. 캘빈 회로 회전 및 포도당 합성 조건 체크
+            const calvinSpeed = rates.overall / 100;
+            if (energyPool >= 2 && co2Pool >= 2 && rates.tempEff > 0.1) {
+                calvinAngle += 0.04 * rates.tempEff;
+                if (frameCount % Math.max(20, Math.round(60 / (rates.tempEff + 0.1))) === 0) {
+                    energyPool -= 2;
+                    co2Pool -= 2;
+                    spawnGlucose();
+                }
+            } else if (calvinSpeed > 0) {
+                calvinAngle += 0.01 * calvinSpeed;
+            }
+
+            // 입자 업데이트 및 렌더링
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            frameCount++;
+            requestAnimationFrame(animate);
+        }
+
+        // 시뮬레이션 시작
+        animate();
+    </script>
+</body>
+</html>

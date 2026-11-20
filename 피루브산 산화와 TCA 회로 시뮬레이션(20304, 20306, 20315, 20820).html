@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>피루브산 산화와 TCA 회로</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eef3f8;color:#293b50;font-family:Arial,"Malgun Gothic",sans-serif}
+header{text-align:center;padding:22px 8px}
+h1{font-size:23px}
+main{max-width:1050px;margin:auto;padding:12px}
+.panel{background:white;border-radius:15px;padding:16px;margin-bottom:15px;box-shadow:0 3px 12px #0001}
+h2{font-size:17px;margin:0 0 12px}
+svg{width:100%;height:auto;display:block}
+.zone{font-size:13px;fill:#718096;font-weight:bold}
+.node{fill:#f0f5fa;stroke:#b7c8d9;stroke-width:2}
+.active{fill:#dcecff;stroke:#397fbe;stroke-width:3}
+.done{fill:#e2f3e8;stroke:#6ba77d;stroke-width:2}
+.nt{font-size:12px;fill:#34465a;font-weight:bold;text-anchor:middle}
+.ct{font-size:11px;fill:#397fbe;text-anchor:middle}
+.line{fill:none;stroke:#a6b8ca;stroke-width:3;stroke-dasharray:7 5}
+.atom{fill:#4387c8;stroke:#28649b;stroke-width:1.5}
+.co2{fill:#e78c5a;stroke:#b96135;stroke-width:1.5}
+.atomb{fill:white;font-size:10px;text-anchor:middle;font-weight:bold}
+.green{fill:#e2f3e8;stroke:#69a77d;stroke-width:1.5}
+.blue{fill:#e5effb;stroke:#78a2ce;stroke-width:1.5}
+.et{font-size:12px;font-weight:bold;text-anchor:middle;fill:#34764d}
+.bt{font-size:12px;font-weight:bold;text-anchor:middle;fill:#356b9d}
+#particle,#co2particle,#carrier,#atp,#fad{opacity:0}
+#particle{opacity:1}
+.info{background:#edf5ff;padding:15px;border-radius:10px;line-height:1.7;border-left:5px solid #4387c8}
+.info h3{margin:0 0 6px;color:#367bb7}
+.controls{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin:15px}
+button,select{border:0;border-radius:8px;padding:11px 16px;font-size:13px}
+button{background:#397fbe;color:white;cursor:pointer}
+.gray{background:#74869a}
+.progress{height:8px;background:#e4eaf1;border-radius:10px;overflow:hidden;margin:12px 0}
+#bar{height:100%;width:0;background:#4387c8}
+.small{font-size:12px;color:#718096}
+.counts{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.countbox{padding:13px 5px;border-radius:11px;text-align:center;background:#f1f6fc;border:1px solid #d5e2ef}
+.countbox strong{display:block;font-size:21px;color:#397fbe}
+.countbox span{font-size:12px;color:#718096}
+#round{text-align:center;margin-top:12px;font-size:13px;color:#64758a}
+#products{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.product{padding:6px 10px;border-radius:8px;background:white;border:1px solid #d5e2ef;font-size:12px;color:#356b9d}
+@media(max-width:600px){main{padding:6px}.panel{padding:10px}.counts{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+<h1>피루브산 산화와 TCA 회로</h1>
+<p class="small">피루브산 산화부터 TCA 회로까지 반복되는 세포 호흡 과정</p>
+</header>
+
+<main>
+<div class="panel">
+<h2>전체 반응 과정</h2>
+<svg id="diagram" viewBox="0 0 900 650">
+<rect x="10" y="15" width="880" height="620" rx="20" fill="#f8fafc" stroke="#d5e0eb" stroke-width="2"/>
+<text x="30" y="43" class="zone">피루브산 산화</text>
+
+<rect x="30" y="75" width="145" height="100" rx="12" class="node" id="n0"/>
+<text x="102" y="105" class="nt">피루브산</text>
+<text x="102" y="128" class="ct">3탄소 (C₃)</text>
+<text x="102" y="151" class="small" text-anchor="middle">출발 물질</text>
+<path d="M175 125 H240" class="line"/>
+
+<rect x="240" y="75" width="180" height="100" rx="12" class="node" id="n1"/>
+<text x="330" y="105" class="nt">피루브산 산화</text>
+<text x="330" y="128" class="ct">탈탄산 · 산화</text>
+<text x="330" y="151" class="small" text-anchor="middle">CO₂ · NADH 생성</text>
+<path d="M420 125 H475" class="line"/>
+
+<rect x="475" y="75" width="180" height="100" rx="12" class="node" id="n2"/>
+<text x="565" y="105" class="nt">아세틸-CoA</text>
+<text x="565" y="128" class="ct">2탄소 (C₂)</text>
+<text x="565" y="151" class="small" text-anchor="middle">TCA 회로 진입</text>
+<path d="M565 175 C565 205 520 220 520 245" class="line"/>
+
+<text x="450" y="215" class="zone" text-anchor="middle">TCA 회로</text>
+
+<path d="M520 275 C620 235 700 255 740 320 C790 385 775 430 740 455 C700 510 635 535 570 555 C490 590 415 590 350 555 C260 530 175 505 130 470 C90 420 90 365 150 320 C190 270 250 255 320 275 C380 245 450 245 520 275" fill="none" stroke="#a6b8ca" stroke-width="4" stroke-dasharray="8 6"/>
+
+<rect x="450" y="245" width="140" height="65" rx="12" class="node" id="n3"/>
+<text x="520" y="270" class="nt">시트르산</text>
+<text x="520" y="290" class="ct">C₆</text>
+
+<rect x="665" y="290" width="155" height="65" rx="12" class="node" id="n4"/>
+<text x="742" y="315" class="nt">이소시트르산</text>
+<text x="742" y="335" class="ct">C₆</text>
+
+<rect x="665" y="420" width="155" height="65" rx="12" class="node" id="n5"/>
+<text x="742" y="445" class="nt">α-케토글루타르산</text>
+<text x="742" y="465" class="ct">C₅</text>
+
+<rect x="495" y="520" width="150" height="65" rx="12" class="node" id="n6"/>
+<text x="570" y="545" class="nt">숙시닐-CoA</text>
+<text x="570" y="565" class="ct">C₄</text>
+
+<rect x="275" y="520" width="150" height="65" rx="12" class="node" id="n7"/>
+<text x="350" y="545" class="nt">숙신산</text>
+<text x="350" y="565" class="ct">C₄</text>
+
+<rect x="55" y="435" width="150" height="65" rx="12" class="node" id="n8"/>
+<text x="130" y="460" class="nt">푸마르산</text>
+<text x="130" y="480" class="ct">C₄</text>
+
+<rect x="55" y="285" width="150" height="65" rx="12" class="node" id="n9"/>
+<text x="130" y="310" class="nt">말산</text>
+<text x="130" y="330" class="ct">C₄</text>
+
+<rect x="270" y="245" width="150" height="65" rx="12" class="green" id="n10"/>
+<text x="345" y="270" class="nt">옥살로아세트산</text>
+<text x="345" y="290" class="ct">C₄ 재생</text>
+<text x="435" y="235" class="small" text-anchor="middle">아세틸-CoA + 옥살로아세트산</text>
+
+<g id="particle">
+<circle cx="-35" cy="0" r="12" class="atom"/>
+<circle cx="-21" cy="0" r="12" class="atom"/>
+<circle cx="-7" cy="0" r="12" class="atom"/>
+<circle cx="7" cy="0" r="12" class="atom"/>
+<circle cx="21" cy="0" r="12" class="atom"/>
+<circle cx="35" cy="0" r="12" class="atom"/>
+<text x="-35" y="4" class="atomb">C</text>
+<text x="-21" y="4" class="atomb">C</text>
+<text x="-7" y="4" class="atomb">C</text>
+<text x="7" y="4" class="atomb">C</text>
+<text x="21" y="4" class="atomb">C</text>
+<text x="35" y="4" class="atomb">C</text>
+</g>
+
+<g id="co2particle">
+<circle cx="0" cy="0" r="14" class="co2"/>
+<text x="0" y="4" class="atomb">CO₂</text>
+</g>
+<g id="carrier">
+<rect x="-35" y="-15" width="70" height="30" rx="8" class="blue"/>
+<text x="0" y="5" class="bt">NADH</text>
+</g>
+<g id="atp">
+<rect x="-30" y="-15" width="60" height="30" rx="8" class="green"/>
+<text x="0" y="5" class="et">ATP</text>
+</g>
+<g id="fad">
+<rect x="-35" y="-15" width="70" height="30" rx="8" class="blue"/>
+<text x="0" y="5" class="bt">FADH₂</text>
+</g>
+<g id="routePaths"></g>
+</svg>
+</div>
+
+<div class="panel">
+<h2>생성되는 에너지 물질</h2>
+<div class="counts">
+<div class="countbox"><strong id="nadhCount">0</strong><span>NADH</span></div>
+<div class="countbox"><strong id="fadhCount">0</strong><span>FADH₂</span></div>
+<div class="countbox"><strong id="atpCount">0</strong><span>ATP 또는 GTP</span></div>
+<div class="countbox"><strong id="co2Count">0</strong><span>CO₂</span></div>
+</div>
+<div id="round">피루브산 산화 및 TCA 회로 진행: 0회</div>
+<p class="small">피루브산 1분자당 NADH 4분자, FADH₂ 1분자, ATP 또는 GTP 1분자, CO₂ 3분자가 생성됩니다.</p>
+</div>
+
+<div class="panel">
+<h2>전자전달계와 ATP 합성</h2>
+<svg viewBox="0 0 900 190">
+<rect x="20" y="35" width="180" height="95" rx="12" class="blue"/>
+<text x="110" y="70" class="bt">NADH · FADH₂</text>
+<text x="110" y="95" class="small" text-anchor="middle">전자 운반체</text>
+<path d="M200 82 H300" class="line"/>
+<rect x="300" y="35" width="170" height="95" rx="12" class="node"/>
+<text x="385" y="70" class="nt">전자전달계</text>
+<text x="385" y="95" class="small" text-anchor="middle">H⁺ 농도 기울기 형성</text>
+<path d="M470 82 H540" class="line"/>
+<rect x="540" y="35" width="170" height="95" rx="12" class="green"/>
+<text x="625" y="70" class="et">ATP 합성효소</text>
+<text x="625" y="95" class="small" text-anchor="middle">ADP + Pi → ATP</text>
+<path d="M710 82 H770" class="line"/>
+<rect x="770" y="35" width="110" height="95" rx="12" class="green"/>
+<text x="825" y="70" class="et">ATP</text>
+<text x="825" y="95" class="small" text-anchor="middle">에너지</text>
+</svg>
+</div>
+
+<div class="panel">
+<div class="info">
+<h3 id="title">피루브산의 이동</h3>
+<div id="description">재생 버튼을 누르면 피루브산 산화부터 시작됩니다.</div>
+<div id="products"></div>
+</div>
+<div class="progress"><div id="bar"></div></div>
+<p class="small" id="step">준비 완료</p>
+<div class="controls">
+<button onclick="play()">▶ 재생</button>
+<button class="gray" onclick="pause()">Ⅱ 일시정지</button>
+<button class="gray" onclick="reset()">↺ 처음부터</button>
+</div>
+<div class="controls">
+<label>속도
+<select id="speed">
+<option value="0.65">느리게</option>
+<option value="1" selected>보통</option>
+<option value="1.6">빠르게</option>
+</select>
+</label>
+</div>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const NS="http://www.w3.org/2000/svg";
+
+const stages=[
+{
+name:"피루브산 이동",
+desc:"피루브산(C₃)이 미토콘드리아 기질에서 산화 과정을 시작합니다.",
+made:["피루브산 3탄소"],
+carbon:3,
+path:"M102 125 C150 125 200 125 330 125",
+duration:1500,node:0
+},
+{
+name:"피루브산 산화",
+desc:"피루브산(C₃)에서 탄소 1개가 CO₂로 방출됩니다. 남은 2탄소 물질이 산화되면서 NAD⁺가 NADH로 환원됩니다.",
+made:["CO₂ 1분자 방출","NADH 1분자 생성"],
+carbon:2,
+path:"M330 125 C380 125 420 125 480 125",
+duration:1800,node:1,
+values:{nadh:1,co2:1}
+},
+{
+name:"아세틸-CoA 생성",
+desc:"남은 2탄소의 아세틸기가 조효소 A(CoA)와 결합하여 아세틸-CoA가 됩니다.",
+made:["아세틸-CoA 생성"],
+carbon:2,
+path:"M480 125 C510 125 545 150 565 175",
+duration:1500,node:2
+},
+{
+name:"시트르산 생성",
+desc:"아세틸-CoA의 2탄소 아세틸기가 옥살로아세트산(4탄소)과 결합하여 6탄소의 시트르산을 형성합니다.",
+made:["시트르산 C₆ 생성"],
+carbon:6,
+path:"M565 175 C565 210 545 235 520 275",
+duration:1800,node:3
+},
+{
+name:"이소시트르산 생성",
+desc:"시트르산(C₆)이 구조를 바꾸어 이소시트르산(C₆)으로 전환됩니다.",
+made:["이소시트르산 C₆ 생성"],
+carbon:6,
+path:"M520 275 C600 245 680 260 742 322",
+duration:1800,node:4
+},
+{
+name:"α-케토글루타르산 생성",
+desc:"이소시트르산(C₆)이 산화·탈탄산됩니다. CO₂ 1분자가 방출되고 NADH 1분자가 생성되며 α-케토글루타르산(C₅)이 됩니다.",
+made:["NADH 1분자 생성","CO₂ 1분자 방출"],
+carbon:5,
+path:"M742 322 C790 360 790 410 742 452",
+duration:2000,node:5,
+values:{nadh:1,co2:1}
+},
+{
+name:"숙시닐-CoA 생성",
+desc:"α-케토글루타르산(C₅)이 산화·탈탄산되어 숙시닐-CoA(C₄)가 됩니다. 이 과정에서 NADH와 CO₂가 생성됩니다.",
+made:["NADH 1분자 생성","CO₂ 1분자 방출"],
+carbon:4,
+path:"M742 452 C700 500 635 535 570 552",
+duration:2000,node:6,
+values:{nadh:1,co2:1}
+},
+{
+name:"숙신산 생성",
+desc:"숙시닐-CoA가 숙신산으로 전환됩니다. 이 과정에서 기질 수준 인산화로 ATP 또는 GTP 1분자가 생성됩니다.",
+made:["ATP 또는 GTP 1분자 생성"],
+carbon:4,
+path:"M570 552 C500 585 420 585 350 552",
+duration:1800,node:7,
+values:{atp:1}
+},
+{
+name:"푸마르산 생성",
+desc:"숙신산(C₄)이 산화되어 푸마르산(C₄)으로 전환됩니다. FAD가 환원되어 FADH₂가 생성됩니다.",
+made:["FADH₂ 1분자 생성"],
+carbon:4,
+path:"M350 552 C270 540 180 510 130 467",
+duration:1800,node:8,
+values:{fadh:1}
+},
+{
+name:"말산 생성",
+desc:"푸마르산(C₄)에 물이 첨가되어 말산(C₄)이 생성됩니다.",
+made:["말산 C₄ 생성"],
+carbon:4,
+path:"M130 467 C85 420 90 365 130 317",
+duration:1800,node:9
+},
+{
+name:"옥살로아세트산 재생",
+desc:"말산(C₄)이 산화되어 옥살로아세트산(C₄)으로 전환됩니다. 이때 NADH 1분자가 생성됩니다. 재생된 옥살로아세트산은 다음 아세틸-CoA와 결합합니다.",
+made:["NADH 1분자 생성","옥살로아세트산 C₄ 재생"],
+carbon:4,
+path:"M130 317 C180 260 245 245 345 277",
+duration:2000,node:10,
+values:{nadh:1}
+}
+];
+
+let paths=[];
+stages.forEach(s=>{
+const p=document.createElementNS(NS,"path");
+p.setAttribute("d",s.path);
+p.setAttribute("fill","none");
+p.setAttribute("stroke","none");
+$("routePaths").appendChild(p);
+paths.push(p);
+});
+
+let index=0,progress=0,playing=false,last=0,raf=0;
+let totals={nadh:0,fadh:0,atp:0,co2:0};
+let rounds=0;
+
+function moveParticle(x,y,count){
+const group=$("particle");
+group.style.opacity=1;
+group.setAttribute("transform",`translate(${x},${y})`);
+for(let i=0;i<6;i++){
+group.children[i].style.display=i<count?"block":"none";
+group.children[i+6].style.display=i<count?"block":"none";
+}
+}
+
+function moveToken(id,x,y){
+const el=$(id);
+el.style.opacity=1;
+el.setAttribute("transform",`translate(${x},${y})`);
+}
+
+function updateTotals(){
+$("nadhCount").textContent=totals.nadh;
+$("fadhCount").textContent=totals.fadh;
+$("atpCount").textContent=totals.atp;
+$("co2Count").textContent=totals.co2;
+$("round").textContent=`피루브산 산화 및 TCA 회로 진행: ${rounds}회`;
+}
+
+function showInfo(){
+const s=stages[index];
+$("title").textContent=s.name;
+$("description").textContent=s.desc;
+$("products").innerHTML="";
+s.made.forEach(item=>{
+const span=document.createElement("span");
+span.className="product";
+span.textContent=item;
+$("products").appendChild(span);
+});
+}
+
+function highlight(){
+for(let i=0;i<=10;i++){
+const n=$("n"+i);
+n.classList.remove("active","done");
+if(i===stages[index].node)n.classList.add("active");
+else if(i<stages[index].node)n.classList.add("done");
+}
+}
+
+function updateProducts(){
+const v=stages[index].values;
+if(!v)return;
+Object.keys(v).forEach(k=>totals[k]+=v[k]);
+updateTotals();
+}
+
+function showByproduct(x,y){
+["co2particle","carrier","atp","fad"].forEach(id=>$(id).style.opacity=0);
+const v=stages[index].values||{};
+if(v.co2)moveToken("co2particle",x+30,y-45);
+if(v.nadh)moveToken("carrier",x+65,y+35);
+if(v.atp)moveToken("atp",x+55,y+35);
+if(v.fadh)moveToken("fad",x-50,y-35);
+}
+
+function render(){
+const s=stages[index];
+const path=paths[index];
+const point=path.getPointAtLength(path.getTotalLength()*progress);
+moveParticle(point.x,point.y,s.carbon);
+showByproduct(point.x,point.y);
+$("bar").style.width=((index+progress)/stages.length*100)+"%";
+highlight();
+}
+
+function finishStage(){
+updateProducts();
+if(index===stages.length-1){
+rounds++;
+index=0;
+}else{
+index++;
+}
+progress=0;
+showInfo();
+updateTotals();
+}
+
+function animate(time){
+if(!playing)return;
+if(!last)last=time;
+const dt=Math.min(time-last,50);
+last=time;
+const speed=Number($("speed").value);
+progress+=dt/(stages[index].duration/speed);
+
+if(progress>=1){
+progress=1;
+render();
+finishStage();
+}else{
+render();
+}
+$("step").textContent=`피루브산 산화 및 TCA 회로 진행 중 · ${rounds+1}회차`;
+raf=requestAnimationFrame(animate);
+}
+
+function play(){
+if(playing)return;
+playing=true;
+last=0;
+showInfo();
+raf=requestAnimationFrame(animate);
+}
+
+function pause(){
+playing=false;
+cancelAnimationFrame(raf);
+raf=0;
+last=0;
+$("step").textContent="일시정지";
+}
+
+function reset(){
+pause();
+index=0;
+progress=0;
+rounds=0;
+totals={nadh:0,fadh:0,atp:0,co2:0};
+updateTotals();
+["co2particle","carrier","atp","fad"].forEach(id=>$(id).style.opacity=0);
+moveParticle(102,125,3);
+showInfo();
+highlight();
+$("bar").style.width="0%";
+$("step").textContent="준비 완료";
+}
+
+reset();
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>피루브산 산화와 TCA 회로</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eef3f8;color:#293b50;font-family:Arial,"Malgun Gothic",sans-serif}
+header{text-align:center;padding:22px 8px}
+h1{font-size:23px}
+main{max-width:1050px;margin:auto;padding:12px}
+.panel{background:white;border-radius:15px;padding:16px;margin-bottom:15px;box-shadow:0 3px 12px #0001}
+h2{font-size:17px;margin:0 0 12px}
+svg{width:100%;height:auto;display:block}
+.zone{font-size:13px;fill:#718096;font-weight:bold}
+.node{fill:#f0f5fa;stroke:#b7c8d9;stroke-width:2}
+.active{fill:#dcecff;stroke:#397fbe;stroke-width:3}
+.done{fill:#e2f3e8;stroke:#6ba77d;stroke-width:2}
+.nt{font-size:12px;fill:#34465a;font-weight:bold;text-anchor:middle}
+.ct{font-size:11px;fill:#397fbe;text-anchor:middle}
+.line{fill:none;stroke:#a6b8ca;stroke-width:3;stroke-dasharray:7 5}
+.atom{fill:#4387c8;stroke:#28649b;stroke-width:1.5}
+.co2{fill:#e78c5a;stroke:#b96135;stroke-width:1.5}
+.atomb{fill:white;font-size:10px;text-anchor:middle;font-weight:bold}
+.green{fill:#e2f3e8;stroke:#69a77d;stroke-width:1.5}
+.blue{fill:#e5effb;stroke:#78a2ce;stroke-width:1.5}
+.et{font-size:12px;font-weight:bold;text-anchor:middle;fill:#34764d}
+.bt{font-size:12px;font-weight:bold;text-anchor:middle;fill:#356b9d}
+#particle,#co2particle,#carrier,#atp,#fad{opacity:0}
+#particle{opacity:1}
+.info{background:#edf5ff;padding:15px;border-radius:10px;line-height:1.7;border-left:5px solid #4387c8}
+.info h3{margin:0 0 6px;color:#367bb7}
+.controls{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin:15px}
+button,select{border:0;border-radius:8px;padding:11px 16px;font-size:13px}
+button{background:#397fbe;color:white;cursor:pointer}
+.gray{background:#74869a}
+.progress{height:8px;background:#e4eaf1;border-radius:10px;overflow:hidden;margin:12px 0}
+#bar{height:100%;width:0;background:#4387c8}
+.small{font-size:12px;color:#718096}
+.counts{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.countbox{padding:13px 5px;border-radius:11px;text-align:center;background:#f1f6fc;border:1px solid #d5e2ef}
+.countbox strong{display:block;font-size:21px;color:#397fbe}
+.countbox span{font-size:12px;color:#718096}
+#round{text-align:center;margin-top:12px;font-size:13px;color:#64758a}
+#products{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.product{padding:6px 10px;border-radius:8px;background:white;border:1px solid #d5e2ef;font-size:12px;color:#356b9d}
+@media(max-width:600px){main{padding:6px}.panel{padding:10px}.counts{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+<h1>피루브산 산화와 TCA 회로</h1>
+<p class="small">피루브산 산화부터 TCA 회로까지 반복되는 세포 호흡 과정</p>
+</header>
+
+<main>
+<div class="panel">
+<h2>전체 반응 과정</h2>
+<svg id="diagram" viewBox="0 0 900 650">
+<rect x="10" y="15" width="880" height="620" rx="20" fill="#f8fafc" stroke="#d5e0eb" stroke-width="2"/>
+<text x="30" y="43" class="zone">피루브산 산화</text>
+
+<rect x="30" y="75" width="145" height="100" rx="12" class="node" id="n0"/>
+<text x="102" y="105" class="nt">피루브산</text>
+<text x="102" y="128" class="ct">3탄소 (C₃)</text>
+<text x="102" y="151" class="small" text-anchor="middle">출발 물질</text>
+<path d="M175 125 H240" class="line"/>
+
+<rect x="240" y="75" width="180" height="100" rx="12" class="node" id="n1"/>
+<text x="330" y="105" class="nt">피루브산 산화</text>
+<text x="330" y="128" class="ct">탈탄산 · 산화</text>
+<text x="330" y="151" class="small" text-anchor="middle">CO₂ · NADH 생성</text>
+<path d="M420 125 H475" class="line"/>
+
+<rect x="475" y="75" width="180" height="100" rx="12" class="node" id="n2"/>
+<text x="565" y="105" class="nt">아세틸-CoA</text>
+<text x="565" y="128" class="ct">2탄소 (C₂)</text>
+<text x="565" y="151" class="small" text-anchor="middle">TCA 회로 진입</text>
+<path d="M565 175 C565 205 520 220 520 245" class="line"/>
+
+<text x="450" y="215" class="zone" text-anchor="middle">TCA 회로</text>
+
+<path d="M520 275 C620 235 700 255 740 320 C790 385 775 430 740 455 C700 510 635 535 570 555 C490 590 415 590 350 555 C260 530 175 505 130 470 C90 420 90 365 150 320 C190 270 250 255 320 275 C380 245 450 245 520 275" fill="none" stroke="#a6b8ca" stroke-width="4" stroke-dasharray="8 6"/>
+
+<rect x="450" y="245" width="140" height="65" rx="12" class="node" id="n3"/>
+<text x="520" y="270" class="nt">시트르산</text>
+<text x="520" y="290" class="ct">C₆</text>
+
+<rect x="665" y="290" width="155" height="65" rx="12" class="node" id="n4"/>
+<text x="742" y="315" class="nt">이소시트르산</text>
+<text x="742" y="335" class="ct">C₆</text>
+
+<rect x="665" y="420" width="155" height="65" rx="12" class="node" id="n5"/>
+<text x="742" y="445" class="nt">α-케토글루타르산</text>
+<text x="742" y="465" class="ct">C₅</text>
+
+<rect x="495" y="520" width="150" height="65" rx="12" class="node" id="n6"/>
+<text x="570" y="545" class="nt">숙시닐-CoA</text>
+<text x="570" y="565" class="ct">C₄</text>
+
+<rect x="275" y="520" width="150" height="65" rx="12" class="node" id="n7"/>
+<text x="350" y="545" class="nt">숙신산</text>
+<text x="350" y="565" class="ct">C₄</text>
+
+<rect x="55" y="435" width="150" height="65" rx="12" class="node" id="n8"/>
+<text x="130" y="460" class="nt">푸마르산</text>
+<text x="130" y="480" class="ct">C₄</text>
+
+<rect x="55" y="285" width="150" height="65" rx="12" class="node" id="n9"/>
+<text x="130" y="310" class="nt">말산</text>
+<text x="130" y="330" class="ct">C₄</text>
+
+<rect x="270" y="245" width="150" height="65" rx="12" class="green" id="n10"/>
+<text x="345" y="270" class="nt">옥살로아세트산</text>
+<text x="345" y="290" class="ct">C₄ 재생</text>
+<text x="435" y="235" class="small" text-anchor="middle">아세틸-CoA + 옥살로아세트산</text>
+
+<g id="particle">
+<circle cx="-35" cy="0" r="12" class="atom"/>
+<circle cx="-21" cy="0" r="12" class="atom"/>
+<circle cx="-7" cy="0" r="12" class="atom"/>
+<circle cx="7" cy="0" r="12" class="atom"/>
+<circle cx="21" cy="0" r="12" class="atom"/>
+<circle cx="35" cy="0" r="12" class="atom"/>
+<text x="-35" y="4" class="atomb">C</text>
+<text x="-21" y="4" class="atomb">C</text>
+<text x="-7" y="4" class="atomb">C</text>
+<text x="7" y="4" class="atomb">C</text>
+<text x="21" y="4" class="atomb">C</text>
+<text x="35" y="4" class="atomb">C</text>
+</g>
+
+<g id="co2particle">
+<circle cx="0" cy="0" r="14" class="co2"/>
+<text x="0" y="4" class="atomb">CO₂</text>
+</g>
+<g id="carrier">
+<rect x="-35" y="-15" width="70" height="30" rx="8" class="blue"/>
+<text x="0" y="5" class="bt">NADH</text>
+</g>
+<g id="atp">
+<rect x="-30" y="-15" width="60" height="30" rx="8" class="green"/>
+<text x="0" y="5" class="et">ATP</text>
+</g>
+<g id="fad">
+<rect x="-35" y="-15" width="70" height="30" rx="8" class="blue"/>
+<text x="0" y="5" class="bt">FADH₂</text>
+</g>
+<g id="routePaths"></g>
+</svg>
+</div>
+
+<div class="panel">
+<h2>생성되는 에너지 물질</h2>
+<div class="counts">
+<div class="countbox"><strong id="nadhCount">0</strong><span>NADH</span></div>
+<div class="countbox"><strong id="fadhCount">0</strong><span>FADH₂</span></div>
+<div class="countbox"><strong id="atpCount">0</strong><span>ATP 또는 GTP</span></div>
+<div class="countbox"><strong id="co2Count">0</strong><span>CO₂</span></div>
+</div>
+<div id="round">피루브산 산화 및 TCA 회로 진행: 0회</div>
+<p class="small">피루브산 1분자당 NADH 4분자, FADH₂ 1분자, ATP 또는 GTP 1분자, CO₂ 3분자가 생성됩니다.</p>
+</div>
+
+<div class="panel">
+<h2>전자전달계와 ATP 합성</h2>
+<svg viewBox="0 0 900 190">
+<rect x="20" y="35" width="180" height="95" rx="12" class="blue"/>
+<text x="110" y="70" class="bt">NADH · FADH₂</text>
+<text x="110" y="95" class="small" text-anchor="middle">전자 운반체</text>
+<path d="M200 82 H300" class="line"/>
+<rect x="300" y="35" width="170" height="95" rx="12" class="node"/>
+<text x="385" y="70" class="nt">전자전달계</text>
+<text x="385" y="95" class="small" text-anchor="middle">H⁺ 농도 기울기 형성</text>
+<path d="M470 82 H540" class="line"/>
+<rect x="540" y="35" width="170" height="95" rx="12" class="green"/>
+<text x="625" y="70" class="et">ATP 합성효소</text>
+<text x="625" y="95" class="small" text-anchor="middle">ADP + Pi → ATP</text>
+<path d="M710 82 H770" class="line"/>
+<rect x="770" y="35" width="110" height="95" rx="12" class="green"/>
+<text x="825" y="70" class="et">ATP</text>
+<text x="825" y="95" class="small" text-anchor="middle">에너지</text>
+</svg>
+</div>
+
+<div class="panel">
+<div class="info">
+<h3 id="title">피루브산의 이동</h3>
+<div id="description">재생 버튼을 누르면 피루브산 산화부터 시작됩니다.</div>
+<div id="products"></div>
+</div>
+<div class="progress"><div id="bar"></div></div>
+<p class="small" id="step">준비 완료</p>
+<div class="controls">
+<button onclick="play()">▶ 재생</button>
+<button class="gray" onclick="pause()">Ⅱ 일시정지</button>
+<button class="gray" onclick="reset()">↺ 처음부터</button>
+</div>
+<div class="controls">
+<label>속도
+<select id="speed">
+<option value="0.65">느리게</option>
+<option value="1" selected>보통</option>
+<option value="1.6">빠르게</option>
+</select>
+</label>
+</div>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const NS="http://www.w3.org/2000/svg";
+
+const stages=[
+{
+name:"피루브산 이동",
+desc:"피루브산(C₃)이 미토콘드리아 기질에서 산화 과정을 시작합니다.",
+made:["피루브산 3탄소"],
+carbon:3,
+path:"M102 125 C150 125 200 125 330 125",
+duration:1500,node:0
+},
+{
+name:"피루브산 산화",
+desc:"피루브산(C₃)에서 탄소 1개가 CO₂로 방출됩니다. 남은 2탄소 물질이 산화되면서 NAD⁺가 NADH로 환원됩니다.",
+made:["CO₂ 1분자 방출","NADH 1분자 생성"],
+carbon:2,
+path:"M330 125 C380 125 420 125 480 125",
+duration:1800,node:1,
+values:{nadh:1,co2:1}
+},
+{
+name:"아세틸-CoA 생성",
+desc:"남은 2탄소의 아세틸기가 조효소 A(CoA)와 결합하여 아세틸-CoA가 됩니다.",
+made:["아세틸-CoA 생성"],
+carbon:2,
+path:"M480 125 C510 125 545 150 565 175",
+duration:1500,node:2
+},
+{
+name:"시트르산 생성",
+desc:"아세틸-CoA의 2탄소 아세틸기가 옥살로아세트산(4탄소)과 결합하여 6탄소의 시트르산을 형성합니다.",
+made:["시트르산 C₆ 생성"],
+carbon:6,
+path:"M565 175 C565 210 545 235 520 275",
+duration:1800,node:3
+},
+{
+name:"이소시트르산 생성",
+desc:"시트르산(C₆)이 구조를 바꾸어 이소시트르산(C₆)으로 전환됩니다.",
+made:["이소시트르산 C₆ 생성"],
+carbon:6,
+path:"M520 275 C600 245 680 260 742 322",
+duration:1800,node:4
+},
+{
+name:"α-케토글루타르산 생성",
+desc:"이소시트르산(C₆)이 산화·탈탄산됩니다. CO₂ 1분자가 방출되고 NADH 1분자가 생성되며 α-케토글루타르산(C₅)이 됩니다.",
+made:["NADH 1분자 생성","CO₂ 1분자 방출"],
+carbon:5,
+path:"M742 322 C790 360 790 410 742 452",
+duration:2000,node:5,
+values:{nadh:1,co2:1}
+},
+{
+name:"숙시닐-CoA 생성",
+desc:"α-케토글루타르산(C₅)이 산화·탈탄산되어 숙시닐-CoA(C₄)가 됩니다. 이 과정에서 NADH와 CO₂가 생성됩니다.",
+made:["NADH 1분자 생성","CO₂ 1분자 방출"],
+carbon:4,
+path:"M742 452 C700 500 635 535 570 552",
+duration:2000,node:6,
+values:{nadh:1,co2:1}
+},
+{
+name:"숙신산 생성",
+desc:"숙시닐-CoA가 숙신산으로 전환됩니다. 이 과정에서 기질 수준 인산화로 ATP 또는 GTP 1분자가 생성됩니다.",
+made:["ATP 또는 GTP 1분자 생성"],
+carbon:4,
+path:"M570 552 C500 585 420 585 350 552",
+duration:1800,node:7,
+values:{atp:1}
+},
+{
+name:"푸마르산 생성",
+desc:"숙신산(C₄)이 산화되어 푸마르산(C₄)으로 전환됩니다. FAD가 환원되어 FADH₂가 생성됩니다.",
+made:["FADH₂ 1분자 생성"],
+carbon:4,
+path:"M350 552 C270 540 180 510 130 467",
+duration:1800,node:8,
+values:{fadh:1}
+},
+{
+name:"말산 생성",
+desc:"푸마르산(C₄)에 물이 첨가되어 말산(C₄)이 생성됩니다.",
+made:["말산 C₄ 생성"],
+carbon:4,
+path:"M130 467 C85 420 90 365 130 317",
+duration:1800,node:9
+},
+{
+name:"옥살로아세트산 재생",
+desc:"말산(C₄)이 산화되어 옥살로아세트산(C₄)으로 전환됩니다. 이때 NADH 1분자가 생성됩니다. 재생된 옥살로아세트산은 다음 아세틸-CoA와 결합합니다.",
+made:["NADH 1분자 생성","옥살로아세트산 C₄ 재생"],
+carbon:4,
+path:"M130 317 C180 260 245 245 345 277",
+duration:2000,node:10,
+values:{nadh:1}
+}
+];
+
+let paths=[];
+stages.forEach(s=>{
+const p=document.createElementNS(NS,"path");
+p.setAttribute("d",s.path);
+p.setAttribute("fill","none");
+p.setAttribute("stroke","none");
+$("routePaths").appendChild(p);
+paths.push(p);
+});
+
+let index=0,progress=0,playing=false,last=0,raf=0;
+let totals={nadh:0,fadh:0,atp:0,co2:0};
+let rounds=0;
+
+function moveParticle(x,y,count){
+const group=$("particle");
+group.style.opacity=1;
+group.setAttribute("transform",`translate(${x},${y})`);
+for(let i=0;i<6;i++){
+group.children[i].style.display=i<count?"block":"none";
+group.children[i+6].style.display=i<count?"block":"none";
+}
+}
+
+function moveToken(id,x,y){
+const el=$(id);
+el.style.opacity=1;
+el.setAttribute("transform",`translate(${x},${y})`);
+}
+
+function updateTotals(){
+$("nadhCount").textContent=totals.nadh;
+$("fadhCount").textContent=totals.fadh;
+$("atpCount").textContent=totals.atp;
+$("co2Count").textContent=totals.co2;
+$("round").textContent=`피루브산 산화 및 TCA 회로 진행: ${rounds}회`;
+}
+
+function showInfo(){
+const s=stages[index];
+$("title").textContent=s.name;
+$("description").textContent=s.desc;
+$("products").innerHTML="";
+s.made.forEach(item=>{
+const span=document.createElement("span");
+span.className="product";
+span.textContent=item;
+$("products").appendChild(span);
+});
+}
+
+function highlight(){
+for(let i=0;i<=10;i++){
+const n=$("n"+i);
+n.classList.remove("active","done");
+if(i===stages[index].node)n.classList.add("active");
+else if(i<stages[index].node)n.classList.add("done");
+}
+}
+
+function updateProducts(){
+const v=stages[index].values;
+if(!v)return;
+Object.keys(v).forEach(k=>totals[k]+=v[k]);
+updateTotals();
+}
+
+function showByproduct(x,y){
+["co2particle","carrier","atp","fad"].forEach(id=>$(id).style.opacity=0);
+const v=stages[index].values||{};
+if(v.co2)moveToken("co2particle",x+30,y-45);
+if(v.nadh)moveToken("carrier",x+65,y+35);
+if(v.atp)moveToken("atp",x+55,y+35);
+if(v.fadh)moveToken("fad",x-50,y-35);
+}
+
+function render(){
+const s=stages[index];
+const path=paths[index];
+const point=path.getPointAtLength(path.getTotalLength()*progress);
+moveParticle(point.x,point.y,s.carbon);
+showByproduct(point.x,point.y);
+$("bar").style.width=((index+progress)/stages.length*100)+"%";
+highlight();
+}
+
+function finishStage(){
+updateProducts();
+if(index===stages.length-1){
+rounds++;
+index=0;
+}else{
+index++;
+}
+progress=0;
+showInfo();
+updateTotals();
+}
+
+function animate(time){
+if(!playing)return;
+if(!last)last=time;
+const dt=Math.min(time-last,50);
+last=time;
+const speed=Number($("speed").value);
+progress+=dt/(stages[index].duration/speed);
+
+if(progress>=1){
+progress=1;
+render();
+finishStage();
+}else{
+render();
+}
+$("step").textContent=`피루브산 산화 및 TCA 회로 진행 중 · ${rounds+1}회차`;
+raf=requestAnimationFrame(animate);
+}
+
+function play(){
+if(playing)return;
+playing=true;
+last=0;
+showInfo();
+raf=requestAnimationFrame(animate);
+}
+
+function pause(){
+playing=false;
+cancelAnimationFrame(raf);
+raf=0;
+last=0;
+$("step").textContent="일시정지";
+}
+
+function reset(){
+pause();
+index=0;
+progress=0;
+rounds=0;
+totals={nadh:0,fadh:0,atp:0,co2:0};
+updateTotals();
+["co2particle","carrier","atp","fad"].forEach(id=>$(id).style.opacity=0);
+moveParticle(102,125,3);
+showInfo();
+highlight();
+$("bar").style.width="0%";
+$("step").textContent="준비 완료";
+}
+
+reset();
+</script>
+</body>
+</html>

@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고급 광합성 생화학 시뮬레이션</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at 20% 20%, #06281e 0%, #030712 75%);
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: rgba(30, 41, 59, 0.9);
+            height: 6px;
+            border-radius: 999px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+            border: 2px solid #ecfdf5;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+            transition: transform 0.15s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500/30">
+
+    <!-- 상단 내비게이션 헤더 -->
+    <header class="glass-panel border-b border-white/10 px-6 py-4 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3.5">
+                <div class="p-2.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-400 rounded-xl border border-emerald-400/30 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                    <i data-lucide="sprout" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-lg md:text-xl font-bold tracking-tight text-white">엽록체 광합성 메커니즘 시뮬레이터</h1>
+                        <span class="hidden sm:inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">PRO LAB</span>
+                    </div>
+                    <p class="text-xs text-slate-400">명반응(광인산화)과 암반응(칼빈-벤슨 회로)의 실시간 에너지 전환 시각화</p>
+                </div>
+            </div>
+
+            <!-- 전체 화학 반응식 배너 -->
+            <div class="hidden xl:flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-slate-700/80 text-xs font-mono text-slate-300">
+                <span class="text-purple-400">6CO₂</span> + 
+                <span class="text-sky-400">6H₂O</span> + 
+                <span class="text-amber-400">빛 에너지</span> 
+                <span class="text-slate-500">──▶</span> 
+                <span class="text-rose-400 font-semibold">C₆H₁₂O₆ (포도당)</span> + 
+                <span class="text-emerald-400 font-semibold">6O₂</span>
+            </div>
+
+            <!-- 상태 인디케이터 -->
+            <div id="status-badge" class="flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-semibold shadow-inner">
+                <span id="status-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span id="status-text">최적 활성 상태</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 대시보드 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- 좌측 컨트롤 패널 (4컬럼) -->
+        <section class="lg:col-span-4 glass-panel rounded-2xl p-6 flex flex-col justify-between space-y-6">
+            <div class="space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="sliders-horizontal" class="w-4 h-4 text-emerald-400"></i>
+                        <h2 class="font-semibold text-sm tracking-wide text-slate-200">환경 변수 제어</h2>
+                    </div>
+                    <button id="btn-pause" class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1 transition">
+                        <i data-lucide="pause" class="w-3 h-3"></i> <span>일시정지</span>
+                    </button>
+                </div>
+
+                <!-- 빛의 세기 -->
+                <div class="space-y-2.5 bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/80">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-200 font-medium flex items-center gap-2">
+                            <i data-lucide="sun" class="w-4 h-4 text-amber-400"></i> 빛의 세기 (광도)
+                        </span>
+                        <span id="val-light" class="font-mono text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded">80%</span>
+                    </div>
+                    <input type="range" id="range-light" min="0" max="100" value="80" class="w-full">
+                    <div class="flex justify-between text-[11px] text-slate-500">
+                        <span>암흑 (0%)</span>
+                        <span>광포화점 (~85%)</span>
+                        <span>강광 (100%)</span>
+                    </div>
+                </div>
+
+                <!-- 이산화탄소 농도 -->
+                <div class="space-y-2.5 bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/80">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-200 font-medium flex items-center gap-2">
+                            <i data-lucide="cloud" class="w-4 h-4 text-purple-400"></i> 이산화탄소 (CO₂) 농도
+                        </span>
+                        <span id="val-co2" class="font-mono text-purple-400 font-bold bg-purple-500/10 px-2 py-0.5 rounded">65%</span>
+                    </div>
+                    <input type="range" id="range-co2" min="0" max="100" value="65" class="w-full">
+                    <div class="flex justify-between text-[11px] text-slate-500">
+                        <span>결핍 (0%)</span>
+                        <span>대기 적정 (60%)</span>
+                        <span>고농도 (100%)</span>
+                    </div>
+                </div>
+
+                <!-- 온도 -->
+                <div class="space-y-2.5 bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/80">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-200 font-medium flex items-center gap-2">
+                            <i data-lucide="thermometer" class="w-4 h-4 text-rose-400"></i> 주변 온도
+                        </span>
+                        <span id="val-temp" class="font-mono text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded">26°C</span>
+                    </div>
+                    <input type="range" id="range-temp" min="5" max="48" value="26" class="w-full">
+                    <div class="flex justify-between text-[11px] text-slate-500">
+                        <span>저온 둔화 (5°C)</span>
+                        <span>최적 (25~28°C)</span>
+                        <span>효소 변성 (45°C+)</span>
+                    </div>
+                </div>
+
+                <!-- 실시간 제한 요인 진단 박스 -->
+                <div id="diagnosis-box" class="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs space-y-1">
+                    <div class="font-semibold text-emerald-300 flex items-center gap-1.5">
+                        <i data-lucide="stethoscope" class="w-3.5 h-3.5"></i> 실시간 생화학 진단
+                    </div>
+                    <p id="diagnosis-text" class="text-slate-300 leading-relaxed">
+                        빛, 이산화탄소, 온도가 모두 조화를 이루어 명반응과 칼빈 회로가 최고 효율로 가동 중입니다.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 프리셋 & 초기화 버튼 -->
+            <div class="pt-3 border-t border-slate-800 grid grid-cols-2 gap-2.5">
+                <button id="btn-night" class="py-2 px-3 bg-slate-900 hover:bg-slate-800 text-slate-300 font-medium rounded-xl transition border border-slate-700/80 flex items-center justify-center gap-1.5 text-xs">
+                    <i data-lucide="moon" class="w-3.5 h-3.5 text-indigo-400"></i> 밤(어두움) 테스트
+                </button>
+                <button id="btn-reset" class="py-2 px-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 font-medium rounded-xl transition border border-emerald-500/30 flex items-center justify-center gap-1.5 text-xs">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> 최적값 초기화
+                </button>
+            </div>
+        </section>
+
+        <!-- 우측 시각화 및 데이터 영역 (8컬럼) -->
+        <div class="lg:col-span-8 flex flex-col space-y-5">
+            
+            <!-- 엽록체 시뮬레이션 캔버스 카드 -->
+            <div class="glass-panel rounded-2xl p-4 md:p-5 relative overflow-hidden">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                        <h3 class="text-sm font-semibold text-slate-200">엽록체 (Chloroplast) 내부 실시간 반응 흐름</h3>
+                    </div>
+                    <span class="text-[11px] text-slate-400">입자가 실제 경로를 따라 반응하고 전환됩니다</span>
+                </div>
+
+                <!-- 고해상도 캔버스 -->
+                <div class="relative rounded-xl overflow-hidden border border-slate-800/90 bg-[#040d0a]">
+                    <canvas id="simCanvas" class="w-full h-[380px] block"></canvas>
+                </div>
+
+                <!-- 6종 입자 정밀 범례 -->
+                <div class="mt-4 pt-3.5 border-t border-slate-800/80">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-xs">
+                        <div class="flex items-center gap-2 bg-slate-900/70 px-2.5 py-2 rounded-lg border border-slate-800">
+                            <span class="w-3 h-3 rounded-full bg-amber-400 shrink-0 shadow-[0_0_8px_#fbbf24]"></span>
+                            <div>
+                                <div class="font-semibold text-slate-200">빛 (광자)</div>
+                                <div class="text-[10px] text-slate-400">에너지 유입</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-900/70 px-2.5 py-2 rounded-lg border border-slate-800">
+                            <span class="w-3 h-3 rounded-full bg-sky-400 shrink-0 shadow-[0_0_8px_#38bdf8]"></span>
+                            <div>
+                                <div class="font-semibold text-slate-200">물 (H₂O)</div>
+                                <div class="text-[10px] text-slate-400">광분해 반응물</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-900/70 px-2.5 py-2 rounded-lg border border-slate-800">
+                            <span class="w-3 h-3 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_8px_#34d399]"></span>
+                            <div>
+                                <div class="font-semibold text-slate-200">산소 (O₂)</div>
+                                <div class="text-[10px] text-slate-400">명반응 부산물</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-900/70 px-2.5 py-2 rounded-lg border border-slate-800">
+                            <span class="w-3 h-3 rounded-full bg-orange-500 shrink-0 shadow-[0_0_8px_#f97316]"></span>
+                            <div>
+                                <div class="font-semibold text-slate-200">ATP / NADPH</div>
+                                <div class="text-[10px] text-slate-400">생화학 에너지</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-900/70 px-2.5 py-2 rounded-lg border border-slate-800">
+                            <span class="w-3 h-3 rounded-full bg-purple-400 shrink-0 shadow-[0_0_8px_#c084fc]"></span>
+                            <div>
+                                <div class="font-semibold text-slate-200">CO₂</div>
+                                <div class="text-[10px] text-slate-400">탄소 고정 기질</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-900/70 px-2.5 py-2 rounded-lg border border-slate-800">
+                            <span class="w-3.5 h-3.5 rounded-full bg-rose-500 shrink-0 shadow-[0_0_8px_#f43f5e]"></span>
+                            <div>
+                                <div class="font-semibold text-slate-200">포도당</div>
+                                <div class="text-[10px] text-slate-400">최종 합성 산물</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단 3대 핵심 지표 카드 -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="glass-panel rounded-2xl p-4 flex items-center space-x-4">
+                    <div class="p-3 bg-emerald-500/15 text-emerald-400 rounded-xl border border-emerald-500/30">
+                        <i data-lucide="gauge" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400">종합 광합성 속도</p>
+                        <h4 id="stat-rate" class="text-2xl font-bold text-white font-mono">82.4%</h4>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-4 flex items-center space-x-4">
+                    <div class="p-3 bg-sky-500/15 text-sky-400 rounded-xl border border-sky-500/30">
+                        <i data-lucide="wind" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400">산소 방출량 (O₂)</p>
+                        <h4 id="stat-o2" class="text-2xl font-bold text-white font-mono">70.0 mL/m</h4>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-4 flex items-center space-x-4">
+                    <div class="p-3 bg-rose-500/15 text-rose-400 rounded-xl border border-rose-500/30">
+                        <i data-lucide="hexagon" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400">포도당 합성률</p>
+                        <h4 id="stat-glucose" class="text-2xl font-bold text-white font-mono">14.8 mg/h</h4>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // DOM 요소
+        const rangeLight = document.getElementById('range-light');
+        const rangeCo2 = document.getElementById('range-co2');
+        const rangeTemp = document.getElementById('range-temp');
+        const valLight = document.getElementById('val-light');
+        const valCo2 = document.getElementById('val-co2');
+        const valTemp = document.getElementById('val-temp');
+
+        const statusBadge = document.getElementById('status-badge');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const diagnosisBox = document.getElementById('diagnosis-box');
+        const diagnosisText = document.getElementById('diagnosis-text');
+
+        const statRate = document.getElementById('stat-rate');
+        const statO2 = document.getElementById('stat-o2');
+        const statGlucose = document.getElementById('stat-glucose');
+
+        const btnReset = document.getElementById('btn-reset');
+        const btnNight = document.getElementById('btn-night');
+        const btnPause = document.getElementById('btn-pause');
+
+        // 캔버스 초기화 (고해상도 Retina 대응)
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            width = rect.width;
+            height = 380;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 시뮬레이션 상태
+        let state = { light: 80, co2: 65, temp: 26, paused: false };
+        let cycleAngle = 0;
+
+        function updateUI() {
+            valLight.textContent = state.light + '%';
+            valCo2.textContent = state.co2 + '%';
+            valTemp.textContent = state.temp + '°C';
+        }
+
+        rangeLight.addEventListener('input', e => { state.light = +e.target.value; updateUI(); });
+        rangeCo2.addEventListener('input', e => { state.co2 = +e.target.value; updateUI(); });
+        rangeTemp.addEventListener('input', e => { state.temp = +e.target.value; updateUI(); });
+
+        btnReset.addEventListener('click', () => {
+            state.light = 80; state.co2 = 65; state.temp = 26;
+            rangeLight.value = 80; rangeCo2.value = 65; rangeTemp.value = 26;
+            updateUI();
+        });
+
+        btnNight.addEventListener('click', () => {
+            state.light = 0;
+            rangeLight.value = 0;
+            updateUI();
+        });
+
+        btnPause.addEventListener('click', () => {
+            state.paused = !state.paused;
+            btnPause.innerHTML = state.paused 
+                ? `<i data-lucide="play" class="w-3 h-3 text-emerald-400"></i> <span>재개</span>`
+                : `<i data-lucide="pause" class="w-3 h-3"></i> <span>일시정지</span>`;
+            lucide.createIcons();
+        });
+
+        // 경로 기반 입자 시스템
+        let particles = [];
+        let spawnTimer = 0;
+
+        function spawnParticles(lightEff, calvinEff) {
+            const thylakoidX = width * 0.28;
+            const thylakoidY = height * 0.52;
+            const calvinX = width * 0.73;
+            const calvinY = height * 0.52;
+
+            // 1. 빛(광자) 위에서 틸라코이드로 유입
+            if (state.light > 5 && Math.random() < (state.light / 100) * 0.35) {
+                particles.push({
+                    type: 'photon',
+                    x: thylakoidX + (Math.random() - 0.5) * 90,
+                    y: 20,
+                    tx: thylakoidX + (Math.random() - 0.5) * 40,
+                    ty: thylakoidY - 30,
+                    speed: 2.5 + (state.light / 40),
+                    color: '#fbbf24',
+                    size: 3.5
+                });
+            }
+
+            // 2. 물(H2O) 좌측 하단에서 틸라코이드로 유입
+            if (lightEff > 0.05 && Math.random() < lightEff * 0.25) {
+                particles.push({
+                    type: 'h2o',
+                    x: 30,
+                    y: height * 0.72 + (Math.random() - 0.5) * 40,
+                    tx: thylakoidX - 25,
+                    ty: thylakoidY + 20,
+                    speed: 1.8 * lightEff + 0.5,
+                    color: '#38bdf8',
+                    size: 4
+                });
+            }
+
+            // 3. 산소(O2) 틸라코이드에서 좌측 상단으로 방출
+            if (lightEff > 0.05 && Math.random() < lightEff * 0.22) {
+                particles.push({
+                    type: 'o2',
+                    x: thylakoidX - 20,
+                    y: thylakoidY - 25,
+                    tx: 35,
+                    ty: height * 0.25 + (Math.random() - 0.5) * 30,
+                    speed: 1.8 * lightEff + 0.5,
+                    color: '#34d399',
+                    size: 4.5
+                });
+            }
+
+            // 4. ATP/NADPH 틸라코이드에서 스트로마(칼빈회로)로 에너지 전달
+            if (lightEff > 0.05 && Math.random() < lightEff * 0.28) {
+                particles.push({
+                    type: 'atp',
+                    x: thylakoidX + 45,
+                    y: thylakoidY - 15 + (Math.random() - 0.5) * 30,
+                    tx: calvinX - 65,
+                    ty: calvinY - 15,
+                    speed: 2.0 * lightEff + 0.6,
+                    color: '#f97316',
+                    size: 4.5
+                });
+            }
+
+            // 5. CO2 우측 상단에서 칼빈 회로로 유입
+            if (state.co2 > 5 && Math.random() < (state.co2 / 100) * 0.28) {
+                particles.push({
+                    type: 'co2',
+                    x: width - 35,
+                    y: height * 0.22 + (Math.random() - 0.5) * 30,
+                    tx: calvinX + 40,
+                    ty: calvinY - 40,
+                    speed: 1.6 + (state.co2 / 60),
+                    color: '#c084fc',
+                    size: 4
+                });
+            }
+
+            // 6. 포도당(Glucose) 칼빈 회로에서 우측 하단으로 생성 및 방출
+            if (calvinEff > 0.08 && Math.random() < calvinEff * 0.16) {
+                particles.push({
+                    type: 'glucose',
+                    x: calvinX + 35,
+                    y: calvinY + 45,
+                    tx: width - 40,
+                    ty: height * 0.80 + (Math.random() - 0.5) * 25,
+                    speed: 1.5 * calvinEff + 0.5,
+                    color: '#f43f5e',
+                    size: 6.5
+                });
+            }
+        }
+
+        // 엽록체 구조물 드로잉 함수
+        function drawChloroplastEnvironment(lightEff, calvinEff) {
+            const cx = width / 2;
+            const cy = height / 2;
+
+            // 1. 엽록체 이중막 (외막 & 내막)
+            ctx.save();
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.28)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.roundRect(16, 16, width - 32, height - 32, 95);
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(52, 211, 153, 0.14)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(24, 24, width - 48, height - 48, 88);
+            ctx.stroke();
+            ctx.restore();
+
+            // 2. 좌측 영역: 틸라코이드 그라나 (Thylakoid Grana) 스택
+            const tx = width * 0.28;
+            const ty = height * 0.52;
+
+            // 빛이 닿을 때 틸라코이드 후광 효과
+            if (lightEff > 0.05) {
+                const grad = ctx.createRadialGradient(tx, ty, 10, tx, ty, 110);
+                grad.addColorStop(0, `rgba(251, 191, 36, ${lightEff * 0.22})`);
+                grad.addColorStop(0.6, `rgba(16, 185, 129, ${lightEff * 0.12})`);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(tx, ty, 110, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 그라나 원반 그리기 (2개의 스택)
+            const stacks = [tx - 28, tx + 28];
+            stacks.forEach((sx, sIdx) => {
+                const discs = sIdx === 0 ? 5 : 4;
+                for (let i = 0; i < discs; i++) {
+                    const dy = ty + 35 - i * 16;
+                    ctx.fillStyle = `rgba(16, 185, 129, ${0.25 + lightEff * 0.35})`;
+                    ctx.strokeStyle = '#34d399';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.ellipse(sx, dy, 26, 7, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            });
+
+            // 스트로마 라멜라 연결선
+            ctx.strokeStyle = 'rgba(52, 211, 153, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(tx - 2, ty + 10);
+            ctx.lineTo(tx + 2, ty + 10);
+            ctx.stroke();
+
+            // 3. 중앙 에너지 전달 브릿지 화살표 (ATP/NADPH)
+            ctx.save();
+            ctx.strokeStyle = `rgba(249, 115, 22, ${0.15 + lightEff * 0.45})`;
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(tx + 65, ty - 15);
+            ctx.lineTo(width * 0.73 - 75, ty - 15);
+            ctx.stroke();
+            ctx.restore();
+
+            // 4. 우측 영역: 스트로마 칼빈 회로 (Calvin Cycle) 회전 링
+            const calX = width * 0.73;
+            const calY = height * 0.52;
+            const radius = 58;
+
+            ctx.save();
+            ctx.translate(calX, calY);
+            if (!state.paused) {
+                cycleAngle += calvinEff * 0.035;
+            }
+            ctx.rotate(cycleAngle);
+
+            // 회전하는 점선 원호 3개
+            for (let i = 0; i < 3; i++) {
+                ctx.rotate((Math.PI * 2) / 3);
+                ctx.strokeStyle = `rgba(192, 132, 252, ${0.25 + calvinEff * 0.65})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, 0.2, Math.PI * 0.55);
+                ctx.stroke();
+
+                // 화살표 촉
+                const tipX = Math.cos(Math.PI * 0.55) * radius;
+                const tipY = Math.sin(Math.PI * 0.55) * radius;
+                ctx.fillStyle = '#c084fc';
+                ctx.beginPath();
+                ctx.arc(tipX, tipY, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // 칼빈 회로 중앙 텍스트
+            ctx.fillStyle = 'rgba(226, 232, 240, 0.85)';
+            ctx.font = '600 12px Pretendard, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('칼빈 회로', calX, calY - 4);
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+            ctx.font = '10px Pretendard, sans-serif';
+            ctx.fillText('(스트로마)', calX, calY + 12);
+
+            // 구역 제목 라벨
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#6ee7b7';
+            ctx.font = '600 12px Pretendard, sans-serif';
+            ctx.fillText('① 명반응 : 틸라코이드 (빛에너지 → 화학에너지)', 42, 46);
+
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#d8b4fe';
+            ctx.fillText('② 암반응 : 스트로마 (CO₂ → 포도당 합성)', width - 42, 46);
+        }
+
+        // 메인 루프
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            // 생물학적 제한 요인(Limiting Factors) 연산
+            // 1. 광포화 곡선 (85% 이상에서 완만해짐)
+            const lightFactor = state.light === 0 ? 0 : Math.min(1, (state.light / 85) * 0.95 + 0.05);
+            // 2. CO2 포화 곡선
+            const co2Factor = state.co2 === 0 ? 0 : Math.min(1, (state.co2 / 80) * 0.95 + 0.05);
+            // 3. 온도 효소 활성 곡선 (26°C 최적, 40°C 초과 시 급격한 변성)
+            let tempFactor = Math.max(0, 1 - Math.pow((state.temp - 26) / 17, 2));
+            if (state.temp > 40) tempFactor *= Math.max(0.05, 1 - (state.temp - 40) * 0.15);
+
+            // 명반응 효율 & 암반응 효율
+            const lightReactionEff = lightFactor * Math.max(0.3, tempFactor);
+            // 암반응은 명반응 산물(ATP/NADPH)과 CO2, 효소 온도 중 가장 부족한 요인(최소율의 법칙)에 제한받음
+            const calvinCycleEff = Math.min(lightReactionEff, co2Factor) * tempFactor;
+            const totalPercent = calvinCycleEff * 100;
+
+            // 상태 및 진단 메시지 업데이트
+            updateDiagnosis(totalPercent, lightFactor, co2Factor, tempFactor);
+
+            // 수치 업데이트
+            statRate.textContent = totalPercent.toFixed(1) + '%';
+            statO2.textContent = (lightReactionEff * 85.0).toFixed(1) + ' mL/m';
+            statGlucose.textContent = (calvinCycleEff * 18.0).toFixed(1) + ' mg/h';
+
+            // 배경 엽록체 구조 그리기
+            drawChloroplastEnvironment(lightReactionEff, calvinCycleEff);
+
+            // 입자 생성 및 이동
+            if (!state.paused) {
+                spawnParticles(lightReactionEff, calvinCycleEff);
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                if (!state.paused) {
+                    const dx = p.tx - p.x;
+                    const dy = p.ty - p.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < 6) {
+                        particles.splice(i, 1);
+                        continue;
+                    }
+                    p.x += (dx / dist) * p.speed;
+                    p.y += (dy / dist) * p.speed;
+                }
+
+                // 입자 글로우 렌더링
+                ctx.save();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = p.color;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                if (p.type === 'glucose') {
+                    // 포도당은 육각형 모양으로 표현
+                    for (let s = 0; s < 6; s++) {
+                        const angle = (Math.PI / 3) * s;
+                        const hx = p.x + Math.cos(angle) * p.size;
+                        const hy = p.y + Math.sin(angle) * p.size;
+                        if (s === 0) ctx.moveTo(hx, hy);
+                        else ctx.lineTo(hx, hy);
+                    }
+                    ctx.closePath();
+                } else {
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                }
+                ctx.fill();
+                ctx.restore();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function updateDiagnosis(total, lightF, co2F, tempF) {
+            if (state.light === 0) {
+                statusText.textContent = "광합성 정지 (암흑)";
+                statusDot.className = "w-2 h-2 rounded-full bg-slate-400";
+                diagnosisText.textContent = "빛이 없어 틸라코이드 명반응이 멈췄습니다. ATP와 NADPH가 공급되지 않아 칼빈 회로도 중단됩니다.";
+            } else if (state.temp >= 41) {
+                statusText.textContent = "고온 효소 변성 경고";
+                statusDot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping";
+                diagnosisText.textContent = "온도가 너무 높아 루비스코(RuBisCO) 등 광합성 효소의 단백질 구조가 변성되어 반응 속도가 급감했습니다.";
+            } else if (state.temp <= 12) {
+                statusText.textContent = "저온 효소 활성 저하";
+                statusDot.className = "w-2 h-2 rounded-full bg-sky-400";
+                diagnosisText.textContent = "온도가 낮아 분자 운동과 효소 반응 속도가 크게 둔화되었습니다.";
+            } else if (co2F < lightF - 0.25) {
+                statusText.textContent = "CO₂ 농도 제한 요인";
+                statusDot.className = "w-2 h-2 rounded-full bg-purple-400";
+                diagnosisText.textContent = "빛은 충분하지만 이산화탄소(CO₂)가 부족하여 칼빈 회로의 포도당 합성 속도가 제한되고 있습니다.";
+            } else if (lightF < co2F - 0.25) {
+                statusText.textContent = "빛의 세기 제한 요인";
+                statusDot.className = "w-2 h-2 rounded-full bg-amber-400";
+                diagnosisText.textContent = "빛의 세기가 약해 명반응에서 생성되는 ATP와 NADPH의 양이 전체 광합성 속도를 제한하고 있습니다.";
+            } else {
+                statusText.textContent = "최적 활성 상태";
+                statusDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-ping";
+                diagnosisText.textContent = "빛, 이산화탄소, 온도가 모두 조화를 이루어 명반응과 칼빈 회로가 최고 효율로 가동 중입니다.";
+            }
+        }
+
+        updateUI();
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>광합성 전체 과정 시뮬레이션</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 20px;
+    background: #edf4ed;
+    font-family: Arial, sans-serif;
+    color: #263b32;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 25px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 5px 20px #00000015;
+}
+
+h1 {
+    text-align: center;
+    color: #26734d;
+}
+
+.subtitle {
+    text-align: center;
+    line-height: 1.8;
+    color: #718078;
+}
+
+/* 반응 구분 */
+
+.reaction-labels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin: 25px 0;
+}
+
+.reaction-card {
+    padding: 22px;
+    border-radius: 16px;
+    text-align: center;
+    line-height: 1.8;
+    transition: 0.4s;
+}
+
+.light-card {
+    background: #fff5d5;
+    border: 3px solid #e8bd48;
+}
+
+.carbon-card {
+    background: #e4f3e5;
+    border: 3px solid #71ad7c;
+}
+
+.reaction-card h3 {
+    margin: 8px;
+    font-size: 23px;
+}
+
+.light-card h3 {
+    color: #bd861b;
+}
+
+.carbon-card h3 {
+    color: #348052;
+}
+
+.light-icon,
+.carbon-icon {
+    font-size: 42px;
+}
+
+.light-tag,
+.no-light-tag {
+    display: inline-block;
+    padding: 5px 16px;
+    border-radius: 20px;
+    color: white;
+    font-weight: bold;
+}
+
+.light-tag {
+    background: #e9b93e;
+}
+
+.no-light-tag {
+    background: #57966b;
+}
+
+/* 선택된 반응 강조 */
+
+.reaction-card.selected {
+    transform: scale(1.025);
+    box-shadow: 0 5px 18px #00000018;
+}
+
+/* 시뮬레이션 영역 */
+
+.section {
+    margin-top: 25px;
+    padding: 20px;
+    background: #f7faf5;
+    border-radius: 15px;
+}
+
+h2 {
+    color: #26734d;
+}
+
+.diagram {
+    width: 100%;
+    overflow-x: auto;
+}
+
+svg {
+    width: 100%;
+    min-width: 750px;
+    display: block;
+}
+
+/* 반응 영역 */
+
+.thylakoid {
+    fill: #fff0bf;
+    stroke: #d6a83e;
+    stroke-width: 4;
+}
+
+.stroma {
+    fill: #e1f1df;
+    stroke: #78a77d;
+    stroke-width: 3;
+}
+
+.membrane {
+    fill: #e7c66c;
+    stroke: #b38b36;
+    stroke-width: 2;
+}
+
+/* 화살표 */
+
+.arrow {
+    fill: none;
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+.light-arrow {
+    stroke: #e6ae2c;
+}
+
+.water-arrow {
+    stroke: #479bd1;
+}
+
+.energy-arrow {
+    stroke: #e0a52e;
+}
+
+.carbon-arrow {
+    stroke: #42a66b;
+}
+
+.return-arrow {
+    stroke: #9277b8;
+    stroke-dasharray: 8 6;
+}
+
+/* 이동 물질 */
+
+.particle {
+    display: none;
+}
+
+.particle.show {
+    display: block;
+}
+
+.light-particle {
+    fill: #ffc83d;
+}
+
+.water-particle {
+    fill: #4b9bd1;
+}
+
+.oxygen-particle {
+    fill: #48b6c8;
+}
+
+.energy-particle {
+    fill: #e6a52e;
+}
+
+.carbon-particle {
+    fill: #43a76d;
+}
+
+/* 단계별 설명 */
+
+.info {
+    padding: 22px;
+    border-radius: 15px;
+    background: #e7f3e9;
+    text-align: center;
+    min-height: 175px;
+    line-height: 1.8;
+}
+
+.stage {
+    color: #39935e;
+    font-weight: bold;
+}
+
+.stage-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 12px;
+}
+
+/* 정보 카드 */
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.stat {
+    padding: 15px;
+    background: white;
+    border: 1px solid #dce9df;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.stat strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 17px;
+    color: #31935d;
+}
+
+/* 진행바 */
+
+.progress {
+    height: 12px;
+    background: #dce8de;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.bar {
+    height: 100%;
+    width: 0%;
+    background: #45a36b;
+    transition: width 0.5s;
+}
+
+/* 버튼 */
+
+.controls {
+    text-align: center;
+    margin-top: 25px;
+}
+
+button {
+    border: none;
+    padding: 13px 20px;
+    margin: 5px;
+    border-radius: 10px;
+    background: #329363;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #237348;
+}
+
+/* 범례 */
+
+.legend {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin: 20px 0;
+}
+
+.legend span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.dot {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+}
+
+/* 최종 정리 */
+
+.final {
+    display: none;
+    margin-top: 25px;
+    padding: 25px;
+    background: #e5f4e9;
+    border: 2px solid #83bc91;
+    border-radius: 15px;
+    text-align: center;
+    line-height: 1.9;
+}
+
+@media(max-width:650px) {
+
+    .container {
+        padding: 12px;
+    }
+
+    .reaction-labels {
+        grid-template-columns: 1fr;
+    }
+
+    .stats {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🌱 광합성 전체 과정 시뮬레이션</h1>
+
+<p class="subtitle">
+빛에너지가 화학 에너지로 전환되고<br>
+이산화 탄소를 이용하여 포도당이 합성되는 과정
+</p>
+
+
+<!-- 빛의 필요 여부에 따른 구분 -->
+
+<div class="section">
+
+<h2>① 빛의 필요 여부에 따른 광합성 반응 구분</h2>
+
+<div class="reaction-labels">
+
+    <div class="reaction-card light-card selected"
+         id="lightCard">
+
+        <div class="light-icon">☀️</div>
+
+        <h3>명반응</h3>
+
+        <span class="light-tag">빛 필요</span>
+
+        <p>
+        <b>장소 : 타이라코이드</b><br><br>
+
+        광합성 색소가 빛에너지를 흡수하여
+        ATP와 NADPH를 생성하고,
+        물이 분해되어 산소가 발생하는 반응
+        </p>
+
+    </div>
+
+
+    <div class="reaction-card carbon-card"
+         id="carbonCard">
+
+        <div class="carbon-icon">🌿</div>
+
+        <h3>탄소 고정 반응</h3>
+
+        <span class="no-light-tag">
+        직접적인 빛 불필요
+        </span>
+
+        <p>
+        <b>장소 : 스트로마</b><br><br>
+
+        여러 효소가 명반응에서 생성된
+        ATP와 NADPH를 이용하여
+        이산화 탄소를 환원시키고
+        포도당을 합성하는 반응
+        </p>
+
+    </div>
+
+</div>
+
+<p style="text-align:center; color:#64766a;">
+※ 탄소 고정 반응은 직접적으로 빛을 필요로 하지 않으며,
+암반응이라고도 한다.
+</p>
+
+</div>
+
+
+<!-- 엽록체 구조 -->
+
+<div class="section">
+
+<h2>② 엽록체 내부에서 일어나는 광합성 과정</h2>
+
+<div class="diagram">
+
+<svg viewBox="0 0 1000 720">
+
+<defs>
+
+<marker id="yellowArrow"
+markerWidth="8" markerHeight="8"
+refX="6" refY="3" orient="auto">
+
+<path d="M0 0 L0 6 L6 3 Z"
+fill="#e6ae2c"/>
+
+</marker>
+
+<marker id="blueArrow"
+markerWidth="8" markerHeight="8"
+refX="6" refY="3" orient="auto">
+
+<path d="M0 0 L0 6 L6 3 Z"
+fill="#479bd1"/>
+
+</marker>
+
+<marker id="greenArrow"
+markerWidth="8" markerHeight="8"
+refX="6" refY="3" orient="auto">
+
+<path d="M0 0 L0 6 L6 3 Z"
+fill="#42a66b"/>
+
+</marker>
+
+</defs>
+
+
+<!-- 엽록체 -->
+
+<ellipse cx="500" cy="365"
+rx="455" ry="300"
+fill="#edf4d9"
+stroke="#78985c"
+stroke-width="9"/>
+
+<ellipse cx="500" cy="365"
+rx="440" ry="285"
+fill="#e1f1df"
+stroke="#a4bb83"
+stroke-width="3"/>
+
+
+<!-- 스트로마 영역 -->
+
+<g id="stromaRegion">
+
+<text x="760" y="85"
+font-size="28"
+font-weight="bold"
+fill="#438252">
+스트로마
+</text>
+
+<text x="760" y="115"
+font-size="17"
+fill="#438252">
+탄소 고정 반응
+</text>
+
+</g>
+
+
+<!-- 타이라코이드 영역 -->
+
+<g id="thylakoidRegion">
+
+<rect x="105" y="240"
+width="250" height="42"
+rx="18"
+class="membrane"/>
+
+<rect x="105" y="288"
+width="250" height="42"
+rx="18"
+class="membrane"/>
+
+<rect x="105" y="336"
+width="250" height="42"
+rx="18"
+class="membrane"/>
+
+<rect x="105" y="384"
+width="250" height="42"
+rx="18"
+class="membrane"/>
+
+<rect x="105" y="432"
+width="250" height="42"
+rx="18"
+class="membrane"/>
+
+<text x="230" y="365"
+text-anchor="middle"
+font-size="22"
+font-weight="bold"
+fill="#674c16">
+타이라코이드
+</text>
+
+</g>
+
+
+<!-- 빛에너지 -->
+
+<g id="lightProcess">
+
+<text x="45" y="65"
+font-size="24"
+font-weight="bold"
+fill="#c18a20">
+☀️ 빛에너지
+</text>
+
+<path d="M65 90 L115 205"
+class="arrow light-arrow"
+marker-end="url(#yellowArrow)"/>
+
+<path d="M110 90 L160 205"
+class="arrow light-arrow"
+marker-end="url(#yellowArrow)"/>
+
+<path d="M155 90 L205 205"
+class="arrow light-arrow"
+marker-end="url(#yellowArrow)"/>
+
+</g>
+
+
+<!-- 빛 입자 -->
+
+<g id="lightParticles" class="particle">
+
+<circle r="9" class="light-particle">
+
+<animateMotion dur="2s"
+repeatCount="indefinite"
+path="M65 90 L115 205"/>
+
+</circle>
+
+<circle r="9" class="light-particle">
+
+<animateMotion dur="2s"
+begin="0.6s"
+repeatCount="indefinite"
+path="M110 90 L160 205"/>
+
+</circle>
+
+</g>
+
+
+<!-- 물 -->
+
+<g id="waterProcess">
+
+<rect x="140" y="125"
+width="115" height="45"
+rx="12"
+fill="#dceeff"
+stroke="#5598ce"
+stroke-width="2"/>
+
+<text x="198" y="155"
+text-anchor="middle"
+font-size="23"
+font-weight="bold">
+H₂O
+</text>
+
+<path d="M198 175 V225"
+class="arrow water-arrow"
+marker-end="url(#blueArrow)"/>
+
+</g>
+
+
+<!-- 물 입자 -->
+
+<g id="waterParticles" class="particle">
+
+<circle r="10" class="water-particle">
+
+<animateMotion dur="2s"
+repeatCount="indefinite"
+path="M198 175 V225"/>
+
+</circle>
+
+</g>
+
+
+<!-- 산소 발생 -->
+
+<g id="oxygenProcess">
+
+<path d="M230 475 V530"
+class="arrow water-arrow"
+marker-end="url(#blueArrow)"/>
+
+<rect x="165" y="530"
+width="130" height="45"
+rx="12"
+fill="#d7f1f3"
+stroke="#48b6c8"
+stroke-width="2"/>
+
+<text x="230" y="560"
+text-anchor="middle"
+font-size="22"
+font-weight="bold">
+O₂ 산소
+</text>
+
+</g>
+
+
+<!-- 산소 입자 -->
+
+<g id="oxygenParticles" class="particle">
+
+<circle r="10" class="oxygen-particle">
+
+<animateMotion dur="2s"
+repeatCount="indefinite"
+path="M230 475 V530"/>
+
+</circle>
+
+<circle r="10" class="oxygen-particle">
+
+<animateMotion dur="2s"
+begin="0.7s"
+repeatCount="indefinite"
+path="M230 475 V530"/>
+
+</circle>
+
+</g>
+
+
+<!-- ATP 이동 -->
+
+<g id="atpProcess">
+
+<path d="M360 260
+C470 180 550 190 655 280"
+class="arrow energy-arrow"
+marker-end="url(#yellowArrow)"/>
+
+<rect x="420" y="175"
+width="110" height="45"
+rx="12"
+fill="#fff0b9"
+stroke="#dfb64c"
+stroke-width="2"/>
+
+<text x="475" y="204"
+text-anchor="middle"
+font-size="22"
+font-weight="bold">
+ATP
+</text>
+
+</g>
+
+
+<g id="atpParticles" class="particle">
+
+<circle r="11" class="energy-particle">
+
+<animateMotion dur="3s"
+repeatCount="indefinite"
+path="M360 260 C470 180 550 190 655 280"/>
+
+</circle>
+
+</g>
+
+
+<!-- NADPH 이동 -->
+
+<g id="nadphProcess">
+
+<path d="M360 420
+C470 500 550 470 655 380"
+class="arrow energy-arrow"
+marker-end="url(#yellowArrow)"/>
+
+<rect x="420" y="450"
+width="130" height="45"
+rx="12"
+fill="#fff0b9"
+stroke="#dfb64c"
+stroke-width="2"/>
+
+<text x="485" y="479"
+text-anchor="middle"
+font-size="21"
+font-weight="bold">
+NADPH
+</text>
+
+</g>
+
+
+<g id="nadphParticles" class="particle">
+
+<circle r="11" class="energy-particle">
+
+<animateMotion dur="3s"
+repeatCount="indefinite"
+path="M360 420 C470 500 550 470 655 380"/>
+
+</circle>
+
+</g>
+
+
+<!-- 이산화 탄소 -->
+
+<g id="co2Process">
+
+<rect x="710" y="155"
+width="115" height="45"
+rx="12"
+fill="#dceeff"
+stroke="#5598ce"
+stroke-width="2"/>
+
+<text x="767" y="184"
+text-anchor="middle"
+font-size="22"
+font-weight="bold">
+CO₂
+</text>
+
+<path d="M767 205 V245"
+class="arrow carbon-arrow"
+marker-end="url(#greenArrow)"/>
+
+</g>
+
+
+<g id="co2Particles" class="particle">
+
+<circle r="11" class="carbon-particle">
+
+<animateMotion dur="2s"
+repeatCount="indefinite"
+path="M767 205 V245"/>
+
+</circle>
+
+</g>
+
+
+<!-- 캘빈 회로 -->
+
+<g id="calvinProcess">
+
+<circle cx="765" cy="340"
+r="95"
+fill="#d8eed7"
+stroke="#65a77c"
+stroke-width="5"/>
+
+<path d="M765 245
+A95 95 0 1 1 670 340"
+fill="none"
+stroke="#65a77c"
+stroke-width="5"
+marker-end="url(#greenArrow)"/>
+
+<text x="765" y="320"
+text-anchor="middle"
+font-size="22"
+font-weight="bold">
+탄소 고정
+</text>
+
+<text x="765" y="350"
+text-anchor="middle"
+font-size="22"
+font-weight="bold">
+반응
+</text>
+
+<text x="765" y="380"
+text-anchor="middle"
+font-size="16">
+캘빈 회로
+</text>
+
+</g>
+
+
+<!-- 포도당 -->
+
+<g id="glucoseProcess">
+
+<path d="M765 440 V500"
+class="arrow carbon-arrow"
+marker-end="url(#greenArrow)"/>
+
+<rect x="685" y="505"
+width="160" height="55"
+rx="14"
+fill="#d9f0df"
+stroke="#66a77c"
+stroke-width="3"/>
+
+<text x="765" y="540"
+text-anchor="middle"
+font-size="24"
+font-weight="bold">
+포도당
+</text>
+
+</g>
+
+
+<g id="glucoseParticles" class="particle">
+
+<circle r="12" fill="#55ae73">
+
+<animateMotion dur="2s"
+repeatCount="indefinite"
+path="M765 440 V500"/>
+
+</circle>
+
+</g>
+
+
+<!-- 명반응 표시 -->
+
+<rect x="50" y="605"
+width="350" height="65"
+rx="15"
+fill="#fff1c7"
+stroke="#e1b94d"
+stroke-width="3"/>
+
+<text x="225" y="632"
+text-anchor="middle"
+font-size="23"
+font-weight="bold"
+fill="#bd861b">
+☀️ 명반응
+</text>
+
+<text x="225" y="655"
+text-anchor="middle"
+font-size="16">
+빛 필요 · 타이라코이드
+</text>
+
+
+<!-- 탄소 고정 반응 표시 -->
+
+<rect x="610" y="605"
+width="350" height="65"
+rx="15"
+fill="#e1f1df"
+stroke="#78a77d"
+stroke-width="3"/>
+
+<text x="785" y="632"
+text-anchor="middle"
+font-size="23"
+font-weight="bold"
+fill="#348052">
+🌿 탄소 고정 반응
+</text>
+
+<text x="785" y="655"
+text-anchor="middle"
+font-size="16">
+직접적인 빛 불필요 · 스트로마
+</text>
+
+</svg>
+
+</div>
+
+
+<!-- 범례 -->
+
+<div class="legend">
+
+<span>
+<i class="dot" style="background:#ffc83d"></i>
+빛에너지
+</span>
+
+<span>
+<i class="dot" style="background:#4b9bd1"></i>
+물
+</span>
+
+<span>
+<i class="dot" style="background:#48b6c8"></i>
+산소
+</span>
+
+<span>
+<i class="dot" style="background:#e6a52e"></i>
+ATP·NADPH
+</span>
+
+<span>
+<i class="dot" style="background:#43a76d"></i>
+CO₂·포도당
+</span>
+
+</div>
+
+</div>
+
+
+<!-- 단계별 시뮬레이션 -->
+
+<div class="section">
+
+<h2>③ 단계별 광합성 시뮬레이션</h2>
+
+<div class="info">
+
+<div class="stage" id="stageNumber">
+STEP 1 / 7
+</div>
+
+<div class="stage-title" id="stageTitle">
+빛에너지 흡수
+</div>
+
+<p id="description">
+타이라코이드의 광합성 색소가 빛에너지를 흡수한다.
+</p>
+
+</div>
+
+
+<div class="stats">
+
+<div class="stat">
+현재 반응
+<strong id="process">
+명반응
+</strong>
+</div>
+
+<div class="stat">
+물질 이동
+<strong id="material">
+빛에너지
+</strong>
+</div>
+
+<div class="stat">
+빛의 필요 여부
+<strong id="lightStatus">
+빛 필요
+</strong>
+</div>
+
+</div>
+
+
+<div class="progress">
+<div class="bar" id="bar"></div>
+</div>
+
+<p id="progressText"
+style="text-align:center;">
+진행률 0%
+</p>
+
+
+<div class="controls">
+
+<button onclick="nextStage()">
+다음 단계 ▶
+</button>
+
+<button onclick="play()">
+자동 재생 ▶
+</button>
+
+<button onclick="resetSim()">
+처음부터 다시 하기 ↻
+</button>
+
+</div>
+
+
+<!-- 최종 정리 -->
+
+<div class="final" id="final">
+
+<h2>🌱 광합성 전체 과정 완료!</h2>
+
+<h3 style="color:#bd861b;">
+☀️ 명반응
+</h3>
+
+<p>
+타이라코이드에서 빛에너지를 흡수하여
+ATP와 NADPH를 생성하고,
+물이 분해되어 산소가 발생한다.
+</p>
+
+<h3 style="color:#348052;">
+🌿 탄소 고정 반응
+</h3>
+
+<p>
+스트로마에 있는 여러 효소가
+명반응에서 생성된 ATP와 NADPH를 이용하여
+이산화 탄소를 환원시키고 포도당을 합성한다.
+</p>
+
+<h2 style="color:#329363;">
+빛에너지 → 화학 에너지 → 포도당
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+// 단계별 과정
+
+const stages = [
+
+{
+title:"빛에너지 흡수",
+
+description:
+"타이라코이드의 광합성 색소가 빛에너지를 흡수한다.",
+
+process:"명반응",
+material:"빛에너지",
+light:"빛 필요",
+
+active:[
+"lightParticles",
+"lightProcess"
+]
+
+},
+
+{
+title:"물의 이동과 분해",
+
+description:
+"물이 타이라코이드로 이동하고 명반응 과정에서 분해된다.",
+
+process:"명반응",
+material:"물(H₂O)",
+light:"빛 필요",
+
+active:[
+"waterParticles",
+"waterProcess",
+"lightProcess"
+]
+
+},
+
+{
+title:"산소 발생 및 에너지 전환",
+
+description:
+"물의 분해로 산소가 발생하고 빛에너지가 ATP와 NADPH의 화학 에너지로 전환된다.",
+
+process:"명반응",
+material:"산소·ATP·NADPH",
+light:"빛 필요",
+
+active:[
+"oxygenParticles",
+"oxygenProcess",
+"atpParticles",
+"atpProcess",
+"nadphParticles",
+"nadphProcess"
+]
+
+},
+
+{
+title:"이산화 탄소의 이동",
+
+description:
+"탄소 고정 반응이 일어나는 스트로마에서 이산화 탄소가 이용된다.",
+
+process:"탄소 고정 반응",
+material:"이산화 탄소(CO₂)",
+light:"직접적인 빛 불필요",
+
+active:[
+"co2Particles",
+"co2Process",
+"calvinProcess"
+]
+
+},
+
+{
+title:"ATP와 NADPH의 이동",
+
+description:
+"명반응에서 생성된 ATP와 NADPH가 탄소 고정 반응으로 이동한다.",
+
+process:"탄소 고정 반응",
+material:"ATP·NADPH",
+light:"직접적인 빛 불필요",
+
+active:[
+"atpParticles",
+"atpProcess",
+"nadphParticles",
+"nadphProcess",
+"calvinProcess"
+]
+
+},
+
+{
+title:"탄소 고정 반응 진행",
+
+description:
+"스트로마에 있는 여러 효소가 ATP와 NADPH를 이용하여 이산화 탄소를 환원시킨다. 이 과정은 연속적인 화학 반응이며 캘빈 회로라고도 한다. 직접적으로 빛을 필요로 하지 않는다.",
+
+process:"탄소 고정 반응",
+material:"CO₂·ATP·NADPH",
+light:"직접적인 빛 불필요",
+
+active:[
+"calvinProcess",
+"atpProcess",
+"nadphProcess",
+"co2Process"
+]
+
+},
+
+{
+title:"포도당 합성",
+
+description:
+"탄소 고정 반응을 통해 이산화 탄소로부터 포도당이 합성된다.",
+
+process:"탄소 고정 반응",
+material:"포도당",
+light:"직접적인 빛 불필요",
+
+active:[
+"calvinProcess",
+"glucoseProcess",
+"glucoseParticles"
+]
+
+}
+
+];
+
+
+let step = 0;
+let timer = null;
+
+
+// 애니메이션 초기화
+
+function hideAll() {
+
+document.querySelectorAll(".particle")
+.forEach(el => {
+el.classList.remove("show");
+});
+
+}
+
+
+// 화면 업데이트
+
+function update() {
+
+const s = stages[step];
+
+hideAll();
+
+document.getElementById("stageNumber").innerText =
+"STEP " + (step+1) + " / " + stages.length;
+
+document.getElementById("stageTitle").innerText =
+s.title;
+
+document.getElementById("description").innerText =
+s.description;
+
+document.getElementById("process").innerText =
+s.process;
+
+document.getElementById("material").innerText =
+s.material;
+
+document.getElementById("lightStatus").innerText =
+s.light;
+
+
+// 명반응과 탄소 고정 반응 강조
+
+const lightCard =
+document.getElementById("lightCard");
+
+const carbonCard =
+document.getElementById("carbonCard");
+
+
+if(s.process === "명반응") {
+
+lightCard.classList.add("selected");
+carbonCard.classList.remove("selected");
+
+} else {
+
+carbonCard.classList.add("selected");
+lightCard.classList.remove("selected");
+
+}
+
+
+// 현재 단계 애니메이션 실행
+
+s.active.forEach(id => {
+
+const el = document.getElementById(id);
+
+if(el) {
+el.classList.add("show");
+}
+
+});
+
+
+// 진행률
+
+let percent =
+((step+1)/stages.length)*100;
+
+document.getElementById("bar").style.width =
+percent + "%";
+
+document.getElementById("progressText").innerText =
+"진행률 " + Math.round(percent) + "%";
+
+
+// 마지막 단계
+
+if(step === stages.length-1) {
+
+document.getElementById("final").style.display =
+"block";
+
+} else {
+
+document.getElementById("final").style.display =
+"none";
+
+}
+
+}
+
+
+// 다음 단계
+
+function nextStage() {
+
+if(step < stages.length-1) {
+
+step++;
+update();
+
+}
+
+}
+
+
+// 자동 재생
+
+function play() {
+
+if(timer) {
+
+clearInterval(timer);
+timer = null;
+
+return;
+
+}
+
+if(step === stages.length-1) {
+
+step = 0;
+update();
+
+}
+
+timer = setInterval(() => {
+
+if(step < stages.length-1) {
+
+nextStage();
+
+} else {
+
+clearInterval(timer);
+timer = null;
+
+}
+
+}, 4000);
+
+}
+
+
+// 처음부터 다시
+
+function resetSim() {
+
+if(timer) {
+
+clearInterval(timer);
+timer = null;
+
+}
+
+step = 0;
+
+update();
+
+}
+
+
+// 최초 실행
+
+update();
+
+</script>
+
+</body>
+</html>

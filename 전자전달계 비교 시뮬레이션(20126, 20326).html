@@ -1,0 +1,337 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>광합성과 세포호흡 전자전달계</title>
+<style>
+* { box-sizing:border-box; }
+body {
+  margin:0; padding:20px;
+  font-family:Arial,sans-serif;
+  background:#edf4f2; color:#253d35;
+}
+h1 {text-align:center;color:#247453;}
+.sub {text-align:center;line-height:1.6;}
+.controls {text-align:center;margin:20px;}
+button {
+  border:0;border-radius:10px;padding:12px 20px;
+  margin:4px;background:#287c5a;color:white;
+  font-size:15px;cursor:pointer;
+}
+button:hover {background:#16583d;}
+.panels {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+  gap:18px;max-width:1100px;margin:auto;
+}
+.panel {
+  background:white;padding:15px;border-radius:16px;
+  box-shadow:0 3px 12px #ccd8d2;
+  min-width:0;
+}
+h2 {color:#267653;}
+svg {
+  width:100%;height:auto;
+  background:#f3f8f5;border-radius:12px;
+}
+.membrane {fill:#a7d9bb;stroke:#549c76;stroke-width:2;}
+.protein {fill:#398566;stroke:#216849;stroke-width:2;}
+.protein2 {fill:#5485b6;stroke:#315f91;stroke-width:2;}
+.label {font-size:11px;fill:white;font-weight:bold;text-anchor:middle;}
+.small {font-size:11px;fill:#344c40;text-anchor:middle;}
+.region {font-size:13px;fill:#34795b;font-weight:bold;text-anchor:middle;}
+.path {fill:none;stroke:none;}
+.electron {fill:#ffb928;stroke:#b87b00;stroke-width:1.5;}
+.proton {fill:#368bea;stroke:#1559a8;stroke-width:1.5;}
+.atp {fill:#e4f3bd;stroke:#699a38;stroke-width:2;}
+.note {font-size:14px;line-height:1.8;padding:8px;}
+.legend {text-align:center;line-height:2;margin:15px;}
+svg.paused * {animation-play-state:paused;}
+.footer {text-align:center;font-size:12px;color:#718078;}
+</style>
+</head>
+
+<body>
+
+<h1>🔬 전자전달계 시뮬레이션</h1>
+<p class="sub">
+광합성과 세포호흡에서 일어나는<br>
+전자 이동과 수소 이온의 이동을 비교해 보자!
+</p>
+
+<div class="controls">
+<button onclick="play()">▶ 재생</button>
+<button onclick="pause()">Ⅱ 일시정지</button>
+<button onclick="resetAll()">↻ 처음부터</button>
+</div>
+
+<div class="legend">
+🟡 전자(e⁻)　
+🔵 수소 이온(H⁺)　
+🟢 ATP
+</div>
+
+<div class="panels">
+
+<!-- 광합성 -->
+<section class="panel">
+<h2>🌱 1. 광합성</h2>
+<p>장소: 엽록체의 틸라코이드 막</p>
+
+<svg id="photo" viewBox="0 0 500 390">
+
+<text x="250" y="25" class="region">
+틸라코이드 내부 (H⁺ 축적)
+</text>
+
+<rect x="8" y="135" width="484" height="65"
+rx="12" class="membrane"/>
+
+<!-- 단백질 복합체 -->
+<rect x="22" y="125" width="57" height="85" rx="9" class="protein"/>
+<text x="50" y="161" class="label">광계 II</text>
+<text x="50" y="176" class="label">PSII</text>
+
+<rect x="103" y="125" width="65" height="85" rx="9" class="protein"/>
+<text x="135" y="158" class="label">PQ</text>
+<text x="135" y="175" class="label">Q 이동</text>
+
+<rect x="190" y="125" width="68" height="85" rx="9" class="protein"/>
+<text x="224" y="157" class="label">Cyt</text>
+<text x="224" y="174" class="label">b₆f</text>
+
+<rect x="280" y="125" width="57" height="85" rx="9" class="protein"/>
+<text x="308" y="158" class="label">PC</text>
+<text x="308" y="175" class="label">운반체</text>
+
+<rect x="357" y="125" width="57" height="85" rx="9" class="protein"/>
+<text x="385" y="157" class="label">광계 I</text>
+<text x="385" y="174" class="label">PSI</text>
+
+<rect x="432" y="125" width="58" height="85" rx="9" class="protein2"/>
+<text x="461" y="157" class="label">FNR</text>
+<text x="461" y="174" class="label">NADPH</text>
+
+<!-- 전자 경로 -->
+<path id="pe" class="path"
+d="M50 110 L135 110 L224 110 L308 110 L385 110 L461 110"/>
+
+<circle r="7" class="electron">
+<animateMotion dur="7s" repeatCount="indefinite">
+<mpath href="#pe"/>
+</animateMotion>
+</circle>
+
+<circle r="7" class="electron">
+<animateMotion dur="7s" begin="-3.5s" repeatCount="indefinite">
+<mpath href="#pe"/>
+</animateMotion>
+</circle>
+
+<!-- H+ 펌프: 스트로마에서 내부로 -->
+<path id="pp" class="path" d="M224 280 L224 220 L224 70"/>
+
+<circle r="7" class="proton">
+<animateMotion dur="3s" repeatCount="indefinite">
+<mpath href="#pp"/>
+</animateMotion>
+</circle>
+<circle r="7" class="proton">
+<animateMotion dur="3s" begin="-1.5s" repeatCount="indefinite">
+<mpath href="#pp"/>
+</animateMotion>
+</circle>
+
+<!-- ATP 합성효소 -->
+<rect x="75" y="123" width="30" height="90" rx="12"
+class="protein2"/>
+<text x="90" y="154" class="label">ATP</text>
+<text x="90" y="169" class="label">합성</text>
+
+<path id="patp" class="path" d="M90 60 L90 115 L90 270"/>
+
+<circle r="6" class="proton">
+<animateMotion dur="3s" begin="-1s" repeatCount="indefinite">
+<mpath href="#patp"/>
+</animateMotion>
+</circle>
+
+<rect x="65" y="280" width="50" height="27" rx="8" class="atp"/>
+<text x="90" y="298" class="small">ATP 생성</text>
+
+<text x="250" y="345" class="region">스트로마</text>
+<text x="250" y="365" class="small">
+물 분해 → 전자 공급 + O₂ 생성
+</text>
+<text x="250" y="380" class="small">
+NADP⁺ → NADPH
+</text>
+</svg>
+
+<div class="note">
+<b>과정 설명</b><br>
+① 광계 II에서 물이 분해되어 전자가 공급된다.<br>
+② 전자는 PQ → 사이토크롬 b₆f → PC를 거쳐 광계 I로 이동한다.<br>
+③ 광계 I에서 빛을 흡수한 전자는 페레독신과 FNR을 거쳐 NADP⁺에 전달된다.<br>
+④ H⁺가 ATP 합성효소를 통해 스트로마로 이동하면서 ATP가 생성된다.
+</div>
+</section>
+
+<!-- 세포호흡 -->
+<section class="panel">
+<h2>⚡ 2. 세포호흡</h2>
+<p>장소: 미토콘드리아 내막</p>
+
+<svg id="resp" viewBox="0 0 500 390">
+
+<text x="250" y="25" class="region">
+막 사이 공간 (H⁺ 축적)
+</text>
+
+<rect x="8" y="135" width="484" height="65"
+rx="12" class="membrane"/>
+
+<!-- 복합체 -->
+<rect x="22" y="125" width="65" height="85" rx="9" class="protein"/>
+<text x="54" y="158" class="label">복합체</text>
+<text x="54" y="175" class="label">I</text>
+
+<rect x="110" y="125" width="58" height="85" rx="9" class="protein2"/>
+<text x="139" y="158" class="label">복합체</text>
+<text x="139" y="175" class="label">II</text>
+
+<rect x="192" y="125" width="62" height="85" rx="9" class="protein"/>
+<text x="223" y="158" class="label">복합체</text>
+<text x="223" y="175" class="label">III</text>
+
+<rect x="280" y="125" width="55" height="85" rx="9" class="protein2"/>
+<text x="307" y="158" class="label">Cyt c</text>
+<text x="307" y="175" class="label">운반체</text>
+
+<rect x="360" y="125" width="65" height="85" rx="9" class="protein"/>
+<text x="392" y="158" class="label">복합체</text>
+<text x="392" y="175" class="label">IV</text>
+
+<rect x="438" y="125" width="52" height="85" rx="9" class="protein2"/>
+<text x="464" y="158" class="label">O₂</text>
+<text x="464" y="175" class="label">수용체</text>
+
+<!-- 전자 이동 -->
+<path id="re" class="path"
+d="M54 110 L139 110 L223 110 L307 110 L392 110 L464 110"/>
+
+<circle r="7" class="electron">
+<animateMotion dur="7s" repeatCount="indefinite">
+<mpath href="#re"/>
+</animateMotion>
+</circle>
+
+<circle r="7" class="electron">
+<animateMotion dur="7s" begin="-3.5s" repeatCount="indefinite">
+<mpath href="#re"/>
+</animateMotion>
+</circle>
+
+<!-- 수소 이온 펌프 -->
+<path id="rp1" class="path" d="M54 280 L54 220 L54 65"/>
+<path id="rp3" class="path" d="M223 280 L223 220 L223 65"/>
+<path id="rp4" class="path" d="M392 280 L392 220 L392 65"/>
+
+<circle r="7" class="proton">
+<animateMotion dur="3s" repeatCount="indefinite">
+<mpath href="#rp1"/>
+</animateMotion>
+</circle>
+<circle r="7" class="proton">
+<animateMotion dur="3s" repeatCount="indefinite">
+<mpath href="#rp3"/>
+</animateMotion>
+</circle>
+<circle r="7" class="proton">
+<animateMotion dur="3s" repeatCount="indefinite">
+<mpath href="#rp4"/>
+</animateMotion>
+</circle>
+
+<!-- ATP 합성효소 -->
+<rect x="75" y="123" width="30" height="90" rx="12"
+class="protein2"/>
+<text x="90" y="154" class="label">ATP</text>
+<text x="90" y="169" class="label">합성</text>
+
+<path id="ratp" class="path" d="M90 60 L90 115 L90 275"/>
+<circle r="6" class="proton">
+<animateMotion dur="3s" begin="-1s" repeatCount="indefinite">
+<mpath href="#ratp"/>
+</animateMotion>
+</circle>
+
+<rect x="65" y="280" width="50" height="27" rx="8" class="atp"/>
+<text x="90" y="298" class="small">ATP 생성</text>
+
+<text x="250" y="345" class="region">미토콘드리아 기질</text>
+<text x="250" y="365" class="small">
+NADH → 복합체 I / FADH₂ → 복합체 II
+</text>
+<text x="250" y="380" class="small">
+산소가 전자를 받아 물 생성
+</text>
+</svg>
+
+<div class="note">
+<b>과정 설명</b><br>
+① NADH는 복합체 I, FADH₂는 복합체 II에 전자를 전달한다.<br>
+② 전자는 유비퀴논(Q) → 복합체 III → 사이토크롬 c → 복합체 IV로 이동한다.<br>
+③ 복합체 I, III, IV가 H⁺를 막 사이 공간으로 이동시킨다. 복합체 II는 펌프하지 않는다.<br>
+④ 산소가 최종 전자 수용체가 되어 물이 생성되고, H⁺가 ATP 합성효소를 통해 기질로 돌아오면서 ATP가 생성된다.
+</div>
+</section>
+
+</div>
+
+<div class="panel" style="max-width:1100px;margin:20px auto;">
+<h2>📖 두 과정의 공통점과 차이점</h2>
+<p>
+<b>공통점:</b> 전자전달계를 통해 H⁺ 농도 기울기를 만들고,
+ATP 합성효소를 통해 ATP를 생성한다.
+</p>
+<p>
+<b>차이점:</b> 광합성은 물에서 전자를 얻고 NADP⁺를 최종 전자 수용체로 사용한다.
+세포호흡은 NADH와 FADH₂에서 전자를 얻고 산소를 최종 전자 수용체로 사용한다.
+</p>
+</div>
+
+<p class="footer">
+※ 실제 생체 내 과정을 이해하기 쉽게 단순화한 개념 시뮬레이션입니다.
+</p>
+
+<script>
+const svgs = document.querySelectorAll("svg");
+
+function play() {
+  svgs.forEach(svg => {
+    svg.unpauseAnimations();
+    svg.classList.remove("paused");
+  });
+}
+
+function pause() {
+  svgs.forEach(svg => {
+    svg.pauseAnimations();
+    svg.classList.add("paused");
+  });
+}
+
+function resetAll() {
+  svgs.forEach(svg => {
+    svg.setCurrentTime(0);
+    svg.unpauseAnimations();
+    svg.classList.remove("paused");
+  });
+}
+
+</script>
+</body>
+</html>

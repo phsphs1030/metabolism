@@ -1,0 +1,470 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>세포호흡 단계별 애니메이션</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#071525;color:#edf7ff;font-family:Arial,"Malgun Gothic",sans-serif}
+main{max-width:1100px;margin:auto;padding:15px}
+h2{font-size:21px}
+p{color:#b9cde0;font-size:14px}
+canvas{width:100%;height:auto;display:block;background:#091b2c;border:1px solid #34516b;border-radius:12px}
+.tabs,.controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+button{padding:10px 16px;border-radius:9px;border:1px solid #54718b;background:#203b56;color:white;font-size:14px;cursor:pointer}
+button:hover{background:#0878bb}
+.tabs button.active{background:#0878bb;border-color:#72d9ff;color:white;font-weight:bold}
+#status{font-size:18px;color:#72d9ff;font-weight:bold;margin:12px 0 5px}
+#info{font-size:14px;line-height:1.6;min-height:45px}
+#equation{color:#ffe18b;font-size:13px;margin-top:8px;min-height:20px}
+</style>
+</head>
+<body>
+<main>
+<h2>세포호흡 단계별 애니메이션</h2>
+<p>원하는 세포호흡 단계를 선택하면 해당 과정의 애니메이션이 재생됩니다.</p>
+
+<div class="tabs">
+<button class="active" data-stage="gly">해당과정</button>
+<button data-stage="tca">TCA 회로</button>
+<button data-stage="ox">산화적 인산화</button>
+</div>
+
+<canvas id="screen" width="1000" height="620"></canvas>
+
+<div class="controls">
+<button id="play">Ⅱ 일시정지</button>
+<button id="restart">↻ 처음부터</button>
+<button id="speed">속도 1배</button>
+</div>
+
+<div id="status"></div>
+<div id="info"></div>
+<div id="equation"></div>
+</main>
+
+<script>
+const c=document.getElementById("screen");
+const ctx=c.getContext("2d");
+const W=1000,H=620;
+
+let time=0,playing=true,last=0,speed=1;
+let selected="gly";
+
+const status=document.getElementById("status");
+const info=document.getElementById("info");
+const equation=document.getElementById("equation");
+
+const descriptions={
+gly:[
+{start:0,end:8,name:"① 해당과정 — 포도당 분해",
+info:"포도당이 활성화된 후 두 개의 3탄소 물질로 분리됩니다. 탈수소효소 반응으로 NADH가 생성되고 인산기가 ADP로 전달되어 ATP가 만들어집니다.",
+eq:"포도당 → 피루브산 2개 + 순 ATP 2개 + NADH 2개"},
+{start:8,end:14,name:"② 피루브산 산화",
+info:"피루브산이 미토콘드리아 기질로 이동합니다. CO₂가 분리되고 NAD⁺가 전자와 수소를 받아 NADH가 됩니다. 남은 2탄소 물질은 CoA와 결합합니다.",
+eq:"피루브산 + NAD⁺ + CoA → 아세틸-CoA + CO₂ + NADH"}
+],
+tca:[
+{start:0,end:16,name:"③ TCA 회로",
+info:"아세틸-CoA가 옥살로아세트산과 결합해 시트르산을 만듭니다. 여러 단계의 산화·탈탄산 반응을 거치며 NADH, FADH₂, GTP와 CO₂가 생성됩니다.",
+eq:"시트르산 → 이소시트르산 → α-케토글루타르산 → 숙시닐-CoA → 숙신산 → 푸마르산 → 말산 → 옥살로아세트산"}
+],
+ox:[
+{start:0,end:12,name:"④ 전자전달계",
+info:"NADH와 FADH₂가 전자를 전달합니다. 전자는 전자전달계의 복합체를 지나 산소로 전달됩니다. 복합체 I, III, IV는 H⁺를 막사이공간으로 이동시킵니다.",
+eq:"NADH / FADH₂ → 전자전달계 → O₂ → H₂O"},
+{start:12,end:20,name:"⑤ 화학삼투와 ATP 합성",
+info:"막사이공간에 축적된 H⁺가 ATP 합성효소를 통해 기질 쪽으로 이동합니다. 이 흐름이 ATP 합성효소를 작동시켜 ADP와 Pi로부터 ATP를 합성합니다.",
+eq:"H⁺ 이동 + ADP + Pi → ATP"}
+]
+};
+
+function mix(a,b,t){return a+(b-a)*t}
+function clamp(x){return Math.max(0,Math.min(1,x))}
+function ease(x){x=clamp(x);return x*x*(3-2*x)}
+
+function txt(s,x,y,size=17,color="#edf7ff",align="center",weight="normal"){
+ctx.fillStyle=color;
+ctx.font=weight+" "+size+"px Arial, sans-serif";
+ctx.textAlign=align;
+ctx.fillText(s,x,y);
+}
+
+function line(x1,y1,x2,y2,color="#547b98",width=3){
+ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
+ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();
+}
+
+function arrow(x1,y1,x2,y2,color="#83b9dc",width=3){
+line(x1,y1,x2,y2,color,width);
+let a=Math.atan2(y2-y1,x2-x1);
+ctx.fillStyle=color;
+ctx.beginPath();
+ctx.moveTo(x2,y2);
+ctx.lineTo(x2-11*Math.cos(a-.45),y2-11*Math.sin(a-.45));
+ctx.lineTo(x2-11*Math.cos(a+.45),y2-11*Math.sin(a+.45));
+ctx.closePath();ctx.fill();
+}
+
+function circle(x,y,r,color,label="",border="#e6f7ff"){
+ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+ctx.fillStyle=color;ctx.fill();
+ctx.strokeStyle=border;ctx.lineWidth=1.5;ctx.stroke();
+if(label)txt(label,x,y+4,Math.max(9,r*.8),"#092033","center","bold");
+}
+
+function molecule(x,y,n,label,scale=1,color="#269ccc"){
+for(let i=0;i<n;i++)circle(x+i*27*scale,y,11*scale,color,"C");
+txt(label,x+(n-1)*13.5*scale,y+35*scale,13,"#dceeff");
+}
+
+function capsule(x,y,label,color="#17644f"){
+ctx.beginPath();ctx.roundRect(x-42,y-16,84,32,9);
+ctx.fillStyle=color;ctx.fill();
+ctx.strokeStyle="#8ce8c1";ctx.lineWidth=1.5;ctx.stroke();
+txt(label,x,y+5,13,"white","center","bold");
+}
+
+function enzyme(x,y,label){
+ctx.beginPath();ctx.ellipse(x,y,62,36,0,0,Math.PI*2);
+ctx.fillStyle="#15584f";ctx.fill();
+ctx.strokeStyle="#76dcb6";ctx.lineWidth=2;ctx.stroke();
+ctx.beginPath();ctx.arc(x,y-4,19,0,Math.PI*2);
+ctx.strokeStyle="#b4f3d9";ctx.setLineDash([4,4]);
+ctx.stroke();ctx.setLineDash([]);
+txt(label,x,y+55,13,"#a7ebd0");
+}
+
+function background(){
+ctx.clearRect(0,0,W,H);
+ctx.fillStyle="#091b2c";ctx.fillRect(0,0,W,H);
+}
+
+function progress(total){
+ctx.fillStyle="#29445d";ctx.fillRect(25,590,950,7);
+ctx.fillStyle="#42b9ee";ctx.fillRect(25,590,950*clamp(time/total),7);
+}
+
+function floatingParticle(x,y,label,color,r=8,phase=0){
+let yy=y+Math.sin(time*4+phase)*4;
+circle(x,yy,r,color,label);
+}
+
+// 해당과정
+function drawGlycolysis(){
+let t=time;
+txt("세포질 · 해당과정",500,35,20,"#9ddfff","center","bold");
+
+let gx=mix(70,285,ease(t/8*.85));
+molecule(gx,150,6,"포도당 (C₆)",1,"#238fc5");
+arrow(250,150,350,150);
+enzyme(430,250,"인산기 전달 효소");
+
+for(let i=0;i<2;i++){
+let q=clamp((t/8-i*.13)*2.1);
+capsule(90,300+i*65,"ATP","#216c50");
+floatingParticle(mix(150,360,q),300+i*65,"P","#e9b950",12,i);
+if(q>.65)capsule(210,300+i*65,"ADP","#38536c");
+}
+
+let split=ease((t/8-.28)*2.1);
+if(t/8>.28){
+let x=mix(390,510,split);
+molecule(x,140,3,"3탄소 물질",.9);
+molecule(x,340,3,"3탄소 물질",.9);
+arrow(440,180,470,140);
+arrow(440,220,470,340);
+}
+
+enzyme(680,240,"탈수소효소");
+capsule(650,95,"NAD⁺","#35536e");
+
+let hq=ease((t/8-.42)*2.2);
+if(t/8>.42){
+floatingParticle(650+hq*100,135-hq*20,"H","#53d7ff",12);
+floatingParticle(665+hq*100,165-hq*10,"e⁻","#ffe16b",10);
+}
+if(t/8>.58)capsule(820,95,"NADH","#167552");
+if(t/8>.65)floatingParticle(850,140,"H⁺","#53d7ff",11);
+
+for(let i=0;i<2;i++){
+let q=ease((t/8-.56-i*.1)*2.3);
+if(t/8>.56){
+floatingParticle(640+q*140,400+i*48,"P","#e9b950",12,i);
+capsule(580,400+i*48,"ADP","#35536e");
+if(q>.65)capsule(850,400+i*48,"ATP","#167552");
+}
+}
+
+if(t/8>.8){
+molecule(780,220,3,"피루브산",.9,"#238fc5");
+molecule(780,300,3,"피루브산",.9,"#238fc5");
+}
+}
+
+// 피루브산 산화
+function drawPyruvate(){
+let t=time-8;
+txt("미토콘드리아 기질 · 피루브산 산화",500,35,20,"#9ddfff","center","bold");
+let x=mix(80,350,ease(t/6));
+
+molecule(x,170,3,"피루브산 (C₃)",1,"#238fc5");
+arrow(300,170,430,170);
+enzyme(500,260,"피루브산 탈수소효소");
+
+let q=ease((t/6-.25)*2);
+if(t/6>.25){
+floatingParticle(450+q*100,100-q*50,"CO₂","#ff987e",17);
+txt("이산화 탄소 방출",650,105,15,"#ffab91");
+}
+
+capsule(260,390,"NAD⁺","#35536e");
+if(t/6>.4){
+floatingParticle(360+q*130,360-q*70,"H⁺","#53d7ff",12);
+floatingParticle(370+q*130,330-q*60,"e⁻","#ffe16b",10);
+}
+if(t/6>.55)capsule(720,380,"NADH","#167552");
+
+if(t/6>.65){
+molecule(690,180,2,"아세틸기 (C₂)",1,"#238fc5");
+arrow(650,220,790,270);
+capsule(810,290,"CoA","#42617a");
+}
+if(t/6>.82)txt("아세틸-CoA 생성",810,355,18,"#8be8b6","center","bold");
+}
+
+// TCA 회로
+function drawTCA(){
+txt("미토콘드리아 기질 · TCA 회로",500,30,20,"#9ddfff","center","bold");
+
+let local=time;
+let current=Math.min(7,Math.floor(local/2));
+let f=(local%2)/2;
+
+const names=["시트르산","이소시트르산","α-케토글루타르산","숙시닐-CoA","숙신산","푸마르산","말산","옥살로아세트산"];
+const carbons=[6,6,5,4,4,4,4,4];
+const products=[
+["시트르산 생성"],
+["구조 재배열"],
+["NADH + H⁺","CO₂"],
+["NADH + H⁺","CO₂"],
+["GTP"],
+["FADH₂"],
+["H₂O 첨가"],
+["NADH + H⁺"]
+];
+
+const cx=475,cy=300,rx=240,ry=180;
+const angles=[-Math.PI/2,-Math.PI/4,0,Math.PI/4,Math.PI/2,3*Math.PI/4,Math.PI,5*Math.PI/4];
+const points=angles.map(a=>({x:cx+rx*Math.cos(a),y:cy+ry*Math.sin(a)}));
+
+ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+ctx.strokeStyle="#365a76";ctx.lineWidth=4;ctx.stroke();
+
+for(let i=0;i<8;i++){
+let p=points[i],n=points[(i+1)%8],active=i===current;
+ctx.beginPath();ctx.arc(p.x,p.y,active?43:35,0,Math.PI*2);
+ctx.fillStyle=active?"#17644f":"#15344c";ctx.fill();
+ctx.strokeStyle=active?"#8af0bd":"#547a96";ctx.lineWidth=active?4:2;ctx.stroke();
+txt(names[i],p.x,p.y-3,11,"#fff","center","bold");
+txt("C"+carbons[i],p.x,p.y+13,10,"#bfe4f5");
+let a=Math.atan2(n.y-p.y,n.x-p.x);
+arrow(p.x+43*Math.cos(a),p.y+43*Math.sin(a),n.x-43*Math.cos(a),n.y-43*Math.sin(a),"#82b6d7",2);
+}
+
+let angle=-Math.PI/2+current*Math.PI/4+f*Math.PI/4;
+circle(cx+rx*Math.cos(angle),cy+ry*Math.sin(angle)-48,12,"#ffe16b","C");
+txt("반응 진행",cx+rx*Math.cos(angle),cy+ry*Math.sin(angle)-68,11,"#ffe18b");
+
+const positions=[[475,65],[800,95],[830,205],[830,370],[475,530],[145,500],[115,370],[115,170]];
+const pos=positions[current],items=products[current];
+let bw=items.length===2?175:150,bh=items.length===2?68:42;
+
+ctx.beginPath();ctx.roundRect(pos[0]-bw/2,pos[1]-bh/2,bw,bh,10);
+ctx.fillStyle="#102d42";ctx.fill();ctx.strokeStyle="#72d9b4";ctx.lineWidth=2;ctx.stroke();
+line(points[current].x,points[current].y,pos[0],pos[1],"#72d9b4",1.5);
+
+items.forEach((item,j)=>{
+let yy=items.length===2?pos[1]-13+j*27:pos[1]+5;
+let px=mix(pos[0]-45,pos[0],ease(f));
+if(item==="CO₂")circle(px,yy,13,"#ff987e","CO₂");
+else if(item==="NADH + H⁺"){capsule(px,yy,"NADH","#167552");circle(px+55,yy,9,"#53d7ff","H⁺");}
+else if(item==="FADH₂")capsule(px,yy,item,"#276b9b");
+else if(item==="GTP")capsule(px,yy,item,"#a16d1c");
+else if(item==="H₂O 첨가")circle(px,yy,13,"#53bce8","H₂O");
+else capsule(px,yy,item,"#45647d");
+});
+
+txt("현재 단계에서 생성되는 물질",pos[0],pos[1]+bh/2+22,11,"#a8e9d0");
+
+const explanations=[
+"아세틸-CoA(C₂) + 옥살로아세트산(C₄) → 시트르산(C₆)",
+"시트르산의 구조가 재배열되어 이소시트르산이 됩니다.",
+"이소시트르산 산화 · 탈탄산 → NADH와 CO₂ 생성",
+"α-케토글루타르산 산화 · 탈탄산 → NADH와 CO₂ 생성",
+"숙시닐-CoA에서 숙신산으로 전환되며 GTP 생성",
+"숙신산 산화 → FADH₂ 생성",
+"푸마르산에 물이 첨가되어 말산 생성",
+"말산 산화 → NADH 생성, 옥살로아세트산 재생"
+];
+txt(explanations[current],475,575,14,"#d7eafa","center");
+txt("TCA 회로 "+(current+1)+" / 8",475,70,14,"#ffe18b","center","bold");
+}
+
+// 전자전달계
+function drawMembrane(){
+txt("미토콘드리아 내막 · 전자전달계",500,35,20,"#9ddfff","center","bold");
+ctx.fillStyle="#183b50";ctx.fillRect(25,245,950,100);
+ctx.fillStyle="#0c2638";ctx.fillRect(25,265,950,60);
+txt("막사이공간 · H⁺ 농도 높음",500,90,18,"#65dfff");
+txt("미토콘드리아 기질 · H⁺ 농도 낮음",500,535,17,"#a9cce1");
+
+const complexes=[{x:170,label:"I"},{x:365,label:"II"},{x:570,label:"III"},{x:775,label:"IV"}];
+complexes.forEach(p=>{
+ctx.beginPath();ctx.roundRect(p.x-48,220,96,150,18);
+ctx.fillStyle="#15584f";ctx.fill();ctx.strokeStyle="#76ddb7";ctx.lineWidth=2;ctx.stroke();
+txt("복합체 "+p.label,p.x,300,16,"white","center","bold");
+});
+
+const route=[[90,430],[170,290],[280,400],[365,290],[470,430],[570,290],[665,400],[775,290],[900,410]];
+let et=time/12;
+for(let j=0;j<5;j++){
+let q=(et*1.7+j*.19)%1,z=q*(route.length-1),k=Math.floor(z),f=z-k;
+let p=route[k],n=route[Math.min(k+1,route.length-1)];
+circle(mix(p[0],n[0],f),mix(p[1],n[1],f),10,"#ffe16b","e⁻");
+}
+
+capsule(90,470,"NADH","#167552");
+capsule(365,470,"FADH₂","#167552");
+capsule(470,190,"Q","#42617a");
+capsule(670,145,"Cyt c","#42617a");
+arrow(215,190,425,190);arrow(515,190,620,160);arrow(700,190,755,190);
+circle(920,430,19,"#ff987e","O₂");
+txt("최종 전자 수용체",900,470,13,"#ffb8a6");
+txt("O₂ + 전자 + H⁺ → H₂O",800,505,14,"#ffb8a6");
+
+[170,570,775].forEach((x,i)=>{
+for(let j=0;j<4;j++){
+let q=(et*.75+j*.23+i*.1)%1;
+circle(x+Math.sin(time*3+j)*9,mix(230,120,q),9,"#52d9ff","H⁺");
+}
+arrow(x,230,x,145,"#52d9ff",2);
+});
+
+for(let i=0;i<22;i++){
+let x=40+(i*83)%910,y=105+(i%3)*28+Math.sin(time*2+i)*5;
+circle(x,y,7,"#52d9ff","H");
+}
+}
+
+// ATP 합성
+function drawATP(){
+txt("화학삼투 · ATP 합성효소",500,35,20,"#9ddfff","center","bold");
+ctx.fillStyle="#183b50";ctx.fillRect(30,260,940,100);
+ctx.fillStyle="#0c2638";ctx.fillRect(30,280,940,60);
+txt("막사이공간 · H⁺ 축적",500,100,18,"#65dfff");
+txt("미토콘드리아 기질",500,550,18,"#b8d3e7");
+
+ctx.save();ctx.translate(720,310);ctx.rotate(time*4);
+ctx.beginPath();ctx.arc(0,0,47,0,Math.PI*2);
+ctx.fillStyle="#7b559b";ctx.fill();ctx.strokeStyle="#e0bafa";ctx.lineWidth=4;ctx.stroke();
+line(-32,0,32,0,"#fff",5);line(0,-32,0,32,"#fff",5);ctx.restore();
+
+ctx.beginPath();ctx.roundRect(675,230,90,155,22);
+ctx.fillStyle="#286b69";ctx.fill();ctx.strokeStyle="#9bf0ce";ctx.lineWidth=3;ctx.stroke();
+txt("ATP",720,315,20,"#fff","center","bold");
+txt("합성효소",720,410,15,"#b6f4db");
+
+for(let j=0;j<12;j++){
+let q=(time*1.1+j/12)%1;
+circle(720+Math.sin(j+time*2)*9,mix(120,475,q),10,"#52d9ff","H⁺");
+}
+
+let q=(time*1.4)%1;
+capsule(mix(390,660,q),470,"ADP","#35536e");
+circle(mix(500,680,q),515,13,"#e9b950","P");
+if(q>.72)capsule(mix(680,850,ease((q-.72)/.28)),470,"ATP","#167552");
+
+arrow(720,410,720,455,"#52d9ff",3);
+txt("H⁺의 농도 기울기에 따른 이동",500,155,16,"#65dfff");
+txt("ADP + Pi → ATP",500,520,20,"#8ce8b6","center","bold");
+for(let i=0;i<4;i++){
+let q=(time*.55+i*.25)%1;
+capsule(800+q*150,445+Math.sin(q*7+i)*15,"ATP","#167552");
+}
+}
+
+function drawScene(){
+background();
+if(selected==="gly"){
+if(time<8)drawGlycolysis();
+else drawPyruvate();
+progress(14);
+}else if(selected==="tca"){
+drawTCA();
+progress(16);
+}else{
+if(time<12)drawMembrane();
+else drawATP();
+progress(20);
+}
+}
+
+function updateLabels(){
+let list=descriptions[selected];
+let s=list.find(x=>time>=x.start&&time<x.end)||list[list.length-1];
+status.textContent=s.name;
+info.textContent=s.info;
+equation.textContent="주요 반응: "+s.eq;
+}
+
+function selectStage(stage){
+selected=stage;
+time=0;
+playing=true;
+last=0;
+document.getElementById("play").textContent="Ⅱ 일시정지";
+document.querySelectorAll(".tabs button").forEach(b=>{
+b.classList.toggle("active",b.dataset.stage===stage);
+});
+}
+
+document.querySelectorAll(".tabs button").forEach(b=>{
+b.addEventListener("click",()=>selectStage(b.dataset.stage));
+});
+
+document.getElementById("play").onclick=()=>{
+playing=!playing;
+document.getElementById("play").textContent=playing?"Ⅱ 일시정지":"▶ 재생";
+};
+
+document.getElementById("restart").onclick=()=>{
+time=0;playing=true;
+document.getElementById("play").textContent="Ⅱ 일시정지";
+};
+
+document.getElementById("speed").onclick=()=>{
+speed=speed===1?2:speed===2?.5:1;
+document.getElementById("speed").textContent="속도 "+speed+"배";
+};
+
+function frame(ts){
+if(!last)last=ts;
+let dt=(ts-last)/1000;
+last=ts;
+if(playing){
+time+=dt*speed;
+let total=selected==="gly"?14:selected==="tca"?16:20;
+if(time>=total)time=0;
+}
+drawScene();
+updateLabels();
+requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

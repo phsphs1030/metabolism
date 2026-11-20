@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포도당 입자 여행 - 세포호흡 시뮬레이션</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&family=Noto+Sans+KR:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background-color: #060b19;
+            color: #f8fafc;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        .glass-hud {
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+        }
+        .glow-dot {
+            box-shadow: 0 0 10px currentColor;
+        }
+    </style>
+</head>
+<body class="relative w-screen h-screen">
+
+    <!-- 전체 화면 파티클 캔버스 -->
+    <canvas id="simCanvas"></canvas>
+
+    <!-- 상단 플로팅 미니멀 컨트롤 바 -->
+    <header class="fixed top-4 left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-4xl flex flex-wrap items-center justify-between gap-2 glass-hud px-3 py-2.5 rounded-2xl shadow-2xl">
+        
+        <!-- 단계 선택 알약 버튼 -->
+        <div class="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-0.5">
+            <button onclick="setStage(0)" id="pill-0" class="stage-pill px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap">
+                출발 (C₆)
+            </button>
+            <span class="text-slate-600 text-xs">›</span>
+            <button onclick="setStage(1)" id="pill-1" class="stage-pill px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap">
+                1. 해당과정
+            </button>
+            <span class="text-slate-600 text-xs">›</span>
+            <button onclick="setStage(2)" id="pill-2" class="stage-pill px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap">
+                2. 피루브산 산화
+            </button>
+            <span class="text-slate-600 text-xs">›</span>
+            <button onclick="setStage(3)" id="pill-3" class="stage-pill px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap">
+                3. TCA 회로
+            </button>
+            <span class="text-slate-600 text-xs">›</span>
+            <button onclick="setStage(4)" id="pill-4" class="stage-pill px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap">
+                4. 산화적 인산화
+            </button>
+        </div>
+
+        <!-- 자동 여행 & 초기화 버튼 -->
+        <div class="flex items-center gap-1.5 ml-auto">
+            <button onclick="toggleAutoPlay()" id="btn-auto" class="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/30 text-xs font-bold transition flex items-center gap-1.5">
+                <span id="auto-dot" class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                <span id="auto-label">자동 여행</span>
+            </button>
+            <button onclick="resetSim()" class="px-2.5 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-600/40 text-xs font-bold transition" title="다시 시작">
+                ↺ 다시 시작
+            </button>
+        </div>
+    </header>
+
+    <!-- 하단 플로팅 입자 범례 & 실시간 카운터 HUD -->
+    <footer class="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-4xl glass-hud px-4 py-2.5 rounded-2xl shadow-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+        
+        <!-- 입자 색상 가이드 -->
+        <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+            <div class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-cyan-400 text-cyan-400 glow-dot"></span>
+                <span class="text-slate-300 font-medium">탄소(C)</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-amber-400 text-amber-400 glow-dot"></span>
+                <span class="text-amber-300 font-bold">NADH</span>
+                <span id="hud-nadh" class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 font-bold">0</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-emerald-400 text-emerald-400 glow-dot"></span>
+                <span class="text-emerald-300 font-bold">FADH₂</span>
+                <span id="hud-fadh2" class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-200 font-bold">0</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-purple-400 text-purple-400 glow-dot"></span>
+                <span class="text-purple-300 font-medium">CO₂</span>
+                <span id="hud-co2" class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-200 font-bold">0</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-sky-400 text-sky-400 glow-dot"></span>
+                <span class="text-sky-300 font-medium">H₂O</span>
+                <span id="hud-h2o" class="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-200 font-bold">0</span>
+            </div>
+        </div>
+
+        <!-- ATP 합성 방식 구분 카운터 -->
+        <div class="flex items-center gap-2.5 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-700/60 w-full sm:w-auto justify-between sm:justify-end">
+            <div class="flex items-center gap-1.5 bg-orange-500/15 border border-orange-400/30 px-2.5 py-1 rounded-xl">
+                <span class="w-2.5 h-2.5 rounded-full bg-orange-400 text-orange-400 glow-dot"></span>
+                <span class="text-orange-200">기질수준 ATP</span>
+                <span id="hud-sub-atp" class="font-extrabold text-orange-300 text-sm">0</span>
+            </div>
+            <div class="flex items-center gap-1.5 bg-yellow-400/20 border border-yellow-300/40 px-2.5 py-1 rounded-xl">
+                <span class="w-2.5 h-2.5 rounded-full bg-yellow-300 text-yellow-300 glow-dot"></span>
+                <span class="text-yellow-100">산화적 ATP</span>
+                <span id="hud-ox-atp" class="font-extrabold text-yellow-300 text-sm">0</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        /**
+         * ============================================================================
+         * 1. 캔버스 초기화 및 반응형 크기 조절
+         * ============================================================================
+         */
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        let W = window.innerWidth;
+        let H = window.innerHeight;
+        let dpr = window.devicePixelRatio || 1;
+
+        function resize() {
+            W = window.innerWidth;
+            H = window.innerHeight;
+            dpr = window.devicePixelRatio || 1;
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        /**
+         * ============================================================================
+         * 2. 시뮬레이션 상태 및 파티클 풀(Pool) 관리
+         * ============================================================================
+         */
+        let currentStage = 0;
+        let autoPlayTimer = null;
+        let tick = 0;
+
+        // 주요 탄소 입자 6개 (포도당 C1 ~ C6)
+        // 각 탄소는 목표 좌표(tx, ty)로 부드럽게 보간(Lerp) 이동하며 결합선(bond)으로 연결됨
+        let carbons = [];
+        // 에너지 운반체 입자 (NADH: 금색, FADH2: 에메랄드색) -> 생성 위치에서 미토콘드리아 내막으로 비행
+        let carriers = [];
+        // 연기/기체 입자 (CO2: 보라색 연기, O2: 붉은 산소 유입)
+        let gases = [];
+        // 생성물 입자 (기질수준 ATP: 주황 코인, 산화적 ATP: 황금 별폭발, H2O: 파란 물방울)
+        let outputs = [];
+        // 배경 부유 먼지 입자 (깊이감 연출)
+        let ambientDust = Array.from({ length: 35 }, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: 1 + Math.random() * 2,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+            alpha: 0.15 + Math.random() * 0.3
+        }));
+
+        // 구역 좌표 계산기 (화면 비율에 맞춰 유동적 배치)
+        function getLayout() {
+            const mitoX = W * 0.34;
+            const mitoY = H * 0.16;
+            const mitoW = W * 0.62;
+            const mitoH = H * 0.68;
+            return {
+                cytosolStart: { x: W * 0.14, y: H * 0.50 },
+                glycolysisZone: { x: W * 0.23, y: H * 0.50 },
+                mitoX, mitoY, mitoW, mitoH,
+                pyruvateGate: { x: mitoX + mitoW * 0.22, y: H * 0.50 },
+                tcaCenter: { x: mitoX + mitoW * 0.50, y: H * 0.50 },
+                cristaeZone: { x: mitoX + mitoW * 0.80, y: H * 0.50 }
+            };
+        }
+
+        // 초기 포도당 6탄소 생성
+        function initCarbons() {
+            const { cytosolStart } = getLayout();
+            carbons = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI * 2 * i) / 6 - Math.PI / 2;
+                carbons.push({
+                    id: i,
+                    x: cytosolStart.x + Math.cos(angle) * 34,
+                    y: cytosolStart.y + Math.sin(angle) * 34,
+                    tx: cytosolStart.x + Math.cos(angle) * 34,
+                    ty: cytosolStart.y + Math.sin(angle) * 34,
+                    active: true,
+                    group: 0 // 0: 포도당(6), 1: 상단 분자, 2: 하단 분자
+                });
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 3. 입자 스폰(생성) 헬퍼 함수들
+         * ============================================================================
+         */
+        // NADH / FADH2 비행 입자 생성 (생성지점 -> 내막 전자전달계로 날아감)
+        function spawnCarrier(type, startX, startY, delay = 0) {
+            const { cristaeZone } = getLayout();
+            const targetY = cristaeZone.y + (Math.random() - 0.5) * (H * 0.36);
+            carriers.push({
+                type, // 'NADH' | 'FADH2'
+                x: startX,
+                y: startY,
+                sx: startX,
+                sy: startY,
+                tx: cristaeZone.x - 15 + (Math.random() - 0.5) * 20,
+                ty: targetY,
+                progress: -delay, // 음수면 대기 후 출발
+                arrived: false,
+                consumed: false
+            });
+        }
+
+        // CO2 연기 입자 생성 (위로 피어오르며 사라짐)
+        function spawnCO2(x, y) {
+            gases.push({
+                type: 'CO2',
+                x, y,
+                vx: (Math.random() - 0.5) * 0.8,
+                vy: -1.1 - Math.random() * 0.7,
+                r: 8,
+                alpha: 1
+            });
+        }
+
+        // O2 산소 유입 입자 생성 (외부 -> 내막으로 진입 후 H2O 변환)
+        function spawnO2(targetX, targetY) {
+            gases.push({
+                type: 'O2',
+                x: targetX + 90,
+                y: targetY + (Math.random() - 0.5) * 80,
+                tx: targetX,
+                ty: targetY,
+                alpha: 1,
+                done: false
+            });
+        }
+
+        // ATP / H2O 반짝임 결과물 입자 생성
+        function spawnOutput(type, x, y, count = 1) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1.2 + Math.random() * 2.4;
+                outputs.push({
+                    type, // 'SUB_ATP' | 'OX_ATP' | 'H2O'
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 0.8,
+                    scale: 0.1,
+                    alpha: 1,
+                    life: 160 + Math.random() * 60
+                });
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 4. 단계별 상태 전환 로직 (0: 출발, 1: 해당과정, 2: 피루브산 산화, 3: TCA, 4: 산화적 인산화)
+         * ============================================================================
+         */
+        function setStage(stage) {
+            // 이전 단계로 되돌아가거나 건너뛸 때 깔끔한 상태 보장을 위해 0부터 순차 시뮬레이션 세팅
+            if (stage <= currentStage && stage !== 0) {
+                resetStateData();
+                for (let s = 1; s <= stage; s++) {
+                    applyStageLogic(s, true);
+                }
+            } else if (stage === 0) {
+                resetStateData();
+            } else {
+                for (let s = currentStage + 1; s <= stage; s++) {
+                    applyStageLogic(s, s !== stage);
+                }
+            }
+
+            currentStage = stage;
+            updateHUD();
+        }
+
+        function resetStateData() {
+            carriers = [];
+            gases = [];
+            outputs = [];
+            initCarbons();
+        }
+
+        function applyStageLogic(stage, isInstant) {
+            const L = getLayout();
+
+            if (stage === 1) {
+                // [1. 해당과정] 세포질에서 C6 -> 피루브산(C3) 2개로 분열
+                carbons.forEach((c, idx) => {
+                    c.active = true;
+                    const isTop = idx < 3;
+                    c.group = isTop ? 1 : 2;
+                    const localIdx = idx % 3;
+                    const baseY = isTop ? L.glycolysisZone.y - 65 : L.glycolysisZone.y + 65;
+                    c.tx = L.glycolysisZone.x + (localIdx - 1) * 26;
+                    c.ty = baseY;
+                    if (isInstant) { c.x = c.tx; c.y = c.ty; }
+                });
+
+                // 기질수준 2 ATP & 2 NADH 생성
+                spawnOutput('SUB_ATP', L.glycolysisZone.x, L.glycolysisZone.y - 65, 1);
+                spawnOutput('SUB_ATP', L.glycolysisZone.x, L.glycolysisZone.y + 65, 1);
+                spawnCarrier('NADH', L.glycolysisZone.x, L.glycolysisZone.y - 65, isInstant ? 1 : 0.1);
+                spawnCarrier('NADH', L.glycolysisZone.x, L.glycolysisZone.y + 65, isInstant ? 1 : 0.25);
+            }
+
+            else if (stage === 2) {
+                // [2. 피루브산 산화] 미토콘드리아 기질 진입, 각 1개 탄소가 CO2로 떨어져 나감 -> 아세틸-CoA(C2) 2개
+                carbons.forEach((c, idx) => {
+                    const isTop = idx < 3;
+                    const localIdx = idx % 3;
+                    const baseY = isTop ? L.pyruvateGate.y - 65 : L.pyruvateGate.y + 65;
+
+                    if (localIdx === 2) {
+                        // 탄소 1개씩 CO2로 방출
+                        if (c.active) {
+                            spawnCO2(L.pyruvateGate.x, baseY);
+                        }
+                        c.active = false;
+                    } else {
+                        c.active = true;
+                        c.group = isTop ? 1 : 2;
+                        c.tx = L.pyruvateGate.x + (localIdx - 0.5) * 28;
+                        c.ty = baseY;
+                        if (isInstant) { c.x = c.tx; c.y = c.ty; }
+                    }
+                });
+
+                // 2 NADH 추가 생성 -> 내막으로 비행
+                spawnCarrier('NADH', L.pyruvateGate.x, L.pyruvateGate.y - 65, isInstant ? 1 : 0.1);
+                spawnCarrier('NADH', L.pyruvateGate.x, L.pyruvateGate.y + 65, isInstant ? 1 : 0.25);
+            }
+
+            else if (stage === 3) {
+                // [3. TCA 회로] 아세틸-CoA의 남은 탄소 4개가 회전하며 모두 CO2로 분해!
+                carbons.forEach((c, idx) => {
+                    if (c.active) {
+                        const offsetAngle = (Math.PI * 2 * idx) / 4;
+                        spawnCO2(
+                            L.tcaCenter.x + Math.cos(offsetAngle) * 45,
+                            L.tcaCenter.y + Math.sin(offsetAngle) * 45
+                        );
+                        c.active = false;
+                    }
+                });
+
+                // 기질수준 2 ATP 생성
+                spawnOutput('SUB_ATP', L.tcaCenter.x - 25, L.tcaCenter.y + 35, 1);
+                spawnOutput('SUB_ATP', L.tcaCenter.x + 25, L.tcaCenter.y + 35, 1);
+
+                // 6 NADH & 2 FADH2 대량 생성 -> 내막으로 비행
+                for (let i = 0; i < 6; i++) {
+                    const ang = (Math.PI * 2 * i) / 6;
+                    spawnCarrier('NADH', L.tcaCenter.x + Math.cos(ang) * 40, L.tcaCenter.y + Math.sin(ang) * 40, isInstant ? 1 : i * 0.12);
+                }
+                for (let i = 0; i < 2; i++) {
+                    const ang = Math.PI * i + 0.5;
+                    spawnCarrier('FADH2', L.tcaCenter.x + Math.cos(ang) * 40, L.tcaCenter.y + Math.sin(ang) * 40, isInstant ? 1 : 0.2 + i * 0.2);
+                }
+            }
+
+            else if (stage === 4) {
+                // [4. 산화적 인산화] 내막에 모인 모든 NADH(10), FADH2(2) 전자 방출 + O2 유입 -> 28 ATP & 6 H2O 폭발!
+                carriers.forEach(cr => {
+                    cr.progress = 1;
+                    cr.arrived = true;
+                    cr.consumed = true;
+                });
+
+                // 산소 유입 및 물(H2O) 방울 생성
+                for (let i = 0; i < 6; i++) {
+                    const yPos = L.cristaeZone.y - 90 + i * 36;
+                    spawnO2(L.cristaeZone.x + 15, yPos);
+                    spawnOutput('H2O', L.cristaeZone.x + 10, yPos, 1);
+                }
+
+                // 산화적 인산화 황금 ATP 입자 대방출 (시각적 28개 표현)
+                for (let i = 0; i < 14; i++) {
+                    const yPos = L.cristaeZone.y - 100 + (i % 7) * 33;
+                    spawnOutput('OX_ATP', L.cristaeZone.x - 10, yPos, 2);
+                }
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 5. 캔버스 배경(세포질 & 미토콘드리아 구조) 드로잉
+         * ============================================================================
+         */
+        function drawMap() {
+            const L = getLayout();
+
+            // 1. 왼쪽: 세포질 (Cytosol) 배경 영역
+            const cytoGrad = ctx.createRadialGradient(W * 0.18, H * 0.5, 20, W * 0.18, H * 0.5, W * 0.35);
+            cytoGrad.addColorStop(0, 'rgba(14, 116, 144, 0.16)');
+            cytoGrad.addColorStop(1, 'rgba(6, 11, 25, 0)');
+            ctx.fillStyle = cytoGrad;
+            ctx.fillRect(0, 0, W * 0.38, H);
+
+            // 세포질 미니멀 라벨
+            drawTag('세포질', W * 0.16, H * 0.19, '#38bdf8', 'rgba(14, 116, 144, 0.22)');
+
+            // 2. 오른쪽: 미토콘드리아 (외막 + 막간공간 + 주름진 내막 크리스타 + 기질)
+            ctx.save();
+            // 외막 (Outer Membrane)
+            ctx.shadowColor = 'rgba(249, 115, 22, 0.25)';
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = 'rgba(30, 27, 75, 0.55)';
+            roundRectPath(L.mitoX, L.mitoY, L.mitoW, L.mitoH, L.mitoH * 0.48);
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(251, 146, 60, 0.65)';
+            ctx.stroke();
+            ctx.restore();
+
+            // 주름진 내막 (Inner Membrane / Cristae) 경로 그리기
+            const pad = 22;
+            const ix = L.mitoX + pad;
+            const iy = L.mitoY + pad;
+            const iw = L.mitoW - pad * 2;
+            const ih = L.mitoH - pad * 2;
+
+            ctx.save();
+            const matrixGrad = ctx.createLinearGradient(ix, iy, ix + iw, iy);
+            matrixGrad.addColorStop(0, 'rgba(30, 41, 59, 0.75)');
+            matrixGrad.addColorStop(0.65, 'rgba(49, 16, 66, 0.75)');
+            matrixGrad.addColorStop(1, 'rgba(88, 28, 135, 0.65)');
+            ctx.fillStyle = matrixGrad;
+
+            // 크리스타 주름이 있는 내막 셰이프
+            ctx.beginPath();
+            const r = ih * 0.44;
+            ctx.moveTo(ix + r, iy);
+            // 상단 주름 (크리스타 함입)
+            ctx.lineTo(ix + iw * 0.35, iy);
+            ctx.lineTo(ix + iw * 0.37, iy + ih * 0.22);
+            ctx.lineTo(ix + iw * 0.41, iy);
+            ctx.lineTo(ix + iw * 0.65, iy);
+            ctx.lineTo(ix + iw * 0.67, iy + ih * 0.25);
+            ctx.lineTo(ix + iw * 0.71, iy);
+            ctx.lineTo(ix + iw - r, iy);
+            // 우측 반원
+            ctx.arc(ix + iw - r, iy + r, r, -Math.PI / 2, Math.PI / 2);
+            // 하단 주름
+            ctx.lineTo(ix + iw * 0.71, iy + ih);
+            ctx.lineTo(ix + iw * 0.67, iy + ih * 0.75);
+            ctx.lineTo(ix + iw * 0.65, iy + ih);
+            ctx.lineTo(ix + iw * 0.41, iy + ih);
+            ctx.lineTo(ix + iw * 0.37, iy + ih * 0.78);
+            ctx.lineTo(ix + iw * 0.35, iy + ih);
+            ctx.lineTo(ix + r, iy + ih);
+            // 좌측 반원
+            ctx.arc(ix + r, iy + r, r, Math.PI / 2, -Math.PI / 2);
+            ctx.closePath();
+
+            ctx.fill();
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = currentStage === 4 ? '#f472b6' : 'rgba(244, 114, 182, 0.5)';
+            ctx.stroke();
+            ctx.restore();
+
+            // 미토콘드리아 내부 장소 태그
+            drawTag('미토콘드리아 기질', L.mitoX + L.mitoW * 0.36, L.mitoY + 46, '#c084fc', 'rgba(88, 28, 135, 0.35)');
+            drawTag('미토콘드리아 내막', L.cristaeZone.x - 10, L.mitoY + 46, '#f472b6', 'rgba(157, 23, 77, 0.35)');
+
+            // 3. 점선 여행 경로 가이드 (시각적 흐름선)
+            ctx.save();
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+            ctx.lineDashOffset = -tick * 0.4;
+            ctx.beginPath();
+            ctx.moveTo(L.cytosolStart.x, L.cytosolStart.y);
+            ctx.lineTo(L.glycolysisZone.x, L.glycolysisZone.y);
+            ctx.lineTo(L.pyruvateGate.x, L.pyruvateGate.y);
+            ctx.lineTo(L.tcaCenter.x, L.tcaCenter.y);
+            ctx.stroke();
+            ctx.restore();
+
+            // 4. TCA 회로 회전 링 (기질 중앙)
+            ctx.save();
+            ctx.translate(L.tcaCenter.x, L.tcaCenter.y);
+            ctx.rotate(tick * (currentStage === 3 ? 0.035 : 0.008));
+            ctx.strokeStyle = currentStage === 3 ? '#a855f7' : 'rgba(168, 85, 247, 0.25)';
+            ctx.lineWidth = currentStage === 3 ? 3.5 : 2;
+            ctx.setLineDash([12, 8]);
+            ctx.beginPath();
+            ctx.arc(0, 0, 48, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            // 5. 내막 전자전달계 & ATP 합성효소 빛나는 노드들
+            const nodes = [-0.24, -0.08, 0.08, 0.24];
+            nodes.forEach((ratio, idx) => {
+                const nx = L.cristaeZone.x + (idx % 2 === 0 ? -8 : 8);
+                const ny = L.cristaeZone.y + H * ratio;
+                const active = currentStage === 4;
+                ctx.save();
+                ctx.fillStyle = active ? '#fde047' : 'rgba(244, 114, 182, 0.4)';
+                ctx.shadowColor = active ? '#facc15' : 'transparent';
+                ctx.shadowBlur = active ? 18 : 0;
+                ctx.beginPath();
+                ctx.arc(nx, ny, active ? 9 : 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        function roundRectPath(x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        function drawTag(text, x, y, textColor, bgColor) {
+            ctx.save();
+            ctx.font = 'bold 12px "Noto Sans KR", sans-serif';
+            const padX = 12;
+            const w = ctx.measureText(text).width + padX * 2;
+            const h = 24;
+            ctx.fillStyle = bgColor;
+            roundRectPath(x - w / 2, y - h / 2, w, h, 12);
+            ctx.fill();
+            ctx.strokeStyle = textColor;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, x, y);
+            ctx.restore();
+        }
+
+        /**
+         * ============================================================================
+         * 6. 입자 업데이트 및 렌더링 루프
+         * ============================================================================
+         */
+        function updateAndDrawParticles() {
+            // 0. 배경 부유 입자
+            ambientDust.forEach(d => {
+                d.x = (d.x + d.vx + W) % W;
+                d.y = (d.y + d.vy + H) % H;
+                ctx.fillStyle = `rgba(148, 163, 184, ${d.alpha})`;
+                ctx.beginPath();
+                ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 1. 탄소(C) 입자 부드러운 이동 및 결합선 그리기
+            carbons.forEach((c, idx) => {
+                if (!c.active) return;
+                const wobbleX = Math.cos(tick * 0.05 + idx) * 2.5;
+                const wobbleY = Math.sin(tick * 0.05 + idx) * 2.5;
+                c.x += (c.tx + wobbleX - c.x) * 0.08;
+                c.y += (c.ty + wobbleY - c.y) * 0.08;
+            });
+
+            // 탄소 간 공유결합선(Glowing Bond)
+            ctx.save();
+            ctx.strokeStyle = 'rgba(34, 211, 238, 0.7)';
+            ctx.lineWidth = 3.5;
+            for (let i = 0; i < carbons.length; i++) {
+                for (let j = i + 1; j < carbons.length; j++) {
+                    if (carbons[i].active && carbons[j].active && carbons[i].group === carbons[j].group) {
+                        const dist = Math.hypot(carbons[i].x - carbons[j].x, carbons[i].y - carbons[j].y);
+                        if (dist < 75) {
+                            ctx.beginPath();
+                            ctx.moveTo(carbons[i].x, carbons[i].y);
+                            ctx.lineTo(carbons[j].x, carbons[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+            ctx.restore();
+
+            // 탄소 구체 그리기
+            carbons.forEach(c => {
+                if (!c.active) return;
+                drawGlowingOrb(c.x, c.y, 11, '#22d3ee', '#cffafe', 'C');
+            });
+
+            // 2. 에너지 운반체 (NADH & FADH2) -> 내막 전자전달계로 날아감
+            carriers.forEach(cr => {
+                if (cr.progress < 0) {
+                    cr.progress += 0.02;
+                    return;
+                }
+                if (cr.progress < 1) {
+                    cr.progress = Math.min(1, cr.progress + 0.018);
+                    // 포물선 궤적 보간
+                    const t = cr.progress;
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    cr.x = cr.sx + (cr.tx - cr.sx) * ease;
+                    cr.y = cr.sy + (cr.ty - cr.sy) * ease - Math.sin(t * Math.PI) * 35;
+                } else {
+                    cr.arrived = true;
+                    // 내막 도착 후 미세 부유
+                    cr.x = cr.tx + Math.cos(tick * 0.06 + cr.ty) * 3;
+                    cr.y = cr.ty + Math.sin(tick * 0.06 + cr.tx) * 3;
+                }
+
+                const isNadh = cr.type === 'NADH';
+                const coreColor = isNadh ? '#fbbf24' : '#34d399';
+                const glowColor = isNadh ? '#fef08a' : '#a7f3d0';
+                const alpha = cr.consumed ? 0.35 : 1;
+
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                drawGlowingOrb(cr.x, cr.y, 8, coreColor, glowColor, isNadh ? 'N' : 'F');
+                ctx.restore();
+            });
+
+            // 3. 기체 입자 (CO2 연기 상승 & O2 산소 유입)
+            for (let i = gases.length - 1; i >= 0; i--) {
+                const g = gases[i];
+                if (g.type === 'CO2') {
+                    g.x += g.vx + Math.sin(tick * 0.08 + i) * 0.4;
+                    g.y += g.vy;
+                    g.r += 0.08;
+                    g.alpha -= 0.008;
+
+                    if (g.alpha <= 0) {
+                        gases.splice(i, 1);
+                        continue;
+                    }
+                    ctx.save();
+                    ctx.globalAlpha = g.alpha;
+                    drawGlowingOrb(g.x, g.y, g.r, '#a855f7', '#e9d5ff', 'CO₂');
+                    ctx.restore();
+                } else if (g.type === 'O2') {
+                    g.x += (g.tx - g.x) * 0.06;
+                    g.y += (g.ty - g.y) * 0.06;
+                    if (Math.hypot(g.tx - g.x, g.ty - g.y) < 5) {
+                        g.alpha -= 0.05;
+                    }
+                    if (g.alpha <= 0) {
+                        gases.splice(i, 1);
+                        continue;
+                    }
+                    ctx.save();
+                    ctx.globalAlpha = g.alpha;
+                    drawGlowingOrb(g.x, g.y, 8, '#f43f5e', '#fecdd3', 'O₂');
+                    ctx.restore();
+                }
+            }
+
+            // 4. 최종 산물 입자 (기질수준 ATP, 산화적 ATP, H2O 물방울)
+            outputs.forEach((o, idx) => {
+                o.x += o.vx;
+                o.y += o.vy;
+                o.vx *= 0.94;
+                o.vy *= 0.94;
+                o.scale += (1 - o.scale) * 0.12;
+
+                // 제자리에서 반짝이며 떠다님
+                const floatY = o.y + Math.sin(tick * 0.07 + idx) * 2;
+
+                if (o.type === 'SUB_ATP') {
+                    drawStarburst(o.x, floatY, 11 * o.scale, '#fb923c', '#fed7aa', 'ATP');
+                } else if (o.type === 'OX_ATP') {
+                    drawStarburst(o.x, floatY, 10 * o.scale, '#facc15', '#fef9c3', 'ATP');
+                } else if (o.type === 'H2O') {
+                    drawGlowingOrb(o.x, floatY, 8 * o.scale, '#38bdf8', '#bae6fd', 'H₂O');
+                }
+            });
+        }
+
+        // 발광 구체 드로잉 헬퍼
+        function drawGlowingOrb(x, y, radius, color, innerColor, label) {
+            ctx.save();
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 16;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = innerColor;
+            ctx.beginPath();
+            ctx.arc(x - radius * 0.25, y - radius * 0.25, radius * 0.45, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (label && radius >= 7) {
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#090d16';
+                ctx.font = `bold ${Math.max(8, Math.floor(radius * 0.85))}px Inter, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, x, y + 0.5);
+            }
+            ctx.restore();
+        }
+
+        // ATP 별폭발(Starburst) 코인 드로잉 헬퍼
+        function drawStarburst(x, y, radius, color, innerColor, label) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 18;
+            ctx.fillStyle = color;
+
+            const spikes = 8;
+            ctx.beginPath();
+            for (let i = 0; i < spikes * 2; i++) {
+                const r = i % 2 === 0 ? radius * 1.25 : radius * 0.75;
+                const angle = (Math.PI * i) / spikes + tick * 0.02;
+                const px = Math.cos(angle) * r;
+                const py = Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 8px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, 0, 0.5);
+            ctx.restore();
+        }
+
+        // 메인 루프
+        function loop() {
+            tick++;
+            ctx.clearRect(0, 0, W, H);
+            drawMap();
+            updateAndDrawParticles();
+            requestAnimationFrame(loop);
+        }
+
+        /**
+         * ============================================================================
+         * 7. 상단·하단 HUD 동기화 및 자동 재생 컨트롤
+         * ============================================================================
+         */
+        const STAGE_COUNTS = [
+            { subAtp: 0, oxAtp: 0, nadh: 0, fadh2: 0, co2: 0, h2o: 0 },
+            { subAtp: 2, oxAtp: 0, nadh: 2, fadh2: 0, co2: 0, h2o: 0 },
+            { subAtp: 2, oxAtp: 0, nadh: 4, fadh2: 0, co2: 2, h2o: 0 },
+            { subAtp: 4, oxAtp: 0, nadh: 10, fadh2: 2, co2: 6, h2o: 0 },
+            { subAtp: 4, oxAtp: 28, nadh: 10, fadh2: 2, co2: 6, h2o: 6 }
+        ];
+
+        function updateHUD() {
+            // 상단 알약 활성화 스타일
+            for (let i = 0; i <= 4; i++) {
+                const pill = document.getElementById(`pill-${i}`);
+                if (i === currentStage) {
+                    pill.className = "stage-pill px-2.5 py-1.5 rounded-xl text-xs font-bold bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-400/30 transition-all whitespace-nowrap";
+                } else if (i < currentStage) {
+                    pill.className = "stage-pill px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-cyan-300 border border-cyan-500/30 transition-all whitespace-nowrap";
+                } else {
+                    pill.className = "stage-pill px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all whitespace-nowrap";
+                }
+            }
+
+            // 하단 입자 카운터 갱신
+            const c = STAGE_COUNTS[currentStage];
+            document.getElementById('hud-sub-atp').textContent = c.subAtp;
+            document.getElementById('hud-ox-atp').textContent = c.oxAtp;
+            document.getElementById('hud-nadh').textContent = c.nadh;
+            document.getElementById('hud-fadh2').textContent = c.fadh2;
+            document.getElementById('hud-co2').textContent = c.co2;
+            document.getElementById('hud-h2o').textContent = c.h2o;
+        }
+
+        function toggleAutoPlay() {
+            if (autoPlayTimer) {
+                stopAutoPlay();
+            } else {
+                if (currentStage === 4) setStage(0);
+                document.getElementById('auto-label').textContent = '일시정지';
+                document.getElementById('auto-dot').classList.add('animate-ping');
+                autoPlayTimer = setInterval(() => {
+                    if (currentStage < 4) {
+                        setStage(currentStage + 1);
+                    } else {
+                        stopAutoPlay();
+                    }
+                }, 2600);
+            }
+        }
+
+        function stopAutoPlay() {
+            if (autoPlayTimer) {
+                clearInterval(autoPlayTimer);
+                autoPlayTimer = null;
+            }
+            document.getElementById('auto-label').textContent = '자동 여행';
+            document.getElementById('auto-dot').classList.remove('animate-ping');
+        }
+
+        function resetSim() {
+            stopAutoPlay();
+            setStage(0);
+        }
+
+        // 시작 실행
+        window.onload = function () {
+            initCarbons();
+            updateHUD();
+            loop();
+        };
+    </script>
+</body>
+</html>

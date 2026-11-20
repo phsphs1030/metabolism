@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>알코올 발효 3D 시뮬레이터 (Alcoholic Fermentation)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Noto Sans KR -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Three.js & OrbitControls UMD (r128) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    body {
+      font-family: 'Noto Sans KR', 'Inter', sans-serif;
+      margin: 0;
+      overflow: hidden;
+      background-color: #070b14;
+      color: #f8fafc;
+      user-select: none;
+    }
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      background: radial-gradient(circle at 50% 38%, #111c33 0%, #070b14 75%);
+    }
+    .btn-active {
+      background-color: rgba(6, 182, 212, 0.22);
+      border-color: rgba(34, 211, 238, 0.65);
+      color: #67e8f9;
+    }
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(71, 85, 105, 0.7);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- 3D 렌더링 캔버스 (화면 전체 100% 개방) -->
+  <div id="canvas-container"></div>
+
+  <!-- WebGL 오류 안내 배너 (필요시 표시) -->
+  <div id="error-box" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 p-6">
+    <div class="max-w-md bg-slate-900 border border-rose-500/50 rounded-2xl p-6 text-center shadow-2xl">
+      <h3 class="text-lg font-bold text-rose-400 mb-2">3D 그래픽 초기화 안내</h3>
+      <p id="error-msg" class="text-sm text-slate-300 leading-relaxed mb-4"></p>
+      <button onclick="location.reload()" class="px-4 py-2 bg-cyan-500 text-slate-950 font-semibold rounded-xl text-sm">다시 시도</button>
+    </div>
+  </div>
+
+  <!-- 상단 초슬림 헤더 바 -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="bg-slate-900/80 backdrop-blur-md border border-slate-700/70 rounded-xl px-3.5 py-1.5 shadow-lg pointer-events-auto flex items-center gap-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+      <h1 class="text-sm sm:text-base font-bold tracking-tight text-white">
+        알코올 발효 3D 시뮬레이터 <span class="text-cyan-400 font-medium text-xs sm:text-sm">(Alcoholic Fermentation)</span>
+      </h1>
+    </div>
+
+    <!-- 원자 색상 범례 + 원소기호/분자명 토글 + 카메라 리셋 -->
+    <div class="flex items-center gap-1.5 sm:gap-2 bg-slate-900/80 backdrop-blur-md border border-slate-700/70 rounded-xl px-3 py-1.5 shadow-lg pointer-events-auto text-xs">
+      <div class="flex items-center gap-2.5 pr-2 border-r border-slate-700/80">
+        <span class="flex items-center gap-1" title="탄소(Carbon)"><i class="w-2.5 h-2.5 rounded-full bg-zinc-700 border border-zinc-400 inline-block"></i><b class="text-slate-200">C</b></span>
+        <span class="flex items-center gap-1" title="수소(Hydrogen)"><i class="w-2.5 h-2.5 rounded-full bg-slate-100 inline-block"></i><b class="text-slate-200">H</b></span>
+        <span class="flex items-center gap-1" title="산소(Oxygen)"><i class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></i><b class="text-slate-200">O</b></span>
+        <span class="flex items-center gap-1" title="인(Phosphorus)"><i class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></i><b class="text-slate-200">P</b></span>
+        <span class="flex items-center gap-1 hidden sm:flex" title="질소(Nitrogen)"><i class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></i><b class="text-slate-200">N</b></span>
+      </div>
+      <button id="toggle-atoms-btn" class="btn-active px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800 font-medium transition">
+        원소기호 ON
+      </button>
+      <button id="toggle-labels-btn" class="btn-active px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800 font-medium transition">
+        분자명 ON
+      </button>
+      <button id="reset-cam-btn" title="카메라 시점 초기화" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 하단 통합 도크: 타임라인 컨트롤 + 생화학 해설 패널 -->
+  <footer class="fixed bottom-2.5 left-2.5 right-2.5 sm:bottom-3.5 sm:left-4 sm:right-4 z-20 flex flex-col items-center pointer-events-none">
+    <div class="w-full max-w-6xl bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 rounded-2xl p-3 sm:p-3.5 shadow-2xl pointer-events-auto">
+      
+      <!-- 1행: 단계 선택 & 재생 컨트롤 -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-800">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button data-mode="all" class="stage-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 transition">
+            전체 자동 재생
+          </button>
+          <button data-mode="1" class="stage-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+            1단계: 해당과정
+          </button>
+          <button data-mode="2" class="stage-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+            2단계: 탈탄산 & CO₂ 방출
+          </button>
+          <button data-mode="3" class="stage-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+            3단계: NADH 투입 & 에탄올
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2.5 flex-1 max-w-xl">
+          <button id="play-pause-btn" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition whitespace-nowrap">
+            <span id="play-icon">⏸ 일시정지</span>
+          </button>
+          <span id="time-label" class="text-[11px] font-mono text-cyan-300 whitespace-nowrap">STAGE 1</span>
+          <input id="timeline-slider" type="range" min="0" max="1000" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400" />
+          <span id="progress-percent" class="text-[11px] font-mono text-slate-400 w-8 text-right">0%</span>
+          <div class="hidden sm:flex items-center gap-1 bg-slate-800/90 border border-slate-700 rounded-xl px-2 py-1">
+            <input id="speed-slider" type="range" min="0.2" max="2.5" step="0.1" value="1.0" class="w-12 h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-400" />
+            <span id="speed-value" class="text-[11px] font-mono text-indigo-300 w-7">1.0x</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2행: 생화학 해설 그리드 -->
+      <div class="pt-2.5 grid grid-cols-1 lg:grid-cols-12 gap-3 items-start max-h-36 sm:max-h-40 overflow-y-auto">
+        <div class="lg:col-span-5">
+          <div class="flex items-center gap-2 mb-1">
+            <span id="stage-badge" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">STAGE 01 · 세포질 (Cytosol)</span>
+            <h2 id="stage-title" class="text-sm sm:text-base font-bold text-white truncate">1단계: 해당과정 (Glycolysis)</h2>
+          </div>
+          <p id="stage-desc" class="text-xs text-slate-300 leading-relaxed">
+            6탄당인 포도당(C₆H₁₂O₆)이 여러 효소 반응을 거쳐 2분자의 3탄당 피루브산(C₃H₄O₃)으로 분해되며 2 ATP와 2 NADH가 생성됩니다.
+          </p>
+        </div>
+
+        <div class="lg:col-span-4 flex flex-col gap-1.5">
+          <div class="bg-slate-950/90 border border-slate-800 rounded-xl px-2.5 py-1.5">
+            <span class="text-[10px] text-slate-400 font-semibold block">핵심 생화학 반응식</span>
+            <div id="stage-equation" class="text-xs font-mono text-amber-300 font-semibold leading-snug">
+              C₆H₁₂O₆ + 2 NAD⁺ + 2 ADP + 2 Pᵢ → 2 피루브산 + 2 NADH + 2 ATP
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+            <div class="bg-purple-950/40 border border-purple-500/30 rounded-lg px-2 py-1 truncate">
+              <span class="text-purple-300 font-semibold">효소: </span>
+              <span id="stage-enzyme" class="text-slate-200">해당과정 효소군</span>
+            </div>
+            <div class="bg-emerald-950/40 border border-emerald-500/30 rounded-lg px-2 py-1 truncate">
+              <span class="text-emerald-300 font-semibold">수지: </span>
+              <span id="stage-balance" class="text-slate-200">+2 ATP / +2 NADH</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-3 bg-slate-800/50 border border-slate-700/60 rounded-xl p-2.5">
+          <div class="text-[11px] font-semibold text-cyan-400 mb-0.5">💡 생화학적 핵심 포인트</div>
+          <p id="stage-point" class="text-[11px] text-slate-300 leading-relaxed">
+            발효의 핵심 목적은 3단계에서 NADH를 산화시켜 해당과정(1단계)에 필수적인 NAD⁺를 재생하는 것입니다.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <script>
+    // =========================================================================
+    // 1. 생화학 단계별 데이터 정의
+    // =========================================================================
+    const STAGE_INFO = {
+      1: {
+        badge: "STAGE 01 · 세포질 (Cytosol)",
+        title: "1단계: 해당과정 (Glycolysis)",
+        desc: "6탄당인 포도당(C₆H₁₂O₆)이 여러 효소 반응을 거쳐 2분자의 3탄당 피루브산(C₃H₄O₃)으로 분해됩니다. 이 과정에서 2 ATP와 2 NADH가 생성됩니다.",
+        equation: "C₆H₁₂O₆ + 2 NAD⁺ + 2 ADP + 2 Pᵢ → 2 피루브산(C₃H₄O₃) + 2 NADH + 2 H⁺ + 2 ATP",
+        enzyme: "헥소키나아제 등 해당과정 효소군",
+        balance: "+2 ATP 순생성 / +2 NADH 환원",
+        point: "포도당이 산화되면서 방출된 고에너지 전자를 NAD⁺가 받아 NADH로 전환됩니다. 무산소 환경에서는 이 NADH를 다시 NAD⁺로 되돌려야 합니다."
+      },
+      2: {
+        badge: "STAGE 02 · 탈탄산 반응",
+        title: "2단계: 피루브산 탈탄산 & CO₂ 방출",
+        desc: "피루브산 탈탄산효소(Pyruvate decarboxylase)가 피루브산의 카복실기(-COO⁻)를 끊어내어 1분자의 이산화탄소(CO₂)를 상단으로 방출하고, 2탄당 아세트알데히드(CH₃CHO)를 형성합니다.",
+        equation: "CH₃COCOO⁻ + H⁺ → CH₃CHO (아세트알데히드) + CO₂↑",
+        enzyme: "피루브산 탈탄산효소 (조효소: TPP)",
+        balance: "CO₂ 기체 방출 (탄소 3개 → 탄소 2개)",
+        point: "이 단계에서 방출되는 이산화탄소(CO₂) 기포가 빵 반죽을 부풀게 하고 맥주·막걸리의 탄산을 만드는 주원인입니다."
+      },
+      3: {
+        badge: "STAGE 03 · 산화-환원 & NAD⁺ 재생",
+        title: "3단계: NADH 투입 & 에탄올 환원",
+        desc: "알코올 탈수소효소(Alcohol dehydrogenase)의 활성 부위로 1단계에서 생성된 NADH가 진입하여 수소 이온(H⁻/e⁻)을 전달합니다. NADH는 NAD⁺로 산화되고 아세트알데히드는 에탄올(C₂H₅OH)로 환원됩니다.",
+        equation: "CH₃CHO + NADH + H⁺ → C₂H₅OH (에탄올) + NAD⁺",
+        enzyme: "알코올 탈수소효소 (Alcohol Dehydrogenase)",
+        balance: "NADH → NAD⁺ 산화 / 아세트알데히드 → 에탄올 환원",
+        point: "NADH가 전자를 잃고 재생된 NAD⁺는 다시 1단계 해당과정으로 돌아가 포도당 분해를 지속시킴으로써 산소 없이도 ATP를 계속 합성하게 합니다."
+      }
+    };
+
+    // =========================================================================
+    // 2. Three.js 씬, 카메라, 조명 및 OrbitControls 안전 초기화
+    // =========================================================================
+    function showError(msg) {
+      document.getElementById('error-msg').textContent = msg;
+      document.getElementById('error-box').classList.remove('hidden');
+    }
+
+    if (typeof THREE === 'undefined') {
+      showError('Three.js 라이브러리를 불러오지 못했습니다. 네트워크 연결을 확인해 주세요.');
+    }
+
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x070b14, 0.02);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+    // 하단 패널 높이를 고려해 분자들이 화면 상단·중앙 75% 영역에 배치되도록 시점 조정
+    const defaultCamPos = new THREE.Vector3(0, 2.8, 14.5);
+    const defaultCamTarget = new THREE.Vector3(0, -1.0, 0);
+    camera.position.copy(defaultCamPos);
+
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+      container.appendChild(renderer.domElement);
+    } catch (e) {
+      showError('WebGL 렌더링 초기화에 실패했습니다: ' + e.message);
+    }
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.copy(defaultCamTarget);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.minDistance = 5;
+    controls.maxDistance = 32;
+
+    // 3점 조명 설정 (주광 + 보조광 + 림라이트)
+    const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.75);
+    scene.add(ambientLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.15);
+    dirLight1.position.set(8, 12, 10);
+    scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.65);
+    dirLight2.position.set(-10, -5, 8);
+    scene.add(dirLight2);
+
+    const rimLight = new THREE.PointLight(0xa855f7, 0.8, 30);
+    rimLight.position.set(0, 6, -8);
+    scene.add(rimLight);
+
+    // 배경 세포질 미세 입자 필드 생성
+    const particleCount = 160;
+    const particleGeo = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      particlePositions[i] = (Math.random() - 0.5) * 32;
+      particlePositions[i + 1] = (Math.random() - 0.5) * 22;
+      particlePositions[i + 2] = (Math.random() - 0.5) * 24 - 4;
+    }
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    const particleMat = new THREE.PointsMaterial({
+      color: 0x38bdf8,
+      size: 0.08,
+      transparent: true,
+      opacity: 0.35
+    });
+    const bgParticles = new THREE.Points(particleGeo, particleMat);
+    scene.add(bgParticles);
+
+    // =========================================================================
+    // 3. 원자 재질(CPK 규약) 및 고해상도 3D CanvasTexture 스프라이트 생성기
+    // =========================================================================
+    const ATOM_MATS = {
+      C: new THREE.MeshStandardMaterial({ color: 0x3f3f46, roughness: 0.35, metalness: 0.25 }),
+      H: new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.25, metalness: 0.1 }),
+      O: new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.3, metalness: 0.15 }),
+      P: new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.2 }),
+      N: new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.3, metalness: 0.2 }),
+      E: new THREE.MeshStandardMaterial({
+        color: 0x10b981,
+        emissive: 0x059669,
+        emissiveIntensity: 0.85,
+        roughness: 0.2
+      })
+    };
+
+    const ATOM_RADII = { C: 0.38, H: 0.24, O: 0.34, P: 0.40, N: 0.36, E: 0.26 };
+    const bondMaterial = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.4, metalness: 0.3 });
+
+    const atomSpriteTextures = {};
+    const atomSprites = [];
+    const moleculeSprites = [];
+
+    const ELEMENT_DISPLAY = {
+      C: { symbol: 'C', color: '#ffffff', bg: 'rgba(24, 24, 27, 0.85)', border: '#a1a1aa' },
+      H: { symbol: 'H', color: '#0f172a', bg: 'rgba(248, 250, 252, 0.95)', border: '#64748b' },
+      O: { symbol: 'O', color: '#ffffff', bg: 'rgba(225, 29, 72, 0.90)', border: '#fda4af' },
+      P: { symbol: 'P', color: '#ffffff', bg: 'rgba(217, 119, 6, 0.90)', border: '#fcd34d' },
+      N: { symbol: 'N', color: '#ffffff', bg: 'rgba(37, 99, 235, 0.90)', border: '#93c5fd' },
+      E: { symbol: 'H⁻/e⁻', color: '#ecfdf5', bg: 'rgba(5, 150, 105, 0.95)', border: '#6ee7b7' }
+    };
+
+    // 고해상도(256x256) 원소 기호 CanvasTexture 생성
+    function getAtomLabelTexture(el) {
+      if (atomSpriteTextures[el]) return atomSpriteTextures[el];
+
+      const info = ELEMENT_DISPLAY[el] || { symbol: el, color: '#ffffff', bg: 'rgba(0,0,0,0.8)', border: '#ffffff' };
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      ctx.beginPath();
+      ctx.arc(128, 128, 96, 0, Math.PI * 2);
+      ctx.fillStyle = info.bg;
+      ctx.fill();
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = info.border;
+      ctx.stroke();
+
+      ctx.fillStyle = info.color;
+      ctx.font = el === 'E' ? 'bold 58px Inter, sans-serif' : 'bold 108px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(info.symbol, 128, 134);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      atomSpriteTextures[el] = texture;
+      return texture;
+    }
+
+    function createAtomSprite(el, radius) {
+      const spriteMat = new THREE.SpriteMaterial({
+        map: getAtomLabelTexture(el),
+        transparent: true,
+        depthTest: false,
+        depthWrite: false
+      });
+      const sprite = new THREE.Sprite(spriteMat);
+      const scale = el === 'E' ? 0.68 : Math.max(0.46, radius * 1.48);
+      sprite.scale.set(scale, scale, 1);
+      sprite.renderOrder = 999;
+      atomSprites.push(sprite);
+      return sprite;
+    }
+
+    // 둥근 사각형 헬퍼 함수 (모든 브라우저 호환)
+    function drawRoundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    // 분자명 3D 스프라이트 생성 함수 (외부 CSS2DRenderer 없이 100% WebGL 내부 렌더링)
+    function createMoleculeTitleSprite(title, formula, type = 'mol') {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 144;
+      const ctx = canvas.getContext('2d');
+
+      const palette = {
+        mol: { bg: 'rgba(15, 23, 42, 0.88)', border: '#38bdf8', title: '#f8fafc', sub: '#38bdf8' },
+        enzyme: { bg: 'rgba(59, 7, 100, 0.88)', border: '#c084fc', title: '#f3e8ff', sub: '#e879f9' },
+        coenzyme: { bg: 'rgba(6, 78, 59, 0.90)', border: '#34d399', title: '#ecfdf5', sub: '#6ee7b7' }
+      }[type] || { bg: 'rgba(15, 23, 42, 0.88)', border: '#38bdf8', title: '#f8fafc', sub: '#38bdf8' };
+
+      drawRoundRect(ctx, 16, 16, 480, 112, 26);
+      ctx.fillStyle = palette.bg;
+      ctx.fill();
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = palette.border;
+      ctx.stroke();
+
+      ctx.fillStyle = palette.title;
+      ctx.font = 'bold 34px "Noto Sans KR", Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(title, 256, 54);
+
+      ctx.fillStyle = palette.sub;
+      ctx.font = '600 25px Inter, "Noto Sans KR", sans-serif';
+      ctx.fillText(formula, 256, 98);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+
+      const mat = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false
+      });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(2.9, 0.82, 1);
+      sprite.renderOrder = 1000;
+      moleculeSprites.push(sprite);
+      return sprite;
+    }
+
+    // 결합 막대 생성
+    function createBond(p1, p2, isDouble = false) {
+      const group = new THREE.Group();
+      const dir = new THREE.Vector3().subVectors(p2, p1);
+      const len = dir.length();
+      const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+
+      const makeCylinder = (offsetVec) => {
+        const geo = new THREE.CylinderGeometry(isDouble ? 0.048 : 0.068, isDouble ? 0.048 : 0.068, len, 12);
+        const mesh = new THREE.Mesh(geo, bondMaterial);
+        mesh.position.copy(mid).add(offsetVec);
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+        return mesh;
+      };
+
+      if (isDouble) {
+        const perp = new THREE.Vector3(0, 0, 1);
+        if (Math.abs(dir.clone().normalize().dot(perp)) > 0.9) perp.set(1, 0, 0);
+        const shift = new THREE.Vector3().crossVectors(dir, perp).normalize().multiplyScalar(0.085);
+        group.add(makeCylinder(shift));
+        group.add(makeCylinder(shift.clone().negate()));
+      } else {
+        group.add(makeCylinder(new THREE.Vector3()));
+      }
+      return group;
+    }
+
+    // 원자 및 결합으로 3D 분자 그룹 빌드
+    function buildMolecule(atoms, bonds) {
+      const mol = new THREE.Group();
+      const positions = atoms.map(a => new THREE.Vector3(a.x, a.y, a.z));
+
+      atoms.forEach((a, idx) => {
+        const radius = ATOM_RADII[a.el] || 0.3;
+        const geo = new THREE.SphereGeometry(radius, 24, 24);
+        const mesh = new THREE.Mesh(geo, ATOM_MATS[a.el]);
+        mesh.position.copy(positions[idx]);
+
+        const sprite = createAtomSprite(a.el, radius);
+        mesh.add(sprite);
+
+        mol.add(mesh);
+      });
+
+      bonds.forEach(b => {
+        mol.add(createBond(positions[b[0]], positions[b[1]], b[2] || false));
+      });
+
+      return mol;
+    }
+
+    // =========================================================================
+    // 4. 주요 생화학 분자 3D 모델 구축
+    // =========================================================================
+
+    // [모델 A] 포도당 (Glucose, C6H12O6)
+    function createGlucoseModel() {
+      const r = 1.05;
+      const atoms = [];
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI) / 3;
+        const yOff = (i % 2 === 0) ? 0.12 : -0.12;
+        atoms.push({
+          el: i === 5 ? 'O' : 'C',
+          x: Math.cos(angle) * r,
+          y: yOff,
+          z: Math.sin(angle) * r
+        });
+      }
+      atoms.push({
+        el: 'C',
+        x: Math.cos((4 * Math.PI) / 3) * (r + 0.75),
+        y: 0.45,
+        z: Math.sin((4 * Math.PI) / 3) * (r + 0.75)
+      });
+      const bonds = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [4, 6]];
+      for (let i = 0; i < 5; i++) {
+        const base = atoms[i];
+        const oIdx = atoms.length;
+        atoms.push({ el: 'O', x: base.x * 1.48, y: base.y + (i % 2 === 0 ? -0.35 : 0.35), z: base.z * 1.48 });
+        bonds.push([i, oIdx]);
+        const hIdx = atoms.length;
+        atoms.push({ el: 'H', x: base.x * 1.25, y: base.y + (i % 2 === 0 ? 0.45 : -0.45), z: base.z * 1.25 });
+        bonds.push([i, hIdx]);
+      }
+      return buildMolecule(atoms, bonds);
+    }
+
+    // [모델 B] 피루브산 (Pyruvate, CH3-CO-COO-)
+    function createPyruvateModel() {
+      const atoms = [
+        { el: 'C', x: -0.95, y: 0.0, z: 0.0 },
+        { el: 'C', x: 0.0, y: 0.25, z: 0.0 },
+        { el: 'C', x: 0.95, y: -0.1, z: 0.0 },
+        { el: 'O', x: 0.0, y: 1.05, z: 0.0 },
+        { el: 'O', x: 1.65, y: 0.55, z: 0.25 },
+        { el: 'O', x: 1.55, y: -0.85, z: -0.25 },
+        { el: 'H', x: -1.45, y: 0.55, z: 0.45 },
+        { el: 'H', x: -1.45, y: -0.55, z: 0.45 },
+        { el: 'H', x: -1.25, y: 0.0, z: -0.75 }
+      ];
+      const bonds = [
+        [0, 1], [1, 2], [1, 3, true], [2, 4, true], [2, 5],
+        [0, 6], [0, 7], [0, 8]
+      ];
+      return buildMolecule(atoms, bonds);
+    }
+
+    // [모델 C] 이산화탄소 (CO2)
+    function createCO2Model() {
+      const atoms = [
+        { el: 'C', x: 0, y: 0, z: 0 },
+        { el: 'O', x: -0.82, y: 0, z: 0 },
+        { el: 'O', x: 0.82, y: 0, z: 0 }
+      ];
+      const bonds = [[0, 1, true], [0, 2, true]];
+      return buildMolecule(atoms, bonds);
+    }
+
+    // [모델 D] 아세트알데히드 (Acetaldehyde, CH3-CHO)
+    function createAcetaldehydeModel() {
+      const atoms = [
+        { el: 'C', x: -0.55, y: -0.1, z: 0 },
+        { el: 'C', x: 0.45, y: 0.2, z: 0 },
+        { el: 'O', x: 0.75, y: 0.98, z: 0 },
+        { el: 'H', x: 1.15, y: -0.45, z: 0 },
+        { el: 'H', x: -1.1, y: 0.45, z: 0.45 },
+        { el: 'H', x: -1.1, y: -0.65, z: 0.45 },
+        { el: 'H', x: -0.8, y: -0.1, z: -0.75 }
+      ];
+      const bonds = [[0, 1], [1, 2, true], [1, 3], [0, 4], [0, 5], [0, 6]];
+      return buildMolecule(atoms, bonds);
+    }
+
+    // [모델 E] 에탄올 (Ethanol, CH3-CH2-OH)
+    function createEthanolModel() {
+      const atoms = [
+        { el: 'C', x: -0.65, y: -0.1, z: 0 },
+        { el: 'C', x: 0.35, y: 0.2, z: 0 },
+        { el: 'O', x: 1.25, y: -0.35, z: 0 },
+        { el: 'H', x: 1.85, y: 0.15, z: 0 },
+        { el: 'H', x: 0.4, y: 0.95, z: 0.45 },
+        { el: 'H', x: 0.4, y: 0.65, z: -0.65 },
+        { el: 'H', x: -1.2, y: 0.45, z: 0.45 },
+        { el: 'H', x: -1.2, y: -0.65, z: 0.45 },
+        { el: 'H', x: -0.9, y: -0.1, z: -0.75 }
+      ];
+      const bonds = [[0, 1], [1, 2], [2, 3], [1, 4], [1, 5], [0, 6], [0, 7], [0, 8]];
+      return buildMolecule(atoms, bonds);
+    }
+
+    // [모델 F] 조효소 NADH / NAD+ 캐리어 모델
+    function createCoenzymeModel(hasHydride = true) {
+      const group = new THREE.Group();
+      const atoms = [];
+      const r = 0.52;
+      for (let i = 0; i < 6; i++) {
+        const ang = (i * Math.PI) / 3;
+        atoms.push({
+          el: i === 0 ? 'N' : 'C',
+          x: Math.cos(ang) * r,
+          y: Math.sin(ang) * r,
+          z: 0
+        });
+      }
+      atoms.push({ el: 'P', x: -1.05, y: 0, z: 0 });
+      atoms.push({ el: 'P', x: -1.65, y: 0.25, z: 0 });
+      const bonds = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [3, 6], [6, 7]];
+
+      if (hasHydride) {
+        atoms.push({ el: 'E', x: 1.0, y: 0, z: 0 });
+        bonds.push([0, 8]);
+      }
+      group.add(buildMolecule(atoms, bonds));
+
+      const ringGeo = new THREE.TorusGeometry(0.88, 0.025, 12, 36);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: hasHydride ? 0x10b981 : 0x64748b,
+        transparent: true,
+        opacity: hasHydride ? 0.75 : 0.35
+      });
+      group.add(new THREE.Mesh(ringGeo, ringMat));
+      return group;
+    }
+
+    // [모델 G] ATP 에너지 분자 모델
+    function createATPModel() {
+      const atoms = [
+        { el: 'N', x: -0.6, y: 0, z: 0 },
+        { el: 'P', x: 0.1, y: 0, z: 0 },
+        { el: 'P', x: 0.75, y: 0.15, z: 0 },
+        { el: 'P', x: 1.4, y: -0.1, z: 0 },
+        { el: 'O', x: 1.4, y: 0.55, z: 0 }
+      ];
+      const bonds = [[0, 1], [1, 2], [2, 3], [3, 4]];
+      const mol = buildMolecule(atoms, bonds);
+      mol.scale.setScalar(0.75);
+      return mol;
+    }
+
+    // [모델 H] 반투명 효소 복합체 3D 도킹 포켓
+    function createEnzymePocket(colorHex) {
+      const group = new THREE.Group();
+      const geo = new THREE.TorusKnotGeometry(1.45, 0.32, 64, 16, 2, 3);
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: colorHex,
+        roughness: 0.25,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 0.25
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = Math.PI / 2;
+      group.add(mesh);
+
+      const wireMat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.15
+      });
+      const wireMesh = new THREE.Mesh(geo, wireMat);
+      wireMesh.rotation.x = Math.PI / 2;
+      group.add(wireMesh);
+      return group;
+    }
+
+    // =========================================================================
+    // 5. 씬에 모든 3D 오브젝트 및 3D 분자명 스프라이트 배치
+    // =========================================================================
+    const glucose = createGlucoseModel();
+    const pyruvate1 = createPyruvateModel();
+    const pyruvate2 = createPyruvateModel();
+    const atp1 = createATPModel();
+    const atp2 = createATPModel();
+    const nadhFromGlycolysis = createCoenzymeModel(true);
+    const enzymeDecarboxylase = createEnzymePocket(0xa855f7);
+    const co2Molecule = createCO2Model();
+    const acetaldehyde = createAcetaldehydeModel();
+    const enzymeADH = createEnzymePocket(0x06b6d4);
+    const nadhInput = createCoenzymeModel(true);
+    const nadPlusOutput = createCoenzymeModel(false);
+
+    const electronTransfer = new THREE.Mesh(
+      new THREE.SphereGeometry(0.24, 16, 16),
+      ATOM_MATS.E
+    );
+    electronTransfer.add(createAtomSprite('E', 0.28));
+
+    const ethanol = createEthanolModel();
+
+    scene.add(
+      glucose, pyruvate1, pyruvate2, atp1, atp2, nadhFromGlycolysis,
+      enzymeDecarboxylase, co2Molecule, acetaldehyde,
+      enzymeADH, nadhInput, nadPlusOutput, electronTransfer, ethanol
+    );
+
+    // 3D 공간 내 분자별 타이틀 스프라이트 부착 (회전에 영향받지 않도록 별도 배치 후 위치 동기화)
+    const labelConfigs = [
+      { target: glucose, title: '포도당 (6탄당)', formula: 'C₆H₁₂O₆', type: 'mol', offset: new THREE.Vector3(0, 1.85, 0) },
+      { target: pyruvate1, title: '피루브산 (3탄당)', formula: 'CH₃COCOO⁻', type: 'mol', offset: new THREE.Vector3(0, 1.65, 0) },
+      { target: pyruvate2, title: '피루브산 (×2)', formula: 'C₃H₄O₃', type: 'mol', offset: new THREE.Vector3(0, 1.55, 0) },
+      { target: atp1, title: '2 ATP 생성', formula: '에너지 획득', type: 'coenzyme', offset: new THREE.Vector3(0, 1.15, 0) },
+      { target: nadhFromGlycolysis, title: '2 NADH 생성', formula: '고에너지 전자 운반', type: 'coenzyme', offset: new THREE.Vector3(0, -1.35, 0) },
+      { target: enzymeDecarboxylase, title: '피루브산 탈탄산효소', formula: 'Pyruvate Decarboxylase', type: 'enzyme', offset: new THREE.Vector3(0, -2.05, 0) },
+      { target: co2Molecule, title: '이산화탄소 방출', formula: 'CO₂↑ (탈탄산)', type: 'mol', offset: new THREE.Vector3(0, 1.15, 0) },
+      { target: acetaldehyde, title: '아세트알데히드 (2탄당)', formula: 'CH₃CHO', type: 'mol', offset: new THREE.Vector3(0, 1.65, 0) },
+      { target: enzymeADH, title: '알코올 탈수소효소', formula: 'Alcohol Dehydrogenase', type: 'enzyme', offset: new THREE.Vector3(0, -2.05, 0) },
+      { target: nadhInput, title: 'NADH 투입', formula: '전자·H⁺ 공여체', type: 'coenzyme', offset: new THREE.Vector3(0, 1.45, 0) },
+      { target: nadPlusOutput, title: 'NAD⁺ 재생 (산화)', formula: '해당과정으로 재순환', type: 'coenzyme', offset: new THREE.Vector3(0, 1.45, 0) },
+      { target: ethanol, title: '에탄올 생성 (환원)', formula: 'C₂H₅OH (최종 산물)', type: 'mol', offset: new THREE.Vector3(0, 1.65, 0) }
+    ];
+
+    labelConfigs.forEach(cfg => {
+      const sprite = createMoleculeTitleSprite(cfg.title, cfg.formula, cfg.type);
+      scene.add(sprite);
+      cfg.sprite = sprite;
+    });
+
+    // =========================================================================
+    // 6. 타임라인 애니메이션 상태 및 보간 로직
+    // =========================================================================
+    let progress = 0;
+    let isPlaying = true;
+    let playbackSpeed = 1.0;
+    let stageMode = 'all';
+    let showLabels = true;
+    let showAtomSymbols = true;
+    let currentDisplayedStage = 0;
+
+    function smoothRange(val, min, max) {
+      const t = Math.max(0, Math.min(1, (val - min) / (max - min)));
+      return t * t * (3 - 2 * t);
+    }
+
+    function setVisible(obj, visible, scale = 1) {
+      obj.visible = visible && scale > 0.01;
+      if (obj.visible) obj.scale.setScalar(scale);
+    }
+
+    function updateSimulation(p, elapsedTime) {
+      setVisible(glucose, false);
+      setVisible(pyruvate1, false);
+      setVisible(pyruvate2, false);
+      setVisible(atp1, false);
+      setVisible(atp2, false);
+      setVisible(nadhFromGlycolysis, false);
+      setVisible(enzymeDecarboxylase, false);
+      setVisible(co2Molecule, false);
+      setVisible(acetaldehyde, false);
+      setVisible(enzymeADH, false);
+      setVisible(nadhInput, false);
+      setVisible(nadPlusOutput, false);
+      setVisible(electronTransfer, false);
+      setVisible(ethanol, false);
+
+      // [STAGE 1: 0.00 ~ 0.34] 해당과정
+      if (p < 0.34) {
+        const t1 = p / 0.34;
+        if (t1 < 0.45) {
+          const gScale = smoothRange(t1, 0, 0.15);
+          setVisible(glucose, true, gScale);
+          glucose.position.set(0, Math.sin(elapsedTime * 3) * 0.15, 0);
+          glucose.rotation.y = elapsedTime * 0.8;
+          glucose.rotation.x = Math.sin(elapsedTime * 1.5) * 0.25;
+        } else {
+          const splitT = smoothRange(t1, 0.45, 0.95);
+          setVisible(pyruvate1, true, 0.9 + splitT * 0.1);
+          setVisible(pyruvate2, true, 0.85);
+
+          pyruvate1.position.set(-2.3 * splitT, 0.2, 0);
+          pyruvate1.rotation.y = elapsedTime * 0.7;
+
+          pyruvate2.position.set(3.4 * splitT, -0.5, -1.6 * splitT);
+          pyruvate2.rotation.y = -elapsedTime * 0.7;
+
+          const byproductT = smoothRange(t1, 0.55, 0.95);
+          setVisible(atp1, true, byproductT);
+          atp1.position.set(-1.6 * byproductT, 2.2 * byproductT, 0.8);
+          atp1.rotation.z = elapsedTime * 1.2;
+
+          setVisible(atp2, true, byproductT);
+          atp2.position.set(1.6 * byproductT, 2.2 * byproductT, 0.8);
+          atp2.rotation.z = -elapsedTime * 1.2;
+
+          setVisible(nadhFromGlycolysis, true, byproductT);
+          nadhFromGlycolysis.position.set(0, -1.8 * byproductT, 1.2);
+          nadhFromGlycolysis.rotation.y = elapsedTime * 1.1;
+        }
+      }
+      // [STAGE 2: 0.34 ~ 0.67] 피루브산 탈탄산 & CO2 방출
+      else if (p < 0.67) {
+        const t2 = (p - 0.34) / 0.33;
+        const enzScale = smoothRange(t2, 0, 0.15) * (1 - smoothRange(t2, 0.88, 1.0) * 0.3);
+        setVisible(enzymeDecarboxylase, true, enzScale);
+        enzymeDecarboxylase.position.set(0, 0, 0);
+        enzymeDecarboxylase.rotation.z = elapsedTime * 0.4;
+
+        if (t2 < 0.42) {
+          const enterT = smoothRange(t2, 0, 0.42);
+          setVisible(pyruvate1, true, 1);
+          pyruvate1.position.set(-2.3 * (1 - enterT), 0.2 * (1 - enterT), 0);
+          pyruvate1.rotation.y = elapsedTime * 0.6;
+        } else {
+          const releaseT = smoothRange(t2, 0.42, 0.98);
+          setVisible(acetaldehyde, true, 1);
+          acetaldehyde.position.set(1.9 * releaseT, 0, 0);
+          acetaldehyde.rotation.y = elapsedTime * 0.8;
+
+          setVisible(co2Molecule, true, 1 - smoothRange(t2, 0.85, 1.0) * 0.35);
+          co2Molecule.position.set(
+            0.5 + releaseT * 1.3,
+            0.3 + releaseT * 3.1,
+            releaseT * 1.1
+          );
+          co2Molecule.rotation.x = elapsedTime * 2.2;
+          co2Molecule.rotation.z = elapsedTime * 1.8;
+        }
+      }
+      // [STAGE 3: 0.67 ~ 1.00] NADH 투입 & 에탄올 환원
+      else {
+        const t3 = (p - 0.67) / 0.33;
+        const enzScale = smoothRange(t3, 0, 0.15);
+        setVisible(enzymeADH, true, enzScale);
+        enzymeADH.position.set(0.5, 0, 0);
+        enzymeADH.rotation.z = -elapsedTime * 0.4;
+
+        if (t3 < 0.52) {
+          const approachT = smoothRange(t3, 0, 0.52);
+          setVisible(acetaldehyde, true, 1);
+          acetaldehyde.position.set(1.9 - approachT * 1.4, 0, 0);
+          acetaldehyde.rotation.y = elapsedTime * 0.8;
+
+          setVisible(nadhInput, true, 1);
+          nadhInput.position.set(
+            -3.2 + approachT * 2.5,
+            2.4 - approachT * 1.6,
+            0.5 * (1 - approachT)
+          );
+          nadhInput.rotation.y = elapsedTime * 1.2;
+
+          if (t3 > 0.34) {
+            const eT = (t3 - 0.34) / 0.18;
+            setVisible(electronTransfer, true, 1.35);
+            electronTransfer.position.set(
+              -0.4 + eT * 0.9,
+              0.6 - eT * 0.6,
+              0
+            );
+          }
+        } else {
+          const prodT = smoothRange(t3, 0.52, 0.98);
+          setVisible(ethanol, true, 1);
+          ethanol.position.set(0.5 + prodT * 2.4, -0.2 * prodT, 0);
+          ethanol.rotation.y = elapsedTime * 0.9;
+          ethanol.rotation.x = Math.sin(elapsedTime * 1.5) * 0.2;
+
+          setVisible(nadPlusOutput, true, 1);
+          nadPlusOutput.position.set(
+            -0.7 - prodT * 2.8,
+            0.8 + prodT * 2.0,
+            0.6 * prodT
+          );
+          nadPlusOutput.rotation.y = -elapsedTime * 1.0;
+        }
+      }
+
+      // 3D 분자명 스프라이트 위치 동기화
+      labelConfigs.forEach(cfg => {
+        cfg.sprite.visible = showLabels && cfg.target.visible;
+        if (cfg.sprite.visible) {
+          cfg.sprite.position.copy(cfg.target.position).add(cfg.offset);
+        }
+      });
+    }
+
+    // =========================================================================
+    // 7. UI 컨트롤 및 이벤트 바인딩
+    // =========================================================================
+    const timelineSlider = document.getElementById('timeline-slider');
+    const timeLabel = document.getElementById('time-label');
+    const progressPercent = document.getElementById('progress-percent');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const playIcon = document.getElementById('play-icon');
+    const speedSlider = document.getElementById('speed-slider');
+    const speedValue = document.getElementById('speed-value');
+    const toggleAtomsBtn = document.getElementById('toggle-atoms-btn');
+    const toggleLabelsBtn = document.getElementById('toggle-labels-btn');
+    const resetCamBtn = document.getElementById('reset-cam-btn');
+    const stageBtns = document.querySelectorAll('.stage-btn');
+
+    function updateInfoPanel(stageNum) {
+      if (currentDisplayedStage === stageNum) return;
+      currentDisplayedStage = stageNum;
+
+      const data = STAGE_INFO[stageNum];
+      document.getElementById('stage-badge').textContent = data.badge;
+      document.getElementById('stage-title').textContent = data.title;
+      document.getElementById('stage-desc').textContent = data.desc;
+      document.getElementById('stage-equation').textContent = data.equation;
+      document.getElementById('stage-enzyme').textContent = data.enzyme;
+      document.getElementById('stage-balance').textContent = data.balance;
+      document.getElementById('stage-point').textContent = data.point;
+      timeLabel.textContent = `STAGE ${stageNum}`;
+    }
+
+    stageBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        stageBtns.forEach(b => {
+          b.classList.remove('bg-cyan-500', 'text-slate-950', 'shadow-md', 'shadow-cyan-500/20');
+          b.classList.add('bg-slate-800', 'text-slate-200', 'border', 'border-slate-700');
+        });
+        btn.classList.remove('bg-slate-800', 'text-slate-200', 'border', 'border-slate-700');
+        btn.classList.add('bg-cyan-500', 'text-slate-950', 'shadow-md', 'shadow-cyan-500/20');
+
+        stageMode = btn.dataset.mode;
+        if (stageMode === '1') progress = 0.01;
+        else if (stageMode === '2') progress = 0.35;
+        else if (stageMode === '3') progress = 0.68;
+
+        isPlaying = true;
+        playIcon.textContent = '⏸ 일시정지';
+      });
+    });
+
+    playPauseBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      playIcon.textContent = isPlaying ? '⏸ 일시정지' : '▶ 재생하기';
+    });
+
+    timelineSlider.addEventListener('input', (e) => {
+      progress = parseInt(e.target.value, 10) / 1000;
+      if (stageMode !== 'all') {
+        stageMode = 'all';
+        stageBtns.forEach(b => {
+          b.classList.remove('bg-cyan-500', 'text-slate-950');
+          b.classList.add('bg-slate-800', 'text-slate-200');
+        });
+        stageBtns[0].classList.remove('bg-slate-800', 'text-slate-200');
+        stageBtns[0].classList.add('bg-cyan-500', 'text-slate-950');
+      }
+    });
+
+    speedSlider.addEventListener('input', (e) => {
+      playbackSpeed = parseFloat(e.target.value);
+      speedValue.textContent = `${playbackSpeed.toFixed(1)}x`;
+    });
+
+    toggleAtomsBtn.addEventListener('click', () => {
+      showAtomSymbols = !showAtomSymbols;
+      toggleAtomsBtn.textContent = showAtomSymbols ? '원소기호 ON' : '원소기호 OFF';
+      toggleAtomsBtn.classList.toggle('btn-active', showAtomSymbols);
+      toggleAtomsBtn.classList.toggle('text-slate-400', !showAtomSymbols);
+      atomSprites.forEach(s => {
+        s.visible = showAtomSymbols;
+      });
+    });
+
+    toggleLabelsBtn.addEventListener('click', () => {
+      showLabels = !showLabels;
+      toggleLabelsBtn.textContent = showLabels ? '분자명 ON' : '분자명 OFF';
+      toggleLabelsBtn.classList.toggle('btn-active', showLabels);
+      toggleLabelsBtn.classList.toggle('text-slate-400', !showLabels);
+    });
+
+    resetCamBtn.addEventListener('click', () => {
+      camera.position.copy(defaultCamPos);
+      controls.target.copy(defaultCamTarget);
+      controls.update();
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // =========================================================================
+    // 8. 메인 애니메이션 루프
+    // =========================================================================
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const elapsedTime = clock.getElapsedTime();
+
+      if (isPlaying) {
+        const step = delta * 0.065 * playbackSpeed;
+        progress += step;
+
+        if (stageMode === 'all') {
+          if (progress >= 1.0) progress = 0;
+        } else if (stageMode === '1') {
+          if (progress >= 0.335 || progress < 0) progress = 0.005;
+        } else if (stageMode === '2') {
+          if (progress >= 0.665 || progress < 0.34) progress = 0.345;
+        } else if (stageMode === '3') {
+          if (progress >= 0.995 || progress < 0.67) progress = 0.675;
+        }
+
+        timelineSlider.value = Math.floor(progress * 1000);
+      }
+
+      const currentStage = progress < 0.34 ? 1 : (progress < 0.67 ? 2 : 3);
+      updateInfoPanel(currentStage);
+      progressPercent.textContent = `${Math.round(progress * 100)}%`;
+
+      bgParticles.rotation.y = elapsedTime * 0.03;
+      updateSimulation(progress, elapsedTime);
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.onload = function () {
+      updateInfoPanel(1);
+      animate();
+    };
+  </script>
+</body>
+</html>

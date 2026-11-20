@@ -1,0 +1,761 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>광합성 전체 과정 시뮬레이션</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #07140d;
+  color: #efffed;
+  font-family: "Pretendard", Arial, sans-serif;
+}
+
+button {
+  cursor: pointer;
+  color: white;
+  font-weight: bold;
+  border: none;
+}
+
+.app {
+  max-width: 1450px;
+  margin: auto;
+  padding: 24px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.logo {
+  font-size: 30px;
+  font-weight: 900;
+  color: #a6ff71;
+}
+
+.subtitle {
+  color: #a0bca6;
+  margin-top: 8px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  background: #10281b;
+  border: 1px solid #275c38;
+  padding: 13px 18px;
+  border-radius: 15px;
+  transition: .25s;
+}
+
+.tab:hover {
+  background: #1e462c;
+}
+
+.tab.active {
+  background: #80e52e;
+  color: #10220d;
+  box-shadow: 0 0 20px #80e52e66;
+}
+
+.main {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+}
+
+.visual {
+  position: relative;
+  min-height: 560px;
+  overflow: hidden;
+  border-radius: 26px;
+  border: 1px solid #2d663d;
+  background:
+    radial-gradient(circle at 50% 50%, #285b32, #0b2113 65%, #06110a);
+  padding: 25px;
+}
+
+.scene-title {
+  font-size: 23px;
+  font-weight: bold;
+  color: #c3ff8a;
+}
+
+.scene-subtitle {
+  color: #9ab6a1;
+  margin-top: 8px;
+}
+
+.chloroplast {
+  position: absolute;
+  width: 70%;
+  height: 56%;
+  top: 23%;
+  left: 15%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #285c25, #17411b 70%, #102c14);
+  border: 8px solid #7cdd56;
+  box-shadow:
+    0 0 25px #7bff4c66,
+    inset 0 0 40px #b1ff7244;
+  transition: .5s;
+}
+
+.chloroplast::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border: 2px solid #c4ff8c66;
+  border-radius: 50%;
+}
+
+.stack {
+  position: absolute;
+  width: 120px;
+  left: 30%;
+  top: 30%;
+}
+
+.disc {
+  height: 24px;
+  margin: -3px 0;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #62bb30, #b3ff58, #4e9e25);
+  border: 1px solid #d6ff9c;
+  box-shadow: 0 3px 10px #0008;
+}
+
+.stack2 {
+  left: 55%;
+  top: 47%;
+  transform: scale(.75);
+}
+
+.label {
+  position: absolute;
+  padding: 8px 12px;
+  background: #06180de8;
+  border: 1px solid #76d649;
+  border-radius: 12px;
+  color: #d8ffd1;
+  font-size: 13px;
+  z-index: 4;
+}
+
+.label.grana {
+  top: 48%;
+  left: 7%;
+}
+
+.label.stroma {
+  right: 7%;
+  bottom: 13%;
+}
+
+.label.thylakoid {
+  left: 10%;
+  bottom: 15%;
+}
+
+.sun {
+  position: absolute;
+  top: 16%;
+  left: 4%;
+  font-size: 60px;
+  filter: drop-shadow(0 0 25px #ffdf49);
+  animation: glow 2s infinite alternate;
+}
+
+.water {
+  position: absolute;
+  bottom: 12%;
+  left: 4%;
+  font-size: 17px;
+  color: #68cfff;
+  text-shadow: 0 0 15px #3bb8ff;
+}
+
+.co2 {
+  position: absolute;
+  top: 15%;
+  right: 5%;
+  font-size: 18px;
+  color: #d4e1ff;
+  background: #3c4768;
+  border-radius: 30px;
+  padding: 10px 14px;
+}
+
+.products {
+  position: absolute;
+  top: 16%;
+  right: 5%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.product {
+  padding: 10px 15px;
+  border-radius: 15px;
+  font-weight: 900;
+  background: #112b1c;
+  border: 1px solid #60d95b;
+  opacity: .25;
+  transition: .5s;
+}
+
+.product.show {
+  opacity: 1;
+  box-shadow: 0 0 20px #6fff8066;
+}
+
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #ffe66a;
+  border-radius: 50%;
+  box-shadow: 0 0 15px #fff48b;
+  animation: moveParticle 3s linear infinite;
+}
+
+.electron {
+  background: #ffb42d;
+  box-shadow: 0 0 15px #ffb42d;
+}
+
+.oxygen {
+  background: #56d5ff;
+  box-shadow: 0 0 15px #56d5ff;
+}
+
+@keyframes moveParticle {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% {
+    transform: translate(300px, -100px);
+    opacity: 0;
+  }
+}
+
+@keyframes glow {
+  from { transform: scale(1); }
+  to { transform: scale(1.15); }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel {
+  background: #10251a;
+  border: 1px solid #285839;
+  border-radius: 22px;
+  padding: 22px;
+}
+
+.panel h2 {
+  color: #a6ff71;
+  font-size: 22px;
+  margin-top: 0;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  color: #c6d9c8;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.num {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #1d873e;
+  color: white;
+  font-weight: bold;
+}
+
+.step.active .num {
+  background: #a4ff53;
+  color: #15300d;
+}
+
+.step.active {
+  color: white;
+}
+
+.info {
+  line-height: 1.7;
+  color: #c1d6c3;
+  min-height: 90px;
+}
+
+.equation {
+  background: #08180e;
+  border-radius: 15px;
+  padding: 15px;
+  color: #a9ff7c;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.control-panel {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #285839;
+  border-radius: 22px;
+  background: #10251a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.progress-box {
+  color: #a6ff71;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.progress-track {
+  flex: 1;
+  min-width: 100px;
+  height: 10px;
+  border-radius: 20px;
+  background: #25432d;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #44c767, #c0ff60);
+  width: 20%;
+  transition: .4s;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.control {
+  padding: 13px 18px;
+  border-radius: 13px;
+  background: #1f4d2c;
+}
+
+.control.primary {
+  background: #65d32e;
+  color: #10240a;
+}
+
+.control:hover {
+  filter: brightness(1.15);
+}
+
+@media(max-width: 900px) {
+  .main {
+    grid-template-columns: 1fr;
+  }
+
+  .visual {
+    min-height: 480px;
+  }
+}
+
+@media(max-width: 600px) {
+  .app {
+    padding: 12px;
+  }
+
+  .visual {
+    min-height: 400px;
+  }
+
+  .chloroplast {
+    width: 80%;
+    left: 10%;
+    height: 48%;
+  }
+
+  .stack {
+    transform: scale(.7);
+    left: 18%;
+  }
+
+  .stack2 {
+    transform: scale(.55);
+    left: 47%;
+  }
+
+  .label {
+    font-size: 10px;
+  }
+
+  .sun {
+    font-size: 42px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header>
+  <div>
+    <div class="logo">🌱 광합성 시뮬레이션</div>
+    <div class="subtitle">빛으로 시작해 탄수화물이 만들어지는 과정</div>
+  </div>
+</header>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="main">
+
+  <div class="visual">
+
+    <div class="scene-title" id="sceneTitle"></div>
+    <div class="scene-subtitle" id="sceneSubtitle"></div>
+
+    <div class="sun" id="sun">☀️</div>
+    <div class="water" id="water">💧 H₂O 물</div>
+    <div class="co2" id="co2">CO₂</div>
+
+    <div class="chloroplast">
+      <div class="stack">
+        <div class="disc"></div>
+        <div class="disc"></div>
+        <div class="disc"></div>
+        <div class="disc"></div>
+        <div class="disc"></div>
+        <div class="disc"></div>
+        <div class="disc"></div>
+      </div>
+
+      <div class="stack stack2">
+        <div class="disc"></div>
+        <div class="disc"></div>
+        <div class="disc"></div>
+        <div class="disc"></div>
+        <div class="disc"></div>
+        <div class="disc"></div>
+      </div>
+    </div>
+
+    <div class="label grana" id="grana">그라나<br>(틸라코이드)</div>
+    <div class="label thylakoid" id="thylakoid">틸라코이드 막</div>
+    <div class="label stroma" id="stroma">스트로마</div>
+
+    <div class="products">
+      <div class="product" id="oxygen">O₂ 산소</div>
+      <div class="product" id="atp">⚡ ATP</div>
+      <div class="product" id="nadph">NADPH</div>
+      <div class="product" id="glucose">🍬 탄수화물</div>
+    </div>
+
+    <div class="particles" id="particles"></div>
+  </div>
+
+  <div class="sidebar">
+
+    <div class="panel">
+      <h2 id="panelTitle">광합성 단계</h2>
+      <div class="steps" id="steps"></div>
+    </div>
+
+    <div class="panel">
+      <h2>🔬 과정 설명</h2>
+      <div class="info" id="info"></div>
+    </div>
+
+    <div class="panel">
+      <h2>⚗️ 반응식 / 핵심 내용</h2>
+      <div class="equation" id="equation"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="control-panel">
+  <div class="progress-box" id="progressText">1 / 5</div>
+
+  <div class="progress-track">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div class="controls">
+    <button class="control" onclick="prevStep()">◀ 이전</button>
+    <button class="control primary" onclick="nextStep()">다음 단계 ▶</button>
+    <button class="control" onclick="togglePlay()" id="playBtn">▶ 자동 재생</button>
+    <button class="control" onclick="resetSimulation()">↻ 처음으로</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+
+const stages = [
+{
+  title: "1. 엽록체 구조",
+  subtitle: "광합성이 일어나는 장소 알아보기",
+  info: "엽록체는 식물 세포에 있는 세포 소기관입니다. 틸라코이드 막에는 빛을 흡수하는 엽록소와 광계가 존재하며, 스트로마에서는 캘빈 회로가 진행됩니다.",
+  equation: "엽록체 = 틸라코이드 + 스트로마",
+  active: [],
+  steps: [
+    "엽록체는 광합성이 일어나는 세포 소기관입니다.",
+    "틸라코이드 막에서는 빛을 이용한 반응이 일어납니다.",
+    "스트로마에서는 CO₂를 이용한 탄소 고정이 진행됩니다."
+  ]
+},
+{
+  title: "2. 명반응",
+  subtitle: "빛에너지를 화학 에너지로 전환",
+  info: "틸라코이드 막의 광계 II가 빛을 흡수합니다. 물이 분해되어 전자와 수소 이온이 만들어지고 산소가 방출됩니다. 전자는 전자 전달계를 지나 광계 I에 도달하며, 이 과정에서 ATP가 만들어지고 NADP⁺가 NADPH로 환원됩니다.",
+  equation: "빛 + H₂O → O₂ + ATP + NADPH (간략화)",
+  active: ["oxygen", "atp", "nadph"],
+  steps: [
+    "광계 II가 빛을 흡수합니다.",
+    "물이 분해되어 전자와 수소 이온이 생성됩니다.",
+    "전자 전달 과정에서 ATP가 생성됩니다.",
+    "광계 I에서 NADPH가 만들어집니다.",
+    "산소가 부산물로 방출됩니다."
+  ]
+},
+{
+  title: "3. CO₂ 고정",
+  subtitle: "대기 중 탄소를 유기물로 가져오기",
+  info: "캘빈 회로에서 CO₂는 RuBP(리불로스 이인산)와 결합합니다. 루비스코 효소의 작용으로 불안정한 6탄소 화합물이 만들어진 뒤 3탄소 화합물인 3-PGA 두 분자로 나뉩니다.",
+  equation: "CO₂ + RuBP → 3-PGA (탄소 고정)",
+  active: ["co2"],
+  steps: [
+    "CO₂가 잎을 통해 들어옵니다.",
+    "CO₂가 RuBP와 결합합니다.",
+    "루비스코 효소가 반응을 촉진합니다.",
+    "3-PGA가 생성됩니다."
+  ]
+},
+{
+  title: "4. 환원 및 RuBP 재생",
+  subtitle: "ATP와 NADPH를 이용해 G3P 만들기",
+  info: "명반응에서 생성된 ATP와 NADPH가 사용됩니다. 3-PGA는 환원되어 G3P가 됩니다. 일부 G3P는 탄수화물 합성에 사용되고 나머지는 ATP를 이용해 RuBP를 재생하여 캘빈 회로가 계속 진행되도록 합니다.",
+  equation: "3-PGA + ATP + NADPH → G3P + ADP + NADP⁺",
+  active: ["atp", "nadph"],
+  steps: [
+    "3-PGA에 ATP의 에너지가 전달됩니다.",
+    "NADPH가 전자와 수소를 제공합니다.",
+    "3탄소 화합물 G3P가 만들어집니다.",
+    "일부 G3P를 이용해 RuBP가 재생됩니다."
+  ]
+},
+{
+  title: "5. 탄수화물 합성",
+  subtitle: "광합성의 결과로 탄소 화합물 생성",
+  info: "캘빈 회로에서 만들어진 G3P 일부는 포도당과 같은 탄수화물 합성에 사용됩니다. 포도당은 식물의 생장와 호흡에 필요한 에너지원이며, 전분으로 저장되거나 다른 유기물 합성에 활용됩니다.",
+  equation: "G3P → 포도당 및 기타 탄수화물",
+  active: ["glucose"],
+  steps: [
+    "G3P가 캘빈 회로에서 생성됩니다.",
+    "G3P 일부가 회로 밖으로 나옵니다.",
+    "탄소 화합물들이 결합하여 탄수화물을 형성합니다.",
+    "생성된 당은 에너지와 생장에 사용되거나 저장됩니다."
+  ]
+}
+];
+
+let current = 0;
+let playing = false;
+let timer = null;
+
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+
+  tabs.innerHTML = stages.map((stage, i) => `
+    <button class="tab ${i === current ? "active" : ""}"
+      onclick="goToStep(${i})">
+      ${stage.title}
+    </button>
+  `).join("");
+}
+
+function renderSteps() {
+  const stage = stages[current];
+
+  document.getElementById("steps").innerHTML =
+    stage.steps.map((step, i) => `
+      <div class="step ${i === 0 ? "active" : ""}">
+        <div class="num">${i + 1}</div>
+        <div>${step}</div>
+      </div>
+    `).join("");
+}
+
+function createParticles() {
+  const container = document.getElementById("particles");
+  container.innerHTML = "";
+
+  if (current === 0) return;
+
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement("div");
+    p.className = "particle";
+
+    if (current === 2 || current === 3) {
+      p.style.background = "#79e8ff";
+      p.style.boxShadow = "0 0 14px #79e8ff";
+    }
+
+    if (current === 1 && i % 3 === 0) {
+      p.classList.add("oxygen");
+    } else if (current === 1) {
+      p.classList.add("electron");
+    }
+
+    p.style.left = (10 + Math.random() * 75) + "%";
+    p.style.top = (25 + Math.random() * 55) + "%";
+    p.style.animationDelay = (Math.random() * 2) + "s";
+
+    container.appendChild(p);
+  }
+}
+
+function updateProducts() {
+  ["oxygen", "atp", "nadph", "glucose"].forEach(id => {
+    document.getElementById(id).classList.remove("show");
+  });
+
+  stages[current].active.forEach(id => {
+    document.getElementById(id).classList.add("show");
+  });
+}
+
+function updateScreen() {
+  const stage = stages[current];
+
+  document.getElementById("sceneTitle").textContent = stage.title;
+  document.getElementById("sceneSubtitle").textContent = stage.subtitle;
+  document.getElementById("panelTitle").textContent = stage.title;
+  document.getElementById("info").textContent = stage.info;
+  document.getElementById("equation").textContent = stage.equation;
+  document.getElementById("progressText").textContent =
+    (current + 1) + " / " + stages.length;
+
+  document.getElementById("progressBar").style.width =
+    ((current + 1) / stages.length * 100) + "%";
+
+  document.getElementById("sun").style.display =
+    current === 1 ? "block" : "none";
+
+  document.getElementById("water").style.display =
+    current === 1 ? "block" : "none";
+
+  document.getElementById("co2").style.display =
+    current >= 2 && current <= 3 ? "block" : "none";
+
+  renderTabs();
+  renderSteps();
+  updateProducts();
+  createParticles();
+}
+
+function nextStep() {
+  current = (current + 1) % stages.length;
+  updateScreen();
+}
+
+function prevStep() {
+  current = (current - 1 + stages.length) % stages.length;
+  updateScreen();
+}
+
+function goToStep(index) {
+  current = index;
+  updateScreen();
+}
+
+function resetSimulation() {
+  stopPlay();
+  current = 0;
+  updateScreen();
+}
+
+function togglePlay() {
+  if (playing) {
+    stopPlay();
+  } else {
+    playing = true;
+    document.getElementById("playBtn").textContent = "⏸ 일시정지";
+
+    timer = setInterval(() => {
+      current++;
+
+      if (current >= stages.length) {
+        current = 0;
+      }
+
+      updateScreen();
+    }, 4000);
+  }
+}
+
+function stopPlay() {
+  playing = false;
+  clearInterval(timer);
+  timer = null;
+  document.getElementById("playBtn").textContent = "▶ 자동 재생";
+}
+
+updateScreen();
+
+</script>
+</body>
+</html>

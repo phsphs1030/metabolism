@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>광합성 시뮬레이션 – 명반응과 캘빈 회로</title>
+<style>
+:root{--bg:#060a17;--cd:#0e1530;--ln:#223059;--tx:#e9efff;--mu:#93a3cc;--lt:#ffd23f;--bl:#4cc9f0;--gr:#3ddc97;--pu:#b388ff;--or:#ff8a3d;--rd:#ff5d73}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 15% -10%,#14305a55,transparent),radial-gradient(900px 500px at 100% 0,#3a1a6a44,transparent),var(--bg);color:var(--tx);font-family:Pretendard,'Noto Sans KR','Malgun Gothic',system-ui,sans-serif;line-height:1.6}
+header{padding:28px 20px 8px;text-align:center}
+h1{margin:0;font-size:clamp(26px,5vw,44px);letter-spacing:-.02em;background:linear-gradient(90deg,var(--lt),var(--gr),var(--bl),var(--pu));-webkit-background-clip:text;background-clip:text;color:transparent}
+header p{margin:6px 0 0;color:var(--mu)}
+nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:16px}
+nav button{background:var(--cd);color:var(--mu);border:1px solid var(--ln);padding:10px 20px;border-radius:99px;font:600 15px inherit;font-family:inherit;cursor:pointer;transition:.25s}
+nav button.on{color:#06101f;background:linear-gradient(90deg,var(--lt),var(--gr));border-color:transparent;box-shadow:0 0 22px #3ddc9755}
+nav button:focus-visible,.st button:focus-visible,.ctl button:focus-visible{outline:2px solid var(--bl);outline-offset:2px}
+main{max-width:1200px;margin:auto;padding:0 16px 40px}
+.tab{display:none}.tab.on{display:block}
+.grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:16px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:linear-gradient(180deg,#121b3b,#0b1129);border:1px solid var(--ln);border-radius:18px;padding:16px;margin-bottom:16px}
+.card h3{margin:0 0 8px;font-size:17px}
+svg{width:100%;height:auto;display:block;border-radius:12px}
+.st{display:flex;flex-direction:column;gap:6px}
+.st button,.ctl button{text-align:left;background:#0a1026;color:var(--tx);border:1px solid var(--ln);border-radius:12px;padding:9px 12px;font:500 14px inherit;font-family:inherit;cursor:pointer;transition:.2s}
+.st button i{font-style:normal;display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;background:var(--ln);margin-right:8px;font-size:12px}
+.st button.on{border-color:var(--lt);background:#1b2347}.st button.on i{background:var(--lt);color:#111}
+.ctl{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.ctl button{flex:1;text-align:center}.ctl button.on{border-color:var(--gr);background:#12332f}
+.dsc{min-height:96px;font-size:14.5px;color:#cfd9f7;background:#0a1026;border-radius:12px;padding:12px;border-left:4px solid var(--lt)}
+.dsc b{color:var(--lt)}
+.stat{display:flex;gap:8px;margin-top:10px}.stat div{flex:1;background:#0a1026;border-radius:12px;padding:8px;text-align:center;font-size:12px;color:var(--mu)}
+.stat b{display:block;font-size:24px;color:var(--lt)}.stat div:nth-child(2) b{color:var(--pu)}
+.bar{height:12px;background:#0a1026;border-radius:9px;overflow:hidden;margin:4px 0 10px}.bar span{display:block;height:100%;width:50%;transition:width .8s;border-radius:9px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border:1px solid var(--ln);padding:8px 10px;text-align:center}th{background:#16224a;color:var(--lt)}td:first-child{background:#0d1531;color:var(--bl);font-weight:600}
+.wrap{overflow-x:auto}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.kv div{background:#0a1026;border-radius:14px;padding:12px;font-size:14px;border-top:3px solid var(--c,var(--bl))}.kv b{color:var(--c,var(--bl))}
+.eq{font-size:clamp(16px,3vw,24px);text-align:center;padding:14px;border-radius:14px;background:linear-gradient(90deg,#3a2c0a,#0f3a2c,#0c2a4a);border:1px solid var(--ln)}
+input[type=range]{width:100%;accent-color:var(--gr)}
+.g{transition:opacity .4s}
+svg:not(.all) .g{opacity:.2}svg:not(.all) .g.hl{opacity:1;filter:url(#glow)}
+.cyc .nonc{opacity:.1!important}
+.ph{fill:none;stroke:var(--lt);stroke-width:3;stroke-dasharray:6 5;animation:fl 1s linear infinite}
+@keyframes fl{to{stroke-dashoffset:-22}}
+.arc{fill:none;stroke-width:10;stroke-linecap:round;stroke-dasharray:16 10;animation:fl 1.2s linear infinite}
+.spin{transform-origin:250px 220px;animation:sp 14s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.bub{animation:bb 3s ease-in infinite;fill:#9be7ff}@keyframes bb{0%{opacity:0;transform:translate(0,0)}20%{opacity:1}100%{opacity:0;transform:translate(-50px,90px)}}
+.flow{fill:none;stroke-width:3;stroke-dasharray:8 7;animation:fl 1s linear infinite}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+text{font-family:inherit}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<linearGradient id="gs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f4a35"/><stop offset="1" stop-color="#0a2a30"/></linearGradient>
+<linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d1560"/><stop offset="1" stop-color="#140a2e"/></linearGradient>
+<radialGradient id="gc"><stop offset="0" stop-color="#1b5a3d"/><stop offset="1" stop-color="#0a2a22"/></radialGradient></defs></svg>
+
+<header><h1>광합성 시뮬레이션</h1><p>빛에너지가 포도당의 화학 에너지로 바뀌는 과정 · 명반응과 암반응(캘빈 회로)</p></header>
+<nav><button class="on" data-t="t0">전체 개요</button><button data-t="t1">명반응</button><button data-t="t2">암반응 (캘빈 회로)</button><button data-t="t3">비교·정리</button></nav>
+<main>
+
+<section class="tab on" id="t0">
+<div class="card"><div class="eq">6CO₂ + 12H₂O + 빛에너지 → C₆H₁₂O₆ + 6O₂ + 6H₂O</div></div>
+<div class="card"><svg viewBox="0 0 900 400" role="img" aria-label="엽록체에서 명반응과 암반응의 물질 흐름">
+<ellipse cx="450" cy="215" rx="430" ry="165" fill="#0b3a2c" stroke="var(--gr)" stroke-width="3"/><ellipse cx="450" cy="215" rx="414" ry="150" fill="url(#gc)" stroke="#2a8a62" stroke-dasharray="3 5"/>
+<text x="450" y="75" text-anchor="middle" fill="#7fe3b8" font-size="14">엽록체 (외막 · 내막)</text>
+<g><rect x="70" y="120" width="260" height="190" rx="22" fill="#2a1260" stroke="var(--pu)" stroke-width="2"/><text x="200" y="150" text-anchor="middle" fill="var(--pu)" font-weight="700" font-size="18">명반응</text><text x="200" y="172" text-anchor="middle" fill="#cdbbff" font-size="13">그라나 (타이라코이드 막)</text>
+<g fill="#4b2a9a" stroke="#b388ff"><rect x="120" y="195" width="160" height="16" rx="8"/><rect x="120" y="217" width="160" height="16" rx="8"/><rect x="120" y="239" width="160" height="16" rx="8"/><rect x="120" y="261" width="160" height="16" rx="8"/></g></g>
+<g><rect x="520" y="120" width="310" height="190" rx="22" fill="#0e3550" stroke="var(--bl)" stroke-width="2"/><text x="675" y="150" text-anchor="middle" fill="var(--bl)" font-weight="700" font-size="18">암반응 (캘빈 회로)</text><text x="675" y="172" text-anchor="middle" fill="#a9e6fa" font-size="13">스트로마</text>
+<circle cx="675" cy="240" r="55" fill="none" stroke="var(--gr)" stroke-width="8" stroke-dasharray="16 9" class="flow" style="stroke:var(--gr)"/><text x="675" y="237" text-anchor="middle" font-size="13" fill="#fff">CO₂ 고정</text><text x="675" y="255" text-anchor="middle" font-size="13" fill="#fff">포도당 합성</text></g>
+<path class="flow" d="M330 215H520" style="stroke:var(--lt)"/><text x="425" y="196" text-anchor="middle" fill="var(--lt)" font-size="14" font-weight="700">ATP · NADPH</text>
+<path class="flow" d="M520 262H330" style="stroke:var(--mu)"/><text x="425" y="285" text-anchor="middle" fill="var(--mu)" font-size="13">ADP+Pᵢ · NADP⁺</text>
+<path class="ph" d="M60 10 q12 14 0 28 t0 28 t0 28 t20 20"/><text x="30" y="30" fill="var(--lt)" font-size="14" font-weight="700">빛</text>
+<path class="flow" d="M10 190H70" style="stroke:var(--bl)"/><text x="10" y="180" fill="var(--bl)" font-size="14" font-weight="700">H₂O</text>
+<path class="flow" d="M70 280H10" style="stroke:#9be7ff"/><text x="10" y="300" fill="#9be7ff" font-size="14" font-weight="700">O₂ 방출</text>
+<path class="flow" d="M610 18V120" style="stroke:var(--or)"/><text x="620" y="30" fill="var(--or)" font-size="14" font-weight="700">CO₂</text>
+<path class="flow" d="M830 240H890" style="stroke:var(--gr)"/><text x="840" y="228" fill="var(--gr)" font-size="14" font-weight="700">포도당</text>
+</svg></div>
+<div class="kv">
+<div style="--c:var(--pu)"><b>명반응</b><br>빛E → ATP·NADPH, 물 분해로 O₂ 발생</div>
+<div style="--c:var(--bl)"><b>암반응 (탄소 고정 반응)</b><br>ATP·NADPH로 CO₂를 환원해 포도당 합성</div>
+<div style="--c:var(--lt)"><b>동화작용</b><br>작은 분자 → 포도당, 에너지 저장</div>
+<div style="--c:var(--gr)"><b>알아두면 좋은 점</b><br>청자색·적색광 흡수, 녹색광 반사 → 잎이 초록색</div>
+</div></section>
+
+<section class="tab" id="t1"><div class="grid"><div>
+<div class="card"><svg id="LS" class="all" viewBox="0 0 900 440" role="img" aria-label="명반응: 타이라코이드 막의 전자 흐름">
+<rect width="900" height="170" fill="url(#gs)"/><rect y="220" width="900" height="220" fill="url(#gl)"/><rect y="170" width="900" height="50" fill="#2b1d0e"/>
+<path d="M0 176H900M0 214H900" stroke="#ffb86b" stroke-width="9" stroke-dasharray="0 11" stroke-linecap="round" opacity=".75"/>
+<text x="14" y="26" fill="#7fe3b8" font-size="15" font-weight="700">스트로마</text><text x="14" y="428" fill="#c9b2ff" font-size="15" font-weight="700">타이라코이드 내부</text><text x="14" y="200" fill="#ffd9a8" font-size="12">타이라코이드 막</text>
+<g class="g" data-s="1 4"><path class="ph" d="M140 6q12 14 0 28t0 28t0 28t0 40"/><path class="ph" d="M565 6q12 14 0 28t0 28t0 28t0 40"/><text x="152" y="24" fill="var(--lt)" font-size="13">빛에너지</text></g>
+<g class="g nonc" data-s="1 2"><rect x="80" y="145" width="130" height="100" rx="18" fill="#12407e" stroke="var(--bl)" stroke-width="2"/><g fill="#4cc9f0"><circle cx="100" cy="165" r="7"/><circle cx="120" cy="158" r="7"/><circle cx="170" cy="158" r="7"/><circle cx="190" cy="165" r="7"/><circle cx="100" cy="225" r="7"/><circle cx="190" cy="225" r="7"/></g><circle cx="145" cy="200" r="19" fill="var(--gr)"/><text x="145" y="205" text-anchor="middle" font-size="12" font-weight="700" fill="#041">P680</text><text x="145" y="265" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">광계 Ⅱ</text></g>
+<g class="g nonc" data-s="2"><text x="30" y="318" fill="#9be7ff" font-size="15" font-weight="700">H₂O → ½O₂ + 2H⁺ + 2e⁻</text><text x="30" y="338" fill="var(--mu)" font-size="12">물의 광분해 (효소 작용)</text><circle class="bub" cx="95" cy="262" r="6"/><circle class="bub" cx="115" cy="270" r="4" style="animation-delay:1s"/><circle class="bub" cx="80" cy="275" r="5" style="animation-delay:2s"/></g>
+<g class="g" data-s="3 6"><rect x="300" y="150" width="75" height="95" rx="16" fill="#6a2fb0" stroke="var(--pu)" stroke-width="2"/><text x="337" y="200" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">전자</text><text x="337" y="218" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">전달계</text><text x="337" y="265" text-anchor="middle" fill="#fff" font-size="12">H⁺ 능동수송</text><path d="M337 248v22" stroke="var(--rd)" stroke-width="3" marker-end="none"/></g>
+<g class="g" data-s="4 5"><rect x="500" y="145" width="130" height="100" rx="18" fill="#7a3510" stroke="var(--or)" stroke-width="2"/><g fill="#ff8a3d"><circle cx="520" cy="165" r="7"/><circle cx="540" cy="158" r="7"/><circle cx="590" cy="158" r="7"/><circle cx="610" cy="165" r="7"/></g><circle cx="565" cy="200" r="19" fill="var(--lt)"/><text x="565" y="205" text-anchor="middle" font-size="12" font-weight="700" fill="#210">P700</text><text x="565" y="265" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">광계 Ⅰ</text></g>
+<g class="g nonc" data-s="5"><rect x="560" y="55" width="190" height="44" rx="12" fill="#2d1a4d" stroke="var(--pu)" stroke-width="2"/><text x="655" y="82" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">NADP⁺ + 2e⁻ + H⁺ → NADPH</text></g>
+<g class="g" data-s="6"><rect x="815" y="170" width="30" height="50" fill="var(--or)"/><circle cx="830" cy="150" r="30" fill="#c25a1a" stroke="#ffb86b" stroke-width="2"/><text x="830" y="154" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">ATP</text><text x="830" y="106" text-anchor="middle" fill="var(--lt)" font-size="13" font-weight="700">ADP+Pᵢ → ATP</text><text x="830" y="262" text-anchor="middle" fill="var(--mu)" font-size="12">ATP 합성효소</text></g>
+<path id="pn" d="M125 290L140 215L195 185Q260 165 335 195L540 205L590 185L655 100" fill="none" stroke="#fff" stroke-opacity=".12" stroke-dasharray="4 6"/>
+<path id="pc" d="M540 205L590 185C610 110 420 110 335 185L540 205" fill="none" stroke="#fff" stroke-opacity=".0"/>
+<g id="hp"></g><g id="el"></g>
+<text id="fx" x="830" y="60" text-anchor="middle" fill="var(--lt)" font-size="20" font-weight="700" opacity="0">+ATP</text>
+</svg></div>
+<div class="card"><h3>광계의 구조 · 빛에너지가 반응 중심으로 모인다</h3><svg viewBox="0 0 600 210" role="img" aria-label="광계 구조"><ellipse cx="270" cy="100" rx="200" ry="88" fill="#12407e33" stroke="var(--bl)" stroke-dasharray="4 5"/><g id="ant"></g><circle cx="270" cy="100" r="26" fill="var(--gr)"/><text x="270" y="97" text-anchor="middle" font-size="11" font-weight="700" fill="#041">반응 중심</text><text x="270" y="110" text-anchor="middle" font-size="10" fill="#041">엽록소 a 한 쌍</text><path class="flow" d="M298 100H470" style="stroke:var(--lt)"/><text x="385" y="90" text-anchor="middle" font-size="12" fill="var(--lt)">e⁻</text><rect x="470" y="76" width="110" height="48" rx="10" fill="#3a2c0a" stroke="var(--lt)" stroke-width="2"/><text x="525" y="105" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">1차 전자수용체</text><g font-size="12"><text x="20" y="200" fill="var(--bl)">● 엽록소 a</text><text x="110" y="200" fill="var(--gr)">● 엽록소 b</text><text x="200" y="200" fill="var(--or)">● 카로티노이드</text><text x="330" y="200" fill="var(--lt)">P₇₀₀(700nm) · P₆₈₀(680nm)</text></g></svg></div>
+</div>
+<div>
+<div class="card"><h3>전자 흐름 선택</h3><div class="ctl"><button class="on" id="mN">비순환적</button><button id="mC">순환적</button></div><div class="dsc" id="mI"></div></div>
+<div class="card"><h3>단계별 살펴보기</h3><div class="st" id="LL"></div><div class="ctl" style="margin-top:8px"><button id="LA">▶ 자동 재생</button><button id="LR">전체 보기</button></div><div class="dsc" id="LD" style="margin-top:8px"></div></div>
+<div class="card"><h3>실시간 현황</h3><div style="font-size:13px;color:var(--mu)">타이라코이드 내부 H⁺ 농도 (높을수록 pH↓)</div><div class="bar"><span id="gH" style="background:linear-gradient(90deg,var(--gr),var(--rd))"></span></div>
+<div class="stat"><div><b id="cA">0</b>ATP 합성</div><div><b id="cN">0</b>NADPH 생성</div></div></div>
+</div></div></section>
+
+<section class="tab" id="t2"><div class="grid"><div>
+<div class="card"><svg id="CS" class="all" viewBox="0 0 520 440" role="img" aria-label="캘빈 회로">
+<circle cx="250" cy="220" r="150" fill="#0a2a22" opacity=".6"/><circle cx="250" cy="220" r="48" fill="#0c3a30" stroke="var(--gr)"/><text x="250" y="216" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">캘빈 회로</text><text x="250" y="234" text-anchor="middle" fill="var(--mu)" font-size="11">스트로마</text>
+<path class="arc g" data-s="1" style="stroke:var(--lt)" d="M120 295A150 150 0 0 1 250 70"/>
+<path class="arc g" data-s="2" style="stroke:var(--bl)" d="M250 70A150 150 0 0 1 380 295"/>
+<path class="arc g" data-s="3" style="stroke:var(--gr)" d="M380 295A150 150 0 0 1 120 295"/>
+<g class="spin"><circle cx="250" cy="70" r="6" fill="#fff"/><circle cx="380" cy="295" r="6" fill="#fff"/><circle cx="120" cy="295" r="6" fill="#fff"/></g>
+<g class="g" data-s="1"><rect x="30" y="288" width="180" height="50" rx="12" fill="#3a2c0a" stroke="var(--lt)" stroke-width="2"/><text x="120" y="308" text-anchor="middle" fill="var(--lt)" font-weight="700" font-size="14">RuBP (C₅) ×3</text><text x="120" y="327" text-anchor="middle" fill="#ffe9a0" font-size="11">리불로스 1,5-이인산</text>
+<path d="M18 130L88 205" stroke="var(--or)" stroke-width="3" class="flow" style="stroke:var(--or)"/><text x="14" y="118" fill="var(--or)" font-size="14" font-weight="700">CO₂ ×3 (C₁)</text><text x="14" y="150" fill="#ffb98a" font-size="11" x2="">루비스코가 촉매</text></g>
+<g class="g" data-s="1 2"><rect x="165" y="30" width="170" height="50" rx="12" fill="#0c2e4a" stroke="var(--bl)" stroke-width="2"/><text x="250" y="50" text-anchor="middle" fill="var(--bl)" font-weight="700" font-size="14">3PG (C₃) ×6</text><text x="250" y="68" text-anchor="middle" fill="#a9e6fa" font-size="11">3-인산글리세르산</text></g>
+<g class="g" data-s="2"><text x="450" y="130" text-anchor="middle" fill="var(--bl)" font-size="12" font-weight="700">6ATP → 6ADP</text><text x="450" y="148" text-anchor="middle" fill="var(--pu)" font-size="12" font-weight="700">6NADPH → 6NADP⁺ + 6H⁺</text><text x="450" y="166" text-anchor="middle" fill="#cfd9f7" font-size="11">3PG → BPGA(C₃) → PGAL(C₃)</text></g>
+<g class="g" data-s="2 3 4"><rect x="320" y="288" width="180" height="50" rx="12" fill="#0f3a2c" stroke="var(--gr)" stroke-width="2"/><text x="410" y="308" text-anchor="middle" fill="var(--gr)" font-weight="700" font-size="14">PGAL (C₃) ×6</text><text x="410" y="327" text-anchor="middle" fill="#a8f0cf" font-size="11">포스포글리세르알데하이드</text></g>
+<g class="g" data-s="4"><path class="flow" d="M460 340L500 400" style="stroke:var(--lt)"/><text x="500" y="380" text-anchor="end" fill="var(--lt)" font-size="13" font-weight="700">PGAL ×1 방출</text><text x="500" y="418" text-anchor="end" fill="#ffe9a0" font-size="11">2 PGAL → 포도당 1분자</text></g>
+<g class="g" data-s="3"><text x="250" y="380" text-anchor="middle" fill="var(--gr)" font-size="12" font-weight="700">3ATP → 3ADP</text><text x="250" y="398" text-anchor="middle" fill="#cfd9f7" font-size="11">PGAL ×5 → RuBP ×3 (C₅)</text></g>
+</svg></div>
+<div class="card"><h3>탄소 원자 추적 (C 18개)</h3><div id="cd"></div></div>
+<div class="card"><h3>포도당 1분자를 만들려면? (CO₂ 고정 횟수)</h3><input type="range" id="sl" min="1" max="6" value="6" aria-label="고정한 CO₂ 분자 수"><div class="stat"><div><b id="sC">6</b>CO₂</div><div><b id="sN">12</b>NADPH</div><div><b id="sA">18</b>ATP</div><div><b id="sG">1</b>포도당</div></div>
+<p style="font-size:13px;color:var(--mu);margin:8px 0 0">CO₂ 1분자당 ATP 3, NADPH 2</p></div>
+</div>
+<div>
+<div class="card"><h3>단계별 살펴보기</h3><div class="st" id="CL"></div><div class="ctl" style="margin-top:8px"><button id="CA">▶ 자동 재생</button><button id="CR">전체 보기</button></div><div class="dsc" id="CD" style="margin-top:8px"></div></div>
+<div class="card"><h3>조건을 바꾸면? (일시적 농도 변화)</h3><div class="ctl"><button class="on" data-k="0">정상</button><button data-k="1">CO₂ 차단</button><button data-k="2">빛 차단</button></div>
+<div style="font-size:13px;color:var(--bl)">3PG 농도</div><div class="bar"><span id="b1" style="background:var(--bl)"></span></div><div style="font-size:13px;color:var(--lt)">RuBP 농도</div><div class="bar"><span id="b2" style="background:var(--lt)"></span></div><div class="dsc" id="cdsc" style="border-color:var(--gr)"></div></div>
+</div></div></section>
+
+<section class="tab" id="t3">
+<div class="card"><h3>비순환적 전자흐름 vs 순환적 전자흐름</h3><div class="wrap"><table><tr><th>구분</th><th>비순환적</th><th>순환적</th></tr>
+<tr><td>전자의 이동</td><td>물 → 광계 Ⅱ(P₆₈₀) → 전자전달계 → 광계 Ⅰ(P₇₀₀) → 전자전달계 → NADP⁺</td><td>광계 Ⅰ(P₇₀₀) → 전자전달계 → 광계 Ⅰ(P₇₀₀)</td></tr>
+<tr><td>최초 전자공여체</td><td>물(H₂O)</td><td>광계 Ⅰ(P₇₀₀)</td></tr><tr><td>최종 전자수용체</td><td>NADP⁺</td><td>광계 Ⅰ(P₇₀₀)</td></tr>
+<tr><td>관여하는 광계</td><td>광계 Ⅰ, 광계 Ⅱ</td><td>광계 Ⅰ</td></tr><tr><td>물의 광분해</td><td>일어남</td><td>일어나지 않음</td></tr><tr><td>광인산화</td><td>일어남</td><td>일어남</td></tr>
+<tr><td>생성물</td><td>NADPH, ATP, O₂</td><td>ATP</td></tr></table></div>
+<h3 style="margin-top:14px">포도당 1분자에 필요한 양 vs 명반응 생산량</h3><div style="font-size:13px;color:var(--lt)">ATP 필요 18</div><div class="bar" style="height:20px"><span style="width:100%;background:var(--lt)"></span></div>
+<div style="font-size:13px;color:var(--bl)">ATP 생산: 비순환 12 + 순환(보충) 6</div><div class="bar" style="height:20px"><span style="width:67%;float:left;background:var(--bl);border-radius:0"></span><span style="width:33%;float:left;background:var(--or);border-radius:0"></span></div>
+<div style="font-size:13px;color:var(--pu)">NADPH 필요 12 = 비순환 생산 12</div><div class="bar" style="height:20px"><span style="width:67%;background:var(--pu)"></span></div></div>
+<div class="card"><h3>화학삼투에 의한 ATP 합성</h3><div class="kv">
+<div style="--c:var(--rd)"><b>H⁺ 농도 기울기</b><br>H⁺ 능동수송 + 물 분해 → 내부 H⁺↑ (pH↓)</div>
+<div style="--c:var(--or)"><b>ATP 합성</b><br>H⁺ 확산 → ATP 합성효소 → ATP (광인산화)</div></div></div>
+<div class="card"><h3>세포호흡과 광합성 비교</h3><div class="wrap"><table><tr><th>구분</th><th>세포호흡</th><th>광합성</th></tr>
+<tr><td>물질대사</td><td>이화작용</td><td>동화작용</td></tr><tr><td>일어나는 장소</td><td>세포질, 미토콘드리아</td><td>엽록체</td></tr><tr><td>반응물 → 생성물</td><td>C₆H₁₂O₆, O₂ → CO₂, H₂O</td><td>CO₂, H₂O → C₆H₁₂O₆, O₂</td></tr>
+<tr><td>에너지 전환</td><td>포도당의 화학 E → ATP의 화학 E</td><td>빛E → ATP·NADPH → 포도당의 화학 E</td></tr><tr><td>전자운반체</td><td>NAD⁺, FAD → NADH, FADH₂</td><td>NADP⁺ → NADPH</td></tr>
+<tr><td>최종 전자수용체</td><td>O₂</td><td>NADP⁺</td></tr><tr><td>H⁺ 능동수송 방향</td><td>기질 → 막 사이 공간</td><td>스트로마 → 타이라코이드 내부</td></tr><tr><td>H⁺ 확산 방향</td><td>막 사이 공간 → 기질</td><td>타이라코이드 내부 → 스트로마</td></tr>
+<tr><td>ATP 합성 장소</td><td>미토콘드리아 기질</td><td>엽록체 스트로마</td></tr><tr><td>ATP 합성 방식</td><td>산화적 인산화</td><td>광인산화</td></tr></table></div></div>
+</section>
+</main>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],NS='http://www.w3.org/2000/svg';
+$$('nav button').forEach(b=>b.onclick=()=>{$$('nav button').forEach(x=>x.classList.toggle('on',x==b));$$('.tab').forEach(t=>t.classList.toggle('on',t.id==b.dataset.t))});
+function steps(svg,list,desc,S,intro,play,reset){
+ let tm=0,cur=-1;
+ const sel=i=>{cur=i;svg.classList.toggle('all',i<0);svg.querySelectorAll('[data-s]').forEach(e=>e.classList.toggle('hl',i>=0&&e.dataset.s.split(' ').includes(''+(i+1))));[...list.children].forEach((b,j)=>b.classList.toggle('on',j==i));desc.innerHTML=i<0?intro:'<b>'+S[i][0]+'</b><br>'+S[i][1]};
+ S.forEach((s,i)=>{const b=document.createElement('button');b.innerHTML='<i>'+(i+1)+'</i>'+s[0];b.onclick=()=>{stop();sel(i)};list.append(b)});
+ const stop=()=>{clearInterval(tm);tm=0;play.textContent='▶ 자동 재생'};
+ play.onclick=()=>{if(tm)return stop();play.textContent='❚❚ 정지';sel((cur+1)%S.length);tm=setInterval(()=>sel((cur+1)%S.length),4500)};
+ reset.onclick=()=>{stop();sel(-1)};sel(-1);
+}
+/* 명반응 */
+const LS=$('#LS'),pn=$('#pn'),pc=$('#pc'),hp=$('#hp'),el=$('#el'),fx=$('#fx');
+steps(LS,$('#LL'),$('#LD'),[
+['광계 Ⅱ가 빛을 흡수','안테나 색소가 모은 빛에너지로 P₆₈₀이 고에너지 전자를 방출, 1차 전자수용체로 전달.'],
+['물의 광분해','산화된 P₆₈₀이 물에서 전자를 받아 환원. O₂ 발생, H⁺은 내부에 축적.'],
+['전자전달계와 H⁺ 수송','전자가 에너지를 방출하며 이동, 그 에너지로 H⁺을 스트로마 → 내부로 능동수송.'],
+['광계 Ⅰ이 빛을 흡수','P₇₀₀이 빛을 받아 전자를 방출, 광계 Ⅱ에서 온 전자로 환원.'],
+['NADPH 생성','전자가 NADP⁺에 전달, H⁺과 결합해 NADPH로 환원.'],
+['화학삼투로 ATP 합성','H⁺이 ATP 합성효소로 확산되며 ADP + Pᵢ → ATP (광인산화).']
+],'노란 구슬: 전자 · 붉은 구슬: H⁺',$('#LA'),$('#LR'));
+let mode='n',atp=0,nad=0,hs=[],lastT=0,sp=0,sp2=0,prev=[];
+const E=[...Array(6)].map((_,i)=>{const c=document.createElementNS(NS,'circle');c.setAttribute('r',5.5);c.setAttribute('fill','#ffd23f');c.setAttribute('filter','url(#glow)');el.append(c);prev.push(0);return c});
+const INFO={n:'<b>비순환적</b><br>물 → 광계 Ⅱ → 광계 Ⅰ → NADP⁺<br>생성: NADPH, ATP, O₂',c:'<b>순환적</b><br>광계 Ⅰ → 전자전달계 → 광계 Ⅰ<br>생성: ATP만'};
+function setMode(m){mode=m;LS.classList.toggle('cyc',m=='c');$('#mN').classList.toggle('on',m=='n');$('#mC').classList.toggle('on',m=='c');$('#mI').innerHTML=INFO[m];hs.forEach(h=>h.c.remove());hs=[];atp=nad=0}
+$('#mN').onclick=()=>setMode('n');$('#mC').onclick=()=>setMode('c');setMode('n');
+function spawn(x,y){const c=document.createElementNS(NS,'circle');c.setAttribute('r',6);c.setAttribute('fill','#ff5d73');c.setAttribute('filter','url(#glow)');hp.append(c);hs.push({c,x,y,t:0})}
+function frame(ts){const dt=Math.min(50,ts-lastT||16);lastT=ts;
+ const p=mode=='n'?pn:pc,L=p.getTotalLength();
+ E.forEach((e,i)=>{const f=(ts/7000+i/E.length)%1,q=p.getPointAtLength(f*L);e.setAttribute('cx',q.x);e.setAttribute('cy',q.y);if(f<prev[i]&&mode=='n')nad++;prev[i]=f});
+ sp+=dt;sp2+=dt;if(sp>500){sp=0;spawn(325+Math.random()*30,255)}
+ if(mode=='n'&&sp2>1000){sp2=0;spawn(110+Math.random()*60,260)}
+ let n=0;hs=hs.filter(h=>{h.t+=dt/3200;const u=h.t;if(u>=1.25){h.c.remove();atp++;fx.style.opacity=1;setTimeout(()=>fx.style.opacity=0,350);return false}
+  let x,y;if(u<1){const k=u*u*(3-2*u);x=h.x+(830-h.x)*k+Math.sin(u*14+h.x)*6;y=h.y+(240-h.y)*k+Math.cos(u*11)*8;n++}else{x=830;y=240-(u-1)/.25*140}
+  h.c.setAttribute('cx',x);h.c.setAttribute('cy',y);return true});
+ $('#gH').style.width=Math.min(100,n*9)+'%';$('#cA').textContent=atp;$('#cN').textContent=Math.floor(nad/1);
+ requestAnimationFrame(frame)}
+if(matchMedia('(prefers-reduced-motion:reduce)').matches){$('#cA').textContent='–'}else requestAnimationFrame(frame);
+/* 캘빈 회로 */
+steps($('#CS'),$('#CL'),$('#CD'),[
+['탄소 고정','CO₂ 3분자가 루비스코의 촉매로 RuBP(C₅) 3분자와 결합, 3PG(C₃) 6분자가 된다.'],
+['3PG 환원','ATP 6, NADPH 6 사용: 3PG → BPGA → PGAL 6분자.'],
+['RuBP 재생','PGAL 5분자가 ATP 3분자를 써서 RuBP 3분자로 재생.'],
+['PGAL 방출과 포도당 합성','PGAL 1분자 방출. PGAL 2분자 = 포도당 1분자 → 6회전 필요.']
+],'세 단계를 눌러 확인하세요.',$('#CA'),$('#CR'));
+const sl=$('#sl');sl.oninput=()=>{const n=+sl.value;$('#sC').textContent=n;$('#sN').textContent=2*n;$('#sA').textContent=3*n;$('#sG').textContent=n==6?1:(n/6).toFixed(2).replace(/0+$/,'')};
+const CD=[[50,50,'3PG · RuBP 농도 일정'],[15,88,'RuBP 소비 안 됨 → RuBP↑, 3PG↓'],[88,15,'ATP·NADPH 공급 끊김 → 3PG↑, RuBP↓']];
+$$('[data-k]').forEach(b=>b.onclick=()=>{$$('[data-k]').forEach(x=>x.classList.toggle('on',x==b));const d=CD[b.dataset.k];$('#b1').style.width=d[0]+'%';$('#b2').style.width=d[1]+'%';$('#cdsc').textContent=d[2]});
+$('#cdsc').textContent=CD[0][2];
+
+(()=>{const A=$('#ant'),C=['#4cc9f0','#3ddc97','#ff8a3d'];for(let i=0;i<14;i++){const a=i/14*6.283,x=270+Math.cos(a)*(105+(i%2)*28),y=100+Math.sin(a)*(52+(i%2)*14);
+const c=document.createElementNS(NS,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',8);c.setAttribute('fill',C[i%3]);A.append(c);
+const d=document.createElementNS(NS,'circle');d.setAttribute('r',3.5);d.setAttribute('fill','#ffd23f');d.innerHTML='<animateMotion dur="'+(1.6+i%3*.4)+'s" begin="'+i*.15+'s" repeatCount="indefinite" path="M'+x+' '+y+' L270 100"/>';A.append(d)}
+const R=[['CO₂ 3 + RuBP 3',[[3,'#ff8a3d'],[15,'#ffd23f']]],['3PG 6',[[18,'#4cc9f0']]],['PGAL 6',[[18,'#3ddc97']]],['방출 1 · RuBP로 재생 5→3',[[3,'#b388ff'],[15,'#ffd23f']]]];
+$('#cd').innerHTML=R.map(r=>'<div style="display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px;color:var(--mu)"><span style="width:130px">'+r[0]+'</span><span style="display:flex;flex-wrap:wrap;gap:3px">'+r[1].map(g=>'<i style="display:inline-flex;gap:3px;padding:2px 5px;border-radius:9px;background:#0a1026">'+Array(g[0]/3).fill('<b style="width:9px;height:9px;border-radius:50%;background:'+g[1]+'"></b><b style="width:9px;height:9px;border-radius:50%;background:'+g[1]+'"></b><b style="width:9px;height:9px;border-radius:50%;background:'+g[1]+'"></b>').join('<s></s>')+'</i>').join('')+'</span></div>').join('')})();
+</script></body></html>

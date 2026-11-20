@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCA 회로 속 탄소 추적</title>
+<style>
+:root{--bg:#f2f7f4;--card:#fff;--ink:#17323a;--mut:#5b7078;--line:#c3d3cc;--acc:#0f7b6c;--node:#e4f0ea;--ta:#0f7b6c;--tb:#b86f00;--tp:#5f6e73;--on:#fff;--ox:#c9362e;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1a1e;--card:#15262b;--ink:#e4f1ec;--mut:#8fa8a8;--line:#2f484f;--acc:#4cc9b0;--node:#1d343a;--ta:#4cc9b0;--tb:#f2b13c;--tp:#8fa0a5;--on:#0e1a1e;--ox:#ff7b72;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.6}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.5rem;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--mut);margin:0 0 14px;font-size:.95rem}
+.wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+svg{width:100%;height:auto;display:block}
+.arc{fill:none;stroke:var(--line);stroke-width:3;transition:.3s}
+.arc.on{stroke:var(--acc);stroke-width:5}
+.nd{fill:var(--node);stroke:var(--line);stroke-width:2;transition:.3s}
+.nd.on{fill:var(--acc);stroke:var(--acc)}
+.nt{font-size:14px;font-weight:700;text-anchor:middle;dominant-baseline:central;fill:var(--ink)}
+.nd.on+.nt{fill:var(--on)}
+.lb{font-size:13px;fill:var(--ink)}
+.pop{font-size:14px;font-weight:700;text-anchor:middle;paint-order:stroke;stroke:var(--card);stroke-width:4px;animation:fi .6s}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.pop,.out{animation:none}}
+.stepno{color:var(--mut);font-size:.85rem}
+#ttl{font-size:1.15rem;margin:2px 0}
+.enz{color:var(--acc);font-weight:600;margin:0 0 6px;font-size:.93rem}
+.eq{background:var(--node);border-radius:8px;padding:7px 10px;font-size:.9rem;margin:0 0 8px;overflow-wrap:anywhere}
+#desc{margin:0 0 10px;font-size:.95rem}
+.mol{display:flex;gap:4px;flex-wrap:wrap;align-items:flex-start;padding:10px;border:1.5px dashed var(--line);border-radius:10px;min-height:96px}
+.col{display:flex;flex-direction:column;align-items:center;min-width:62px}
+.ch{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.82rem;color:var(--on)}
+.A{background:var(--ta)}.B{background:var(--tb)}.P{background:var(--tp)}
+small{font-size:.72rem;color:var(--mut);text-align:center}
+.bl{width:2px;height:10px;background:var(--line)}
+.rel{margin-top:8px;min-height:44px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--ox);font-weight:600;font-size:.9rem}
+.rel span.item{display:flex;align-items:center;gap:6px}
+.out{animation:fi .7s}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 8px;align-items:center}
+button,select{font:inherit;font-size:.92rem;padding:7px 12px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button.p{background:var(--acc);border-color:var(--acc);color:var(--on)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+td{padding:6px 4px;border-top:1px solid var(--line);vertical-align:middle}
+td:first-child{width:50px}
+td.x{color:var(--ox);font-weight:600}
+.note{color:var(--mut);font-size:.82rem;margin:8px 0 0}
+#sum{font-weight:600;margin:0 0 6px}
+</style></head>
+<body>
+<main>
+<h1>TCA 회로 속 탄소 추적</h1>
+<p class="sub">아세틸 CoA에서 들어온 탄소와 회로에 원래 있던 탄소가 한 바퀴, 두 바퀴 도는 동안 어디로 가는지 하나씩 따라가 보세요.</p>
+<div class="wrap">
+ <div>
+  <div class="card"><svg id="sv" viewBox="0 0 640 500" role="img" aria-label="TCA 회로 다이어그램"></svg></div>
+ </div>
+ <div>
+  <div class="card">
+   <div class="stepno" id="sn"></div>
+   <h2 id="ttl"></h2>
+   <p class="enz" id="enz"></p>
+   <p class="eq" id="eq"></p>
+   <p id="desc"></p>
+   <div class="mol" id="mol" aria-live="polite"></div>
+   <div class="rel" id="rel"></div>
+   <div class="ctl">
+    <button id="bp">← 이전</button>
+    <button id="bn" class="p">다음 →</button>
+    <button id="ba">▶ 자동 재생</button>
+    <button id="br">처음으로</button>
+   </div>
+   <input type="range" id="rg" min="0" max="16" value="0" aria-label="단계 이동">
+   <div class="ctl"><label for="fl">석신산 방향</label>
+    <select id="fl"><option value="0">방향 A</option><option value="1">방향 B</option></select></div>
+   <p class="note">두 방향은 같은 확률입니다. 2회전째에 CO₂가 되는 탄소는 어느 쪽이든 A2와 P3이고, A1이 나가는 시점이 달라집니다.</p>
+  </div>
+ </div>
+</div>
+<div class="card">
+ <p id="sum"></p>
+ <table id="tb"></table>
+ <p class="note">P1–P4는 처음부터 회로 안에 있던 옥살로아세트산의 탄소입니다. 피루브산 산화에서 이미 나간 CO₂(피루브산마다 탄소 1개)는 여기에 포함하지 않았습니다.</p>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const NM=["옥살로아세트산","시트르산","이소시트르산","α-케토글루타르산","석신일 CoA","석신산","푸마르산","말산"],CB=[4,6,6,5,4,4,4,4];
+const G={oaa:["COOH","C=O","CH₂","COOH"],cit:["COOH","CH₂","C–OH","CH₂","COOH"],iso:["COOH","CH₂","CH","CH–OH","COOH"],akg:["COOH","CH₂","CH₂","C=O","COOH"],suc:["COOH","CH₂","CH₂","C(=O)–CoA"],sa:["COOH","CH₂","CH₂","COOH"],fum:["COOH","CH=","=CH","COOH"],mal:["COOH","CH–OH","CH₂","COOH"]};
+const EN=[,"시트르산 합성효소","아코니테이스","이소시트르산 탈수소효소","α-케토글루타르산 탈수소효소 복합체","석신일 CoA 합성효소","석신산 탈수소효소","푸마레이스","말산 탈수소효소"];
+const EQ=[,"아세틸 CoA(2C) + 옥살로아세트산(4C) → 시트르산(6C)","시트르산 → 이소시트르산","이소시트르산 + NAD⁺ → α-케토글루타르산 + CO₂ + NADH","α-케토글루타르산 + NAD⁺ + CoA → 석신일 CoA + CO₂ + NADH","석신일 CoA + GDP + Pᵢ → 석신산 + GTP + CoA","석신산 + FAD → 푸마르산 + FADH₂","푸마르산 + H₂O → 말산","말산 + NAD⁺ → 옥살로아세트산 + NADH"];
+const DS=[,"아세틸기(2C)가 옥살로아세트산의 가운데 탄소(C2)에 붙어 6탄소 시트르산이 됩니다. 아세틸 탄소는 시트르산의 한쪽 팔(–CH₂–COOH)이 됩니다.","–OH가 가운데 탄소에서 이웃한 탄소로 옮겨 갑니다. 탄소는 그대로이고 결합 모양만 바뀝니다.","가운데 탄소에 붙어 있던 카복실기가 CO₂로 떨어집니다. 방금 들어온 아세틸 탄소가 아니라 옥살로아세트산에서 온 탄소입니다.","α-케토 카복실기가 CO₂로 떨어지고, 남은 4탄소는 CoA와 결합합니다. 이번에도 방금 들어온 아세틸 탄소가 아닙니다.","고에너지 결합이 끊어지며 GTP가 만들어집니다. 석신산은 대칭이라 양 끝 카복실기를 구별할 수 없어서, 다음 단계부터 두 방향이 같은 확률로 가능합니다(오른쪽 아래에서 선택).","FAD가 전자를 받아 FADH₂가 되고 단일결합이 이중결합으로 바뀝니다.","이중결합에 물이 붙습니다. 석신산이 대칭이라 –OH가 붙는 쪽에 따라 탄소 순서가 뒤집힌 두 가지 말산이 가능합니다.","NADH가 생기며 옥살로아세트산이 재생됩니다. 아세틸에서 온 탄소는 이제 다른 탄소와 섞인 자리에 있습니다."];
+const AC=[["A1","A2"],["B1","B2"]],TR=["A1","A2","B1","B2"];
+const ORG=id=>id[0]=="P"?"회로에 원래 있던 탄소":`${id[0]=="A"?"첫 번째":"두 번째"} 아세틸 CoA의 ${id[1]=="1"?"메틸":"카보닐"} 탄소`;
+const chip=id=>`<span class="ch ${id[0]}">${id}</span>`;
+function build(f){
+ const S=[{turn:0,j:0,ids:["P1","P2","P3","P4"],g:G.oaa,n:NM[0],rel:[],br:null}];
+ let O=["P1","P2","P3","P4"];
+ AC.forEach(([m,k],t)=>{
+  const c=[k,m,O[1],O[2],O[3]],su=[k,m,O[1],O[2]],nO=f?[k,m,O[1],O[2]]:[O[2],O[1],m,k];
+  [[1,c,G.cit,[2,O[0],"COOH"],[]],[2,c,G.iso,[2,O[0],"COOH"],[]],[3,c,G.akg,null,[O[0]]],[4,su,G.suc,null,[O[3]]],[5,su,G.sa,null,[]],[6,su,G.fum,null,[]],[7,nO,G.mal,null,[]],[8,nO,G.oaa,null,[]]]
+  .forEach(([j,ids,g,br,rel])=>S.push({turn:t,j,ids,g,br,rel,n:NM[j%8]}));
+  O=nO;
+ });
+ return S;
+}
+function stat(i,id){
+ for(let x=0;x<=i;x++)if(S[x].rel.includes(id))return["CO₂로 배출 (회전 "+(S[x].turn+1)+", "+S[x].j+"단계)",1];
+ const s=S[i],p=s.ids.indexOf(id);
+ if(p>-1)return[s.n+" · "+s.g[p],0];
+ if(s.br&&s.br[1]===id)return[s.n+" · "+s.br[2],0];
+ return["아세틸 CoA 상태로 대기",0];
+}
+const cx=320,cy=250,R=150;
+const P=(a,r=R)=>[cx+r*Math.cos(a*Math.PI/180),cy+r*Math.sin(a*Math.PI/180)],an=i=>-90+45*i;
+let h="";
+for(let i=0;i<8;i++){const[a,b]=P(an(i)+16),[c,d]=P(an(i+1)-16);h+=`<path class="arc" id="a${i}" d="M${a} ${b} A${R} ${R} 0 0 1 ${c} ${d}"/>`}
+for(let i=0;i<8;i++){const[x,y]=P(an(i)),co=Math.cos(an(i)*Math.PI/180),[lx,ly]=P(an(i),R+44);
+ h+=`<circle class="nd" id="n${i}" cx="${x}" cy="${y}" r="30"/><text class="nt" x="${x}" y="${y}">${CB[i]}C</text><text class="lb" x="${lx}" y="${ly}" text-anchor="${co>.3?"start":co<-.3?"end":"middle"}" dominant-baseline="central">${NM[i]}</text>`}
+h+=`<text class="lb" x="${cx}" y="${cy-6}" text-anchor="middle" font-weight="700">TCA 회로</text><text class="lb" id="tn" x="${cx}" y="${cy+16}" text-anchor="middle" fill="var(--mut)"></text><g id="pp"></g>`;
+$("sv").innerHTML=h;
+let S=build(false),i=0,timer=null;
+function up(){
+ const s=S[i],j=s.j,c=j%8;
+ for(let k=0;k<8;k++){$("a"+k).classList.toggle("on",j>=1&&k===j-1);$("n"+k).classList.toggle("on",k===c)}
+ $("tn").textContent=(i?s.turn+1:1)+"번째 회전";
+ let p="";
+ if(j===1){const[x,y]=P(an(0)+22.5,88);p+=`<text class="pop" x="${x}" y="${y}" fill="var(--ta)">+아세틸 ${AC[s.turn].join("·")}</text>`}
+ s.rel.forEach((id,k)=>{const[x,y]=P(an(j-1)+22.5,88);p+=`<text class="pop" x="${x}" y="${y+k*18}" fill="var(--ox)">+CO₂ (${id})</text>`});
+ $("pp").innerHTML=p;
+ $("sn").textContent=i?`회전 ${s.turn+1} · ${j} / 8단계`:"시작 전";
+ $("ttl").textContent=i?s.n:"회전 1 시작 전";
+ $("enz").textContent=i?EN[j]:"";
+ $("eq").textContent=i?EQ[j]:"옥살로아세트산(P1–P4) + 아세틸 CoA(A1, A2)";
+ let d=i?DS[j]:"옥살로아세트산 P1–P4와, 첫 번째 피루브산에서 만든 아세틸 CoA의 두 탄소 A1(메틸), A2(카보닐)가 준비되어 있습니다.";
+ if(s.rel.length)d+=` 이번에 CO₂가 된 탄소는 ${s.rel[0]}입니다. (${ORG(s.rel[0])})`;
+ if(j===8)d+=` 다음 회전에서 CO₂로 빠질 자리(양 끝 카복실기)에 있는 탄소는 ${s.ids[0]}와 ${s.ids[3]}입니다.`;
+ $("desc").textContent=d;
+ $("mol").innerHTML=s.ids.map((id,k)=>`<div class="col">${chip(id)}<small>${s.g[k]}</small>${s.br&&s.br[0]===k?`<span class="bl"></span>${chip(s.br[1])}<small>${s.br[2]}</small>`:""}</div>`).join("");
+ $("rel").innerHTML=s.rel.map(id=>`<span class="item out">${chip(id)} → O=C=O</span>`).join("")||"";
+ let n=0;
+ $("tb").innerHTML=TR.map(id=>{const[t,x]=stat(i,id);n+=x;return`<tr><td>${chip(id)}</td><td>${ORG(id)}</td><td class="${x?"x":""}">${t}</td></tr>`}).join("");
+ $("sum").textContent=`아세틸 CoA에서 들어온 탄소 4개 중 ${n}개가 CO₂로 나갔습니다.`;
+ $("bp").disabled=i===0;$("bn").disabled=i===16;$("rg").value=i;
+}
+function stop(){clearInterval(timer);timer=null;$("ba").textContent="▶ 자동 재생"}
+function go(k){i=Math.max(0,Math.min(16,k));up()}
+$("bn").onclick=()=>{stop();go(i+1)};
+$("bp").onclick=()=>{stop();go(i-1)};
+$("br").onclick=()=>{stop();go(0)};
+$("rg").oninput=e=>{stop();go(+e.target.value)};
+$("fl").onchange=e=>{S=build(e.target.value==="1");up()};
+$("ba").onclick=()=>{
+ if(timer){stop();return}
+ if(i===16)go(0);
+ $("ba").textContent="⏸ 일시정지";
+ timer=setInterval(()=>{if(i>=16){stop();return}go(i+1)},3000);
+};
+up();
+</script>
+</body></html>
