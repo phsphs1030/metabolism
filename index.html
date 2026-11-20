@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>세포와 물질대사 시뮬레이션</title>
+<h1>세포와 물질대사 시뮬레이션</h1>
+<p>실행할 작품을 선택하세요.</p>
+<ol id="works"></ol>
+
+<script>
+const works = [
+  ['TCA 회로', '20104, 20316'],
+  ['TCA 회로', '20311, 20319'],
+  ['광합성', '20105, 20426'],
+  ['광합성', '20125, 21014'],
+  ['광합성', '20308, 20519'],
+  ['광합성', '20406'],
+  ['광합성', '20508'],
+  ['광합성', '20622'],
+  ['광합성', '20822, 20914'],
+  ['명반응', '20309, 20318, 20321'],
+  ['명반응', '20813, 20828'],
+  ['세포호흡', '20118, 20121'],
+  ['세포호흡', '20122'],
+  ['세포호흡', '20327, 20417'],
+  ['세포호흡', '20505, 20810'],
+  ['세포호흡과 발효', '20818, 20921'],
+  ['알코올 발효', '20111'],
+  ['전자전달계 비교', '20126, 20326'],
+  ['피루브산 산화와 TCA 회로', '20304, 20306, 20315, 20820'],
+  ['피루브산 산화와 TCA 회로, 탄소고정 반응', '20718, 21024'],
+  ['해당과정, 산화적인산화', '20120, 20124']
+];
+
+const list = document.querySelector('#works');
+for (const [title, ids] of works) {
+  const filename = `${title} 시뮬레이션(${ids}).html`;
+  const link = document.createElement('a');
+  link.href = './' + encodeURIComponent(filename);
+  link.textContent = filename;
+  const item = document.createElement('li');
+  item.append(link);
+  list.append(item);
+}
+</script>
+</html>
