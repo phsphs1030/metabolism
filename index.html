@@ -389,5 +389,107 @@ for (const area of areas) {
   cards.append(card);
 }
 </script>
+ <script>
+(() => {
+  const additions = {
+    mito: {
+      '세포호흡 전체 과정': [
+        ['세포호흡', '20324, 20904'],
+        ['세포호흡', '20612, 20613'],
+        ['세포호흡', '20627, 20628'],
+        ['세포호흡', '20918'],
+        ['세포호흡', '21024']
+      ],
+      '해당과정 · 산화적 인산화': [
+        ['해당과정', '20305, 20307'],
+        ['해당과정', '20323'],
+        ['산화적 인산화', '20728']
+      ],
+      '피루브산 산화 · TCA 회로': [
+        ['TCA 회로', '20113, 20114'],
+        ['TCA 회로', '20117']
+      ],
+      '발효': [
+        ['세포호흡, 발효', '20802', '세포호흡과 발효']
+      ]
+    },
+    chloro: {
+      '광합성 전체 과정': [
+        ['광합성', '20103, 20115'],
+        ['광합성', '20123']
+      ],
+      '명반응': [
+        ['명반응', '20125, 20709'],
+        ['명반응', '20908']
+      ],
+      '탄소 고정 반응': [
+        ['탄소 고정 반응', '21012']
+      ],
+      '광합성 색소 분리': [
+        ['시금치 크로마토그래피', '20325'],
+        ['청경채 크로마토그래피', '20116']
+      ]
+    },
+    whole: {
+      '전자전달계': [
+        ['전자전달계 비교', '20902']
+      ]
+    }
+  };
+
+  for (const [cardId, groups] of Object.entries(additions)) {
+    const card = document.getElementById(cardId);
+    const works = card.querySelector('.works');
+    const existingLinks = new Set(
+      Array.from(works.querySelectorAll('a'), link => link.href)
+    );
+
+    for (const [heading, entries] of Object.entries(groups)) {
+      let section = Array.from(works.querySelectorAll('.group'))
+        .find(group => group.querySelector('h3').textContent === heading);
+
+      if (!section) {
+        section = document.createElement('section');
+        section.className = 'group';
+        const title = document.createElement('h3');
+        title.textContent = heading;
+        section.append(title, document.createElement('ul'));
+        works.append(section);
+      }
+
+      const list = section.querySelector('ul');
+
+      for (const [fileTitle, ids, label = fileTitle] of entries) {
+        const link = document.createElement('a');
+        link.href = './' + encodeURIComponent(
+          `${fileTitle} 시뮬레이션(${ids}).html`
+        );
+
+        if (existingLinks.has(link.href)) continue;
+
+        const item = document.createElement('li');
+        const name = document.createElement('span');
+        const credit = document.createElement('small');
+        const arrow = document.createElement('span');
+
+        name.textContent = label;
+        credit.textContent = ids;
+        arrow.className = 'launch';
+        arrow.setAttribute('aria-hidden', 'true');
+        arrow.textContent = '↗';
+
+        name.append(credit);
+        link.append(name, arrow);
+        item.append(link);
+        list.append(item);
+        existingLinks.add(link.href);
+      }
+    }
+
+    card.querySelector('.card-foot > span:first-child').textContent =
+      `작품 ${works.querySelectorAll('li').length}개`;
+  }
+})();
+</script>
 </body>
 </html>
