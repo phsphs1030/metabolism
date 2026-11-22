@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>세포와 물질대사 · 세포호흡 시뮬레이션</title>
+<style>
+/* ===== 디자인 토큰 (getdesign.md의 Figma 스타일을 참고) =====
+   흑백 에디토리얼 틀 + 파스텔 색 블록 + 알약형 버튼 */
+:root{
+  --ink:#000; --paper:#fff; --soft:#f5f5f5; --sub:#5c6670;
+  --lime:#e4ff97; --lilac:#d4c6ff; --mint:#b9f2d0; --pink:#ffc9e6; --sky:#bfe2ff; --butter:#fff0a6;
+  --teal:#2bd9d9;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);line-height:1.55;letter-spacing:-.01em;
+  font-family:"Pretendard","Noto Sans KR",-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.mono,.eyebrow{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.eyebrow{font-size:.74rem;letter-spacing:.06em;color:var(--sub);margin-bottom:6px}
+.wrap{max-width:1180px;margin:0 auto;padding:12px}
+
+/* 히어로 블록 */
+.hero{background:var(--lilac);border:1.5px solid var(--ink);border-radius:28px;padding:26px 24px;margin-bottom:12px}
+.hero .eyebrow{color:#000}
+.hero h1{margin:0 0 8px;font-size:clamp(1.9rem,5.5vw,3.3rem);line-height:1.06;letter-spacing:-.035em;font-weight:700}
+.hero p{margin:0 0 12px;max-width:720px;font-size:1rem}
+.tag{display:inline-block;border:1.5px solid var(--ink);border-radius:999px;padding:3px 12px;font-size:.8rem;background:#fff;margin:0 6px 6px 0}
+
+/* 레이아웃 */
+.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px}
+@media(max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--paper);border:1.5px solid var(--ink);border-radius:20px;padding:16px;margin-bottom:12px}
+.card h2{margin:0 0 10px;font-size:1.15rem;letter-spacing:-.02em}
+.card h3{margin:6px 0;font-size:1.05rem}
+.small{font-size:.82rem;color:var(--sub)}
+
+/* 단계 선택 알약 */
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--ink);background:#fff;color:var(--ink);
+  border-radius:999px;padding:5px 12px;font-size:.84rem;font-weight:600;cursor:pointer;font-family:inherit}
+.pill::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c)}
+.pill.on{background:var(--ink);color:#fff}
+
+/* 버튼 */
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.btn{border:1.5px solid var(--ink);border-radius:999px;padding:8px 16px;font-size:.9rem;font-weight:600;
+  background:#fff;color:var(--ink);cursor:pointer;font-family:inherit}
+.btn.primary{background:var(--ink);color:#fff}
+.btn:active{transform:scale(.97)}
+
+/* 그림 영역: 좁은 화면에서는 좌우로 밀어서 볼 수 있게 함 */
+.svgwrap{overflow-x:auto;margin-bottom:10px;border:1.5px solid var(--ink);border-radius:16px;background:#fff}
+.svgwrap svg{display:block;width:100%;min-width:520px;height:auto}
+.hint{display:none;margin:0;text-align:right}
+@media(max-width:600px){.hint{display:block}}
+
+/* 조절 장치 */
+.ctl{margin-bottom:12px}
+.ctl label{display:block;font-size:.9rem;font-weight:600;margin-bottom:2px}
+.ctl label span{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--butter);border-radius:999px;padding:0 8px;margin-left:4px}
+.ctl input[type=range]{width:100%;accent-color:#000}
+.ctl select{width:100%;padding:9px 12px;border-radius:12px;border:1.5px solid var(--ink);background:#fff;font-family:inherit;font-size:.86rem}
+
+/* 실시간 수치: 파스텔 카드 */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{border:1.5px solid var(--ink);border-radius:14px;padding:9px 10px}
+.stat:nth-child(1){background:var(--lime)} .stat:nth-child(2){background:var(--pink)}
+.stat:nth-child(3){background:var(--lilac)} .stat:nth-child(4){background:var(--butter)}
+.stat:nth-child(5){background:var(--sky)} .stat:nth-child(6){background:var(--mint)}
+.stat:nth-child(7){background:var(--sky)} .stat:nth-child(8){background:var(--soft)}
+.stat .nm{font-size:.78rem}
+.stat .v{font-size:1.55rem;font-weight:700;letter-spacing:-.03em}
+.stat .u{font-size:.8rem;font-weight:600;margin-left:2px}
+.stat .sub{font-size:.72rem;color:#333}
+
+/* 설명 카드 */
+#info{background:#f1fbf5}
+.badge{display:inline-block;color:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:2px 12px;font-size:.8rem;font-weight:700}
+.rxn{background:#fff;border:1.5px solid var(--ink);border-radius:12px;padding:8px 12px;font-weight:600;margin:8px 0}
+.chip{display:inline-block;color:#fff;border-radius:999px;padding:2px 11px;margin:2px 4px 2px 0;font-size:.8rem;font-weight:700}
+.done{background:var(--lime);border:1.5px solid var(--ink);border-radius:14px;padding:10px 12px;margin-top:10px}
+
+/* 단계 목록·표 */
+ol.steps{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px}
+ol.steps li{border:1.5px solid var(--ink);border-radius:12px;padding:6px 10px;font-size:.85rem;cursor:pointer;display:flex;gap:8px;align-items:center;background:#fff}
+ol.steps li.on{background:var(--butter);font-weight:700}
+ol.steps .dot{width:10px;height:10px;border-radius:50%;flex:none}
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.84rem;min-width:430px}
+th,td{border-bottom:1.5px solid var(--ink);padding:6px;text-align:center}
+th{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.76rem;font-weight:600;background:var(--soft)}
+td:first-child,th:first-child{text-align:left}
+#sum{background:var(--lilac);border:1.5px solid var(--ink);border-radius:14px;padding:10px 12px}
+.notes{background:var(--soft)}
+.notes li{margin-bottom:5px;font-size:.88rem}
+.notes code{background:#fff;border:1px solid #000;padding:0 6px;border-radius:6px;font-size:.82rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <div class="eyebrow">세포와 물질대사 · 시뮬레이션</div>
+    <h1>세포호흡,<br>탄소를 따라가 보자</h1>
+    <p>탐구 질문: 세포호흡 과정을 시뮬레이션 해 볼 수 없을까? 포도당의 탄소가 세포 속 어디에서 어떻게 나뉘고 CO₂로 나가며 ATP가 만들어지는지 단계별로 살펴본다.</p>
+    <span class="tag">해당</span><span class="tag">피루브산의 산화</span><span class="tag">TCA 회로</span><span class="tag">산화적 인산화</span>
+  </section>
+
+  <div class="grid">
+    <!-- 왼쪽 열: 그림과 단계 설명 -->
+    <div class="col">
+      <section class="card">
+        <h2>반응 과정 관찰</h2>
+        <div class="pills" id="pills"></div>
+        <div class="btns">
+          <button class="btn primary" id="bPlay">▶ 재생</button>
+          <button class="btn" id="bPause">⏸ 일시정지</button>
+          <button class="btn" id="bReset">⟲ 처음부터</button>
+          <button class="btn" id="bPrev">◀ 이전 단계</button>
+          <button class="btn" id="bNext">다음 단계 ▶</button>
+        </div>
+        <div class="eyebrow">위 ① 세포 속 위치와 물질의 이동</div>
+        <div class="svgwrap" id="overview"></div>
+        <div class="eyebrow">위 ② 탄소 원자 수의 변화</div>
+        <div class="svgwrap" id="carbon"></div>
+        <div class="eyebrow">아래 · 반응 자세히 보기</div>
+        <div class="svgwrap" id="detail"></div>
+        <p class="hint small">그림은 좌우로 밀어서 볼 수 있어요.</p>
+      </section>
+      <section class="card" id="info"></section>
+    </div>
+
+    <!-- 오른쪽 열: 조절 장치, 실시간 수치, 결과 -->
+    <div class="col">
+      <section class="card">
+        <h2>조절 장치</h2>
+        <div class="ctl"><label>포도당 분자 수 <span id="lN">1개</span></label>
+          <input type="range" id="rN" min="1" max="10" step="1" value="1"></div>
+        <div class="ctl"><label>산소 공급 <span id="lO">100 %</span></label>
+          <input type="range" id="rO" min="0" max="100" step="10" value="100"></div>
+        <div class="ctl"><label>재생 속도 <span id="lS">1.0 배</span></label>
+          <input type="range" id="rS" min="0.5" max="3" step="0.5" value="1"></div>
+        <div class="ctl"><label>세포질 NADH 운반 방식</label>
+          <select id="sSh">
+            <option value="mal">말산-아스파르트산 셔틀 (해당의 NADH 1개당 ATP 약 2.5개)</option>
+            <option value="gly">글리세롤 3-인산 셔틀 (해당의 NADH 1개당 ATP 약 1.5개)</option>
+          </select></div>
+        <div class="ctl"><label>진행 위치 <span id="lP"></span></label>
+          <input type="range" id="scrub" min="0" max="16" step="0.01" value="0"></div>
+      </section>
+
+      <section class="card">
+        <h2>실시간 수치 <span class="small">(포도당 <span id="lN2">1</span>개 기준)</span></h2>
+        <div class="stats">
+          <div class="stat"><div class="nm">순 ATP</div><div><span class="v" id="vAtp">0</span><span class="u">개</span></div><div class="sub" id="vAtpSub"></div></div>
+          <div class="stat"><div class="nm">NADH 보유량</div><div><span class="v" id="vNadh">0</span><span class="u">개</span></div></div>
+          <div class="stat"><div class="nm">FADH₂ 보유량</div><div><span class="v" id="vFadh">0</span><span class="u">개</span></div></div>
+          <div class="stat"><div class="nm">CO₂ 방출(누적)</div><div><span class="v" id="vCo2">0</span><span class="u">개</span></div></div>
+          <div class="stat"><div class="nm">O₂ 소비(누적)</div><div><span class="v" id="vO2">0</span><span class="u">개</span></div></div>
+          <div class="stat"><div class="nm">막 사이 공간의 H⁺</div><div><span class="v" id="vHp">0</span><span class="u">개</span></div></div>
+          <div class="stat"><div class="nm">H₂O 생성(전자전달계)</div><div><span class="v" id="vH2o">0</span><span class="u">개</span></div></div>
+          <div class="stat"><div class="nm">젖산 생성</div><div><span class="v" id="vLac">0</span><span class="u">개</span></div></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>최종 결과 <span class="small">(조절 값에 따라 바로 계산)</span></h2>
+        <div class="tblwrap"><table id="tbl"></table></div>
+        <p id="sum" style="margin:10px 0 0"></p>
+      </section>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>전체 단계 목록 <span class="small">(눌러서 이동)</span></h2>
+    <ol class="steps" id="stepList"></ol>
+  </section>
+
+  <section class="card notes">
+    <h2>사용한 식과 가정</h2>
+    <ul>
+      <li><b>총괄식</b>: <code>C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + 에너지(ATP + 열)</code></li>
+      <li><b>해당(포도당 1분자)</b>: 포도당 → 과당 1,6-2인산(ATP 2개 소모) → 3탄당 인산 2분자 → 피루브산 2분자(ATP 4개 생성, NADH 2개). 순 ATP 2개</li>
+      <li><b>피루브산의 산화</b>: 피루브산 1분자 → 아세틸 CoA + CO₂ + NADH (포도당 1분자당 2번)</li>
+      <li><b>TCA 회로(아세틸 CoA 1분자당)</b>: CO₂ 2개, NADH 3개, FADH₂ 1개, ATP 1개 (포도당 1분자당 2회전)</li>
+      <li><b>산화적 인산화</b>: NADH 1분자 → H⁺ 약 10개, FADH₂ 1분자 → H⁺ 약 6개 이동, <code>ATP 수 = 이동한 H⁺ 수 ÷ 4</code> (NADH 약 2.5개, FADH₂ 약 1.5개)</li>
+      <li><b>에너지 전환 효율</b> = <code>(ATP 수 × 30.5 kJ/몰) ÷ 2870 kJ/몰 × 100 (%)</code>. 나머지는 열로 방출된다.</li>
+      <li>가정 1: 해당은 수업 범위에 맞춰 '포도당 → 과당 1,6-2인산 → 피루브산'의 3단계로 단순화했고, 중간 반응과 효소는 생략했다. 과당 1,6-2인산의 인산기는 양 끝 탄소(1번, 6번)에 붙는다.</li>
+      <li>가정 2: TCA 회로의 석신일 CoA → 석신산 단계는 GTP를 거치지만 ATP 1개로 계산했다.</li>
+      <li>가정 3: 산소 공급(%)은 피루브산 중 호기 호흡으로 진행되는 비율로 단순화했고, 나머지는 젖산 발효(ATP 추가 생성 없음)로 처리했다.</li>
+      <li>가정 4: 전자전달계에서 생성된 H₂O는 12개이며, 해당·TCA 회로에서 물이 일부 소모되므로 총괄식의 순생성은 6개이다.</li>
+      <li>가정 5: 탄소 점의 색은 탄소를 구별하려는 표시이며 실제 원자 번호와 일치하지 않는다. TCA 회로는 아세틸 CoA 1분자가 들어가는 1회전을 기준으로 그렸다.</li>
+      <li>가정 6: ATP 30.5 kJ/몰, 포도당 2870 kJ/몰은 표준 값이며 실제 세포 안의 값과 다를 수 있다. ATP 총량은 교재에 따라 30~32개, 36~38개 등으로 다르게 제시되므로 수업 교과서의 값과 비교한다.</li>
+      <li>참고 기준: 고등학교 생명과학 교과서의 세포호흡 단원 내용과 일반 생화학 자료. 디자인은 getdesign.md의 Figma 디자인 시스템을 참고했다.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ===================== 1. 상수와 상태 ===================== */
+const STEP_SEC = 3.5;   // 재생 속도 1배일 때 한 단계가 걸리는 시간(초)
+const ATP_KJ = 30.5;    // ATP 1몰이 가수분해될 때 방출하는 에너지(kJ/몰)
+const GLU_KJ = 2870;    // 포도당 1몰이 완전 산화될 때 방출하는 에너지(kJ/몰)
+
+// 상태: t=경과 시간(초), N=포도당 수(개), o2=산소 공급(%), shuttle=세포질 NADH 운반 방식
+const S = {t:0, playing:false, speed:1, N:1, o2:100, shuttle:'mal'};
+let LIST = [];          // 현재 조건에서 실제로 진행하는 단계 목록
+
+const STAGES = [
+  {name:'해당',            place:'세포질',               color:'#f08c00'},
+  {name:'피루브산의 산화', place:'마이토콘드리아 바탕질', color:'#e64980'},
+  {name:'TCA 회로',        place:'마이토콘드리아 바탕질', color:'#7048e8'},
+  {name:'산화적 인산화',   place:'마이토콘드리아 내막',   color:'#1c7ed6'},
+  {name:'젖산 발효',       place:'세포질',               color:'#868e96'}
+];
+
+const $ = id => document.getElementById(id);
+const fmt = v => { const r = Math.round(v*10)/10; return String(Object.is(r,-0)?0:r); };
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const ease = t => t < .5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
+
+/* ===================== 2. 단계 데이터 ===================== */
+// y: 포도당 1분자당 변화량 (atp 생성, atpu 소모, nadh·fadh 증감, co2, o2 소비, h2o, hp(H⁺), lac)
+// pi: 인산기가 붙은 탄소의 순서(0부터, 왼쪽 끝이 0번)
+const ALL = [
+ // ---- 해당 (세포질): 수업 범위에 맞춰 3단계로 단순화 ----
+ {id:'g1', s:0, n:'활성화: 포도당 → 과당 1,6-2인산', enz:'인산화 효소(키네이스)',
+  from:[{n:'포도당',c:6}], to:[{n:'과당 1,6-2인산',c:6,pi:[0,5]}], y:{atpu:2}, extra:['ADP 2개 생성'],
+  d:'ATP 2개의 인산기가 포도당의 양 끝 탄소(1번, 6번)에 각각 붙어 과당 1,6-2인산이 된다. 에너지를 먼저 투자하는 단계이다. (중간 반응은 생략)'},
+ {id:'g2', s:0, n:'분해: 6탄당 → 3탄당 인산 2분자', enz:'분해 효소',
+  from:[{n:'과당 1,6-2인산',c:6,pi:[0,5]}], to:[{n:'3탄당 인산',c:3,pi:[0]},{n:'3탄당 인산',c:3,pi:[2]}], y:{},
+  d:'6탄당 2인산이 3탄당 인산 2분자로 분해된다. 탄소 6개가 3개씩 나뉘고, 인산기는 각 분자의 끝 탄소에 하나씩 남는다. (중간 반응은 생략)'},
+ {id:'g3', s:0, n:'산화와 ATP 생성: 3탄당 인산 → 피루브산', enz:'탈수소효소, 인산기 전달 효소',
+  from:[{n:'3탄당 인산',c:3,x:2,pi:[0]}], to:[{n:'피루브산',c:3,x:2}], y:{nadh:2,atp:4}, rep:'3탄당 인산 2분자에서 각각 NADH 1개, ATP 2개씩 생성',
+  d:'3탄당 인산이 여러 단계(생략)를 거쳐 피루브산이 된다. 탈수소효소가 H⁺과 고에너지 전자를 NAD⁺에 전달해 NADH가 생성되고, 인산기가 ADP로 옮겨져 ATP가 생성된다(기질 수준 인산화). 해당 전체: ATP 2개 소모 + 4개 생성 = 순 2개, NADH 2개, 피루브산 2분자. 산소가 없어도 일어난다.'},
+ // ---- 피루브산의 산화 (바탕질) ----
+ {id:'p1', s:1, n:'피루브산 → 아세틸 CoA', enz:'피루브산 탈수소효소 복합체',
+  from:[{n:'피루브산',c:3,x:2}], to:[{n:'아세틸 CoA',c:2,x:2}], y:{nadh:2,co2:2}, rep:'포도당 1분자당 2번 일어난 값',
+  d:'피루브산이 세포질에서 마이토콘드리아의 바탕질로 들어온다. 그 뒤 산화되어 탄소 1개가 CO₂로 떨어져 나가고(3C → 2C) NADH가 생성되며, 남은 아세틸기가 조효소 A와 결합해 아세틸 CoA가 된다.'},
+ // ---- TCA 회로 (바탕질) ----
+ {id:'t1', s:2, n:'시트르산 생성', enz:'시트르산 합성효소',
+  from:[{n:'아세틸 CoA',c:2},{n:'옥살아세트산',c:4}], to:[{n:'시트르산',c:6}], y:{}, rep:'TCA 회로는 포도당 1분자당 2회전한다',
+  d:'아세틸 CoA의 아세틸기(2C)가 옥살아세트산(4C)과 결합해 시트르산(6C)이 된다.'},
+ {id:'t2', s:2, n:'이성질화', enz:'아코니테이스',
+  from:[{n:'시트르산',c:6}], to:[{n:'아이소시트르산',c:6}], y:{},
+  d:'시트르산이 구조가 다른 아이소시트르산으로 바뀐다. 탄소 수는 6개 그대로이다.'},
+ {id:'t3', s:2, n:'첫 번째 CO₂ 방출', enz:'아이소시트르산 탈수소효소',
+  from:[{n:'아이소시트르산',c:6}], to:[{n:'α-케토글루타르산',c:5}], y:{co2:2,nadh:2}, rep:'1회전당 CO₂ 1개, NADH 1개 → 2회전 값',
+  d:'탈수소·탈탄산 반응으로 CO₂가 방출되고 NADH가 생성된다. 6C → 5C.'},
+ {id:'t4', s:2, n:'두 번째 CO₂ 방출', enz:'α-케토글루타르산 탈수소효소 복합체',
+  from:[{n:'α-케토글루타르산',c:5}], to:[{n:'석신일 CoA',c:4}], y:{co2:2,nadh:2}, rep:'1회전당 CO₂ 1개, NADH 1개 → 2회전 값',
+  d:'다시 CO₂가 방출되고 NADH가 생성된다. 5C → 4C.'},
+ {id:'t5', s:2, n:'ATP 생성 (기질 수준 인산화)', enz:'석신일 CoA 합성효소',
+  from:[{n:'석신일 CoA',c:4}], to:[{n:'석신산',c:4}], y:{atp:2}, rep:'1회전당 ATP 1개 → 2회전 값',
+  d:'ATP가 만들어진다. 세포에 따라 GTP를 거치지만 여기서는 ATP 1개로 계산한다.'},
+ {id:'t6', s:2, n:'FADH₂ 생성', enz:'석신산 탈수소효소',
+  from:[{n:'석신산',c:4}], to:[{n:'푸마르산',c:4}], y:{fadh:2}, rep:'1회전당 FADH₂ 1개 → 2회전 값',
+  d:'FAD가 H를 받아 FADH₂가 된다. 이 효소는 마이토콘드리아 내막에 있다(복합체 Ⅱ).'},
+ {id:'t7', s:2, n:'물 첨가', enz:'푸마레이스',
+  from:[{n:'푸마르산',c:4}], to:[{n:'말산',c:4}], y:{},
+  d:'물 분자가 첨가되어 말산이 된다.'},
+ {id:'t8', s:2, n:'옥살아세트산 재생', enz:'말산 탈수소효소',
+  from:[{n:'말산',c:4}], to:[{n:'옥살아세트산',c:4}], y:{nadh:2}, rep:'1회전당 NADH 1개 → 2회전 값',
+  d:'말산이 산화되어 옥살아세트산이 다시 만들어지고 NADH가 생성된다. 회로가 한 바퀴 돌았다.'},
+ // ---- 산화적 인산화 (내막) ----
+ {id:'o1', s:3, n:'전자 전달', enz:'전자전달계 (복합체 Ⅰ~Ⅳ)',
+  from:[{n:'NADH, FADH₂'}], to:[{n:'NAD⁺, FAD + 전자(e⁻)'}], y:{nadh:-10,fadh:-2},
+  d:'앞 단계에서 만들어진 NADH와 FADH₂가 내막의 전자전달계에 고에너지 전자(e⁻)를 전달한다. NADH는 복합체 Ⅰ, FADH₂는 복합체 Ⅱ에 전달하고, NAD⁺와 FAD로 돌아가 다시 쓰인다.'},
+ {id:'o2', s:3, n:'H⁺ 능동 수송', enz:'복합체 Ⅰ, Ⅲ, Ⅳ',
+  from:[{n:'바탕질의 H⁺'}], to:[{n:'막 사이 공간의 H⁺'}], y:{},
+  d:'전자가 전달되며 방출한 에너지로 H⁺을 바탕질에서 막 사이 공간으로 퍼 올린다. NADH 1개당 H⁺ 약 10개, FADH₂ 1개당 약 6개로 계산한다. 그 결과 막 사이 공간의 H⁺ 농도가 높아진다.'},
+ {id:'o3', s:3, n:'산소의 환원 (물 생성)', enz:'복합체 Ⅳ',
+  from:[{n:'O₂ + 전자 + H⁺'}], to:[{n:'H₂O'}], y:{o2:6,h2o:12},
+  d:'전자의 최종 수용체는 O₂이다. 전자와 H⁺을 받은 O₂가 환원되어 물이 된다. 산소가 없으면 전자가 흐르지 못해 이 과정이 멈춘다.'},
+ {id:'o4', s:3, n:'ATP 합성 (화학 삼투)', enz:'ATP 합성효소',
+  from:[{n:'ADP + Pᵢ'}], to:[{n:'ATP'}], y:{},
+  d:'막 사이 공간의 H⁺이 농도 기울기를 따라 ATP 합성효소를 통해 바탕질로 되돌아오며 ATP가 합성된다. 가정: H⁺ 4개당 ATP 1개.'},
+ // ---- 젖산 발효 (세포질) ----
+ {id:'f1', s:4, n:'피루브산 → 젖산 (NAD⁺ 재생)', enz:'젖산 탈수소효소',
+  from:[{n:'피루브산',c:3,x:2}], to:[{n:'젖산',c:3,x:2}], y:{nadh:-2,lac:2},
+  d:'산소가 부족하면 NADH가 전자전달계에서 산화되지 못한다. 세포질에서 피루브산이 환원되어 젖산이 되고 NAD⁺가 재생되어 해당이 계속된다. 이때 탄소 수는 3개 그대로이며 ATP는 더 만들어지지 않는다.'}
+];
+
+/* ===== 탄소 추적 데이터 =====
+   k: 탄소 점 이름(색을 따라감), lab: 분자 이름, pp: 인산기가 붙은 탄소 이름, gone: CO₂로 나가는 탄소, sub: 설명 문구 */
+const GC = ['#ff6b6b','#ffa94d','#fcc419','#51cf66','#339af0','#9775fa'];   // 포도당 탄소 6개의 색
+const CCOL = {g0:GC[0], g1:GC[1], g2:GC[2], g3:GC[3], g4:GC[4], g5:GC[5],
+              o0:'#1c7ed6', o1:'#4dabf7', o2:'#74c0fc', o3:'#0b7285'};      // o0~o3: 옥살아세트산의 탄소 4개
+const G = (k,lab,pp) => ({k:k, lab:lab, pp:pp||[]});
+const SIX = ['g0','g1','g2','g3','g4','g5'], T1 = ['g0','g1','g2'], T2 = ['g3','g4','g5'];
+const OAA = ['o0','o1','o2','o3'], AC = ['g1','g2'];
+const RING = AC.concat(OAA), KG = AC.concat(['o0','o1','o2']), FOUR = AC.concat(['o0','o1']);
+const CV = {
+  g1:{a:[G(SIX,'포도당')], b:[G(SIX,'과당 1,6-2인산',['g0','g5'])], sub:'ATP 2개의 인산기가 양 끝 탄소(1번, 6번)에 결합'},
+  g2:{a:[G(SIX,'과당 1,6-2인산',['g0','g5'])], b:[G(T1,'3탄당 인산',['g0']), G(T2,'3탄당 인산',['g5'])]},
+  g3:{a:[G(T1,'3탄당 인산',['g0']), G(T2,'3탄당 인산',['g5'])], b:[G(T1,'피루브산'), G(T2,'피루브산')], sub:'인산기가 ADP로 이동 → ATP 4개, NADH 2개 생성'},
+  p1:{a:[G(T1,'피루브산'), G(T2,'피루브산')], b:[G(AC,'아세틸 CoA'), G(['g4','g5'],'아세틸 CoA')], gone:['g0','g3']},
+  t1:{a:[G(AC,'아세틸 CoA'), G(OAA,'옥살아세트산')], b:[G(RING,'시트르산')]},
+  t2:{a:[G(RING,'시트르산')], b:[G(RING,'아이소시트르산')]},
+  t3:{a:[G(RING,'아이소시트르산')], b:[G(KG,'α-케토글루타르산')], gone:['o3']},
+  t4:{a:[G(KG,'α-케토글루타르산')], b:[G(FOUR,'석신일 CoA')], gone:['o2']},
+  t5:{a:[G(FOUR,'석신일 CoA')], b:[G(FOUR,'석신산')]},
+  t6:{a:[G(FOUR,'석신산')], b:[G(FOUR,'푸마르산')]},
+  t7:{a:[G(FOUR,'푸마르산')], b:[G(FOUR,'말산')]},
+  t8:{a:[G(FOUR,'말산')], b:[G(FOUR,'옥살아세트산')]},
+  f1:{a:[G(T1,'피루브산'), G(T2,'피루브산')], b:[G(T1,'젖산'), G(T2,'젖산')]}
+};
+const CAPTION = [
+  '※ 점의 색은 같은 탄소를 따라가기 위한 표시이고, 노란 P는 인산기입니다.',
+  '※ 포도당 1분자에서 피루브산 2분자가 생기므로 같은 반응이 2번 일어납니다.',
+  '※ 아세틸 CoA 1분자가 들어가는 1회전 기준입니다 (포도당 1분자당 2회전).',
+  '', '※ 피루브산이 젖산으로 바뀌어도 탄소 수는 3개 그대로입니다.'
+];
+
+/* ===================== 3. 계산 ===================== */
+// 포도당 1분자당 전자전달계에서 이동하는 H⁺ 수: NADH 8개×10 + FADH₂ 2개×6 + 해당의 NADH 2개(운반 방식에 따라 10 또는 6)
+function hpPerGlucose(){
+  const cyt = S.shuttle === 'mal' ? 10 : 6;
+  return 8*10 + 2*6 + 2*cyt;
+}
+function yieldOf(st){
+  if(st.id === 'o2') return {hp: hpPerGlucose()};
+  if(st.id === 'o4'){ const h = hpPerGlucose(); return {atp: h/4, hp: -h}; }
+  return st.y;
+}
+// 산소 공급 비율을 단계별 진행 비율로 변환
+function mult(st){
+  const f = S.o2/100;
+  return st.s === 0 ? 1 : (st.s === 4 ? 1-f : f);
+}
+// 목록 만들기: 산소가 0 %이면 호기 단계를 건너뛰고, 100 % 미만이면 젖산 발효를 추가한다
+function buildList(){
+  const f = S.o2/100;
+  LIST = ALL.filter(st => st.s === 0 || (st.s === 4 ? f < 1 : f > 0));
+  const cnt = {}, seen = {};
+  LIST.forEach(st => { cnt[st.s] = (cnt[st.s]||0) + 1; });
+  LIST.forEach(st => { st._si = seen[st.s]||0; seen[st.s] = st._si + 1; st._sn = cnt[st.s]; });
+  $('scrub').max = LIST.length;
+  let h = '', shown = [];
+  LIST.forEach((st,i) => {
+    if(!shown.includes(st.s)){
+      shown.push(st.s);
+      h += `<button class="pill" data-i="${i}" data-s="${st.s}" style="--c:${STAGES[st.s].color}">${STAGES[st.s].name}</button>`;
+    }
+  });
+  $('pills').innerHTML = h;
+  $('stepList').innerHTML = LIST.map((st,i) =>
+    `<li data-i="${i}"><span class="dot" style="background:${STAGES[st.s].color}"></span>${i+1}. ${st.n}</li>`).join('');
+}
+// 현재 시점까지의 누적값 (한 단계는 60 % 진행했을 때 결과가 반영됨)
+function tally(idx, p){
+  const r = {atp:0,atpu:0,nadh:0,fadh:0,co2:0,o2:0,h2o:0,hp:0,lac:0};
+  for(let i=0;i<=idx;i++){
+    if(i === idx && p < 0.6) break;
+    const st = LIST[i], y = yieldOf(st), m = mult(st)*S.N;
+    for(const k in y) r[k] += y[k]*m;
+  }
+  return r;
+}
+
+/* ===================== 4. 그림 도우미 ===================== */
+function units(t){ let u=0; for(const ch of t) u += ch.charCodeAt(0)>127 ? 1 : 0.58; return u; }
+function fitFont(t,w,max){ return Math.max(9, Math.min(max, (w-12)/units(t))); }
+function textW(t,f){ return units(t)*f; }
+const SVG0 = (vb) => `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">`;
+
+function chipsOf(st){
+  const y = yieldOf(st), o = [];
+  const add = (t,col) => o.push({t,col});
+  if(y.atpu) add(`ATP ${fmt(y.atpu)}개 소모`, '#c92a2a');
+  if(y.atp > 0) add(`ATP +${fmt(y.atp)}개 생성`, '#2b8a3e');
+  if(y.nadh > 0) add(`NADH +${fmt(y.nadh)}개`, '#e8590c');
+  if(y.nadh < 0) add(`NADH ${fmt(-y.nadh)}개 산화 (NAD⁺ 재생)`, '#e8590c');
+  if(y.fadh > 0) add(`FADH₂ +${fmt(y.fadh)}개`, '#9c36b5');
+  if(y.fadh < 0) add(`FADH₂ ${fmt(-y.fadh)}개 산화`, '#9c36b5');
+  if(y.co2) add(`CO₂ ${fmt(y.co2)}개 방출`, '#495057');
+  if(y.o2) add(`O₂ ${fmt(y.o2)}개 소비`, '#1c7ed6');
+  if(y.h2o) add(`H₂O ${fmt(y.h2o)}개 생성`, '#1098ad');
+  if(y.hp > 0) add(`H⁺ ${fmt(y.hp)}개 이동 (바탕질→막 사이 공간)`, '#1971c2');
+  if(y.hp < 0) add(`H⁺ ${fmt(-y.hp)}개 바탕질로 이동`, '#1971c2');
+  if(y.lac) add(`젖산 ${fmt(y.lac)}개 생성`, '#868e96');
+  (st.extra||[]).forEach(t => add(t,'#1098ad'));
+  return o;
+}
+
+/* ===== 탄소 점 배치와 이동 (위 ①, ② 그림이 함께 사용) ===== */
+const cntC = groups => groups.reduce((a,g) => a + g.k.length, 0);
+// 분자 묶음들을 (cx, cy) 중심으로 정렬해 각 탄소 점의 위치를 계산
+function layout(groups, cx, cy, gap, ggap){
+  const gg = groups.length > 1 ? ggap : 0;
+  const widths = groups.map(g => (g.k.length-1)*gap);
+  const tot = widths.reduce((a,b) => a+b, 0) + gg*(groups.length-1);
+  let x = cx - tot/2; const pos = {}, cen = [];
+  groups.forEach((g,i) => {
+    g.k.forEach((key,j) => { pos[key] = {x: x + j*gap, y: cy}; });
+    cen.push(x + widths[i]/2); x += widths[i] + gg;
+  });
+  return {pos, cen};
+}
+// 반응이 일어나는 구간(피루브산 산화는 마이토콘드리아에 들어간 뒤에 반응)
+function eOf(st,p){
+  const w = st.id === 'p1' ? [0.45,0.95] : [0.15,0.85];
+  return ease(clamp((p-w[0])/(w[1]-w[0]), 0, 1));
+}
+// 각 탄소 점의 현재 위치: 이전 위치와 이후 위치 사이를 보간. CO₂로 나가는 탄소는 fly 방향으로 날아가며 사라짐
+function dotsNow(cv, A, B, e, fly, amp){
+  const gone = cv.gone || [];
+  const keys = Array.from(new Set([].concat(...cv.a.map(g => g.k), ...cv.b.map(g => g.k))));
+  const same = gone.length === 0 && cntC(cv.a) === cntC(cv.b) && cv.a.length === cv.b.length;
+  const now = {};
+  keys.forEach((k,i) => {
+    const pa = A.pos[k], pb = B.pos[k]; let x, y, o = 1;
+    if(pa && pb){ x = pa.x + (pb.x-pa.x)*e; y = pa.y + (pb.y-pa.y)*e; }
+    else if(pa){ x = pa.x + fly[0]*e; y = pa.y + fly[1]*e; o = 1 - e; }
+    else { x = pb.x; y = pb.y; }
+    if(same) y += Math.sin(e*Math.PI) * (i%2 ? -amp : amp);
+    now[k] = {x, y, o};
+  });
+  return {keys, now, same, gone};
+}
+
+/* ===================== 5. 위 ① 그림: 세포 속 위치와 물질의 이동 ===================== */
+// 탄소 화합물이 있는 위치(세포질 → 마이토콘드리아 바탕질로 이동)
+function sceneAnchor(st,p){
+  if(st.s === 1){ const u = ease(clamp(p/0.45, 0, 1)); return {x: 125 + (430-125)*u, y: 150 + (125-150)*u}; }
+  if(st.s === 2) return {x:430, y:125};
+  return {x:125, y:150};
+}
+function drawScene(st,p){
+  const s = st.s, c = STAGES[s].color, cv = CV[st.id];
+  const cell = (s===0 || s===4), mat = (s===1 || s===2), mem = (s===3);
+  let o = SVG0('0 0 640 260');
+  o += `<rect width="640" height="260" fill="#fafafa"/>`;
+  o += `<rect x="6" y="6" width="628" height="248" rx="30" fill="#fff8ec" stroke="${cell?c:'#e0b878'}" stroke-width="${cell?7:3}"/>`;
+  o += `<text x="20" y="32" font-size="15" font-weight="700" fill="#a8741a">세포질</text>`;
+  // 마이토콘드리아: 외막, 내막, 크리스타
+  o += `<ellipse cx="430" cy="140" rx="190" ry="98" fill="#ffe3e3" stroke="#e03131" stroke-width="3"/>`;
+  o += `<ellipse cx="430" cy="140" rx="165" ry="76" fill="${mat?c:'#fff0f6'}" fill-opacity="${mat?0.28:1}" stroke="${mem?c:'#c2255c'}" stroke-width="${mem?8:3}"/>`;
+  const cs = mem ? c : '#c2255c';
+  [360,410,460,510].forEach(x0 => { o += `<path d="M${x0} 72 v28 q0 8 8 8 q8 0 8 -8 v-28" fill="none" stroke="${cs}" stroke-width="3"/>`; });
+  [385,435,485].forEach(x0 => { o += `<path d="M${x0} 211 v-28 q0 -8 8 -8 q8 0 8 8 v28" fill="none" stroke="${cs}" stroke-width="3"/>`; });
+  o += `<text x="430" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#c92a2a">마이토콘드리아</text>`;
+  o += `<text x="430" y="56" text-anchor="middle" font-size="11" fill="#c92a2a">막 사이 공간</text>`;
+  o += `<text x="278" y="150" font-size="13" font-weight="700" fill="#862e9c">바탕질</text>`;
+  o += `<text x="20" y="248" font-size="14" font-weight="700" fill="${c}">현재: ${STAGES[s].name} (${STAGES[s].place})</text>`;
+  if(s === 1 && p < 0.45) o += `<text x="20" y="226" font-size="12" font-weight="700" fill="#e64980">피루브산이 마이토콘드리아 안으로 이동</text>`;
+
+  if(s === 3){
+    // 산화적 인산화: 막 사이 공간에 H⁺이 쌓이고, 내막을 따라 전자가 이동
+    const id = st.id; let nHp = 0;
+    if(id === 'o2') nHp = Math.floor(30*p); else if(id === 'o3') nHp = 30; else if(id === 'o4') nHp = 30 - Math.floor(20*p);
+    for(let k=0;k<nHp;k++){
+      const a = (k/30)*2*Math.PI;
+      o += `<circle cx="${430+178*Math.cos(a)}" cy="${140+87*Math.sin(a)}" r="3.8" fill="#1c7ed6" stroke="#fff" stroke-width="1"/>`;
+    }
+    o += `<circle cx="${330+200*((st._si+p)/st._sn)}" cy="${72}" r="9" fill="${c}" stroke="#fff" stroke-width="3"/>`;
+  } else {
+    // 탄소 화합물(작은 점)의 위치와 변화
+    const an = sceneAnchor(st,p), e = eOf(st,p);
+    const A = layout(cv.a, an.x, an.y, 11, 44), B = layout(cv.b, an.x, an.y, 11, 44);
+    const D = dotsNow(cv, A, B, e, [26,-62], 4);
+    if(s === 2){   // TCA 회로의 고리
+      o += `<circle cx="430" cy="125" r="54" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="4 5" opacity=".6"/>`;
+      for(let i=0;i<8;i++){
+        const a = (-90+45*i)*Math.PI/180, on = (i === (st._si+1)%8);
+        o += `<circle cx="${430+54*Math.cos(a)}" cy="${125+54*Math.sin(a)}" r="${on?7:4.5}" fill="${on?c:'#fff'}" stroke="${c}" stroke-width="2"/>`;
+      }
+    }
+    D.keys.forEach(k => { /* 결합선은 아래에서 그림 */ });
+    const bond = (groups,op) => groups.forEach(g => {
+      for(let i=0;i<g.k.length-1;i++){
+        const u = D.now[g.k[i]], v = D.now[g.k[i+1]];
+        o += `<line x1="${u.x}" y1="${u.y}" x2="${v.x}" y2="${v.y}" stroke="#adb5bd" stroke-width="3.5" stroke-linecap="round" opacity="${op*Math.min(u.o,v.o)}"/>`;
+      }
+    });
+    bond(cv.a, 1-e); bond(cv.b, e);
+    D.keys.forEach(k => {
+      const q = D.now[k];
+      o += `<circle cx="${q.x}" cy="${q.y}" r="5.5" fill="${CCOL[k]}" stroke="#000" stroke-width="1" opacity="${q.o}"/>`;
+    });
+    D.gone.forEach(k => {
+      const q = D.now[k];
+      o += `<text x="${q.x+8}" y="${q.y-8}" font-size="12" font-weight="700" fill="#c92a2a" opacity="${Math.sin(e*Math.PI)}">CO₂</text>`;
+    });
+    const lab = (groups,L,op) => groups.forEach((g,i) => {
+      o += `<text x="${L.cen[i]}" y="${an.y+24}" text-anchor="middle" font-size="11" font-weight="700" fill="#212529" opacity="${op}">${g.k.length}C</text>`;
+    });
+    lab(cv.a, A, 1-e); lab(cv.b, B, e);
+  }
+  // ATP, NADH 등의 변화를 일어나는 장소 근처에 표시
+  const ch = chipsOf(st);
+  if(ch.length){
+    const a = clamp((p-0.5)*4, 0, 1);
+    if(s === 0 || s === 4){
+      ch.forEach((q,i) => {
+        const w = textW(q.t,12) + 18;
+        o += `<g opacity="${a}"><rect x="16" y="${58+26*i}" width="${w}" height="22" rx="11" fill="${q.col}"/><text x="${16+w/2}" y="${73+26*i}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">${q.t}</text></g>`;
+      });
+    } else {
+      const f = 11, ws = ch.map(q => textW(q.t,f) + 18), tot = ws.reduce((q,w) => q+w, 0) + 6*(ch.length-1);
+      let cx = 430 - tot/2;
+      ch.forEach((q,i) => {
+        o += `<g opacity="${a}"><rect x="${cx}" y="172" width="${ws[i]}" height="22" rx="11" fill="${q.col}"/><text x="${cx+ws[i]/2}" y="187" text-anchor="middle" font-size="${f}" font-weight="700" fill="#fff">${q.t}</text></g>`;
+        cx += ws[i] + 6;
+      });
+    }
+  }
+  return o + '</svg>';
+}
+
+/* ===================== 6. 위 ② 그림: 탄소 추적기 ===================== */
+function drawCarbon(st,p){
+  if(st.s === 3) return drawCarbonDone();
+  const cv = CV[st.id], c = STAGES[st.s].color;
+  const A = layout(cv.a, 320, 130, 28, 110), B = layout(cv.b, 320, 130, 28, 110);
+  const e = eOf(st,p);
+  const D = dotsNow(cv, A, B, e, [45,-85], 7), now = D.now;
+  let s = SVG0('0 0 640 260');
+  s += `<rect width="640" height="260" fill="#fafafa"/>`;
+  s += `<ellipse cx="320" cy="130" rx="230" ry="62" fill="${c}" opacity=".08"/>`;
+  s += `<circle cx="320" cy="130" r="${30+e*150}" fill="none" stroke="${c}" stroke-width="3" opacity="${e>0.02 && e<1 ? 0.35*(1-e) : 0}"/>`;
+  const ta = cv.a.map(g => g.k.length+'C').join(' + '), tb = cv.b.map(g => g.k.length+'C').join(' + ');
+  s += `<text x="320" y="56" text-anchor="middle" font-size="30" font-weight="700" fill="#000"><tspan fill-opacity="${1-0.6*e}">${ta}</tspan><tspan fill="${c}">\u00a0→\u00a0</tspan><tspan fill-opacity="${0.4+0.6*e}">${tb}</tspan></text>`;
+  let sub, subCol = '#5c6670';
+  if(D.gone.length){ sub = `CO₂ ${D.gone.length}개 방출 (탄소 ${D.gone.length}개 감소)`; subCol = '#c92a2a'; }
+  else if(cv.sub) sub = cv.sub;
+  else if(cv.b.length > cv.a.length) sub = '분자가 쪼개져 탄소가 나뉨';
+  else if(cv.b.length < cv.a.length) sub = '두 분자가 결합해 탄소가 합쳐짐';
+  else sub = '탄소 수 변화 없음 · 구조만 바뀜';
+  s += `<text x="320" y="78" text-anchor="middle" font-size="${fitFont(sub,600,14)}" font-weight="700" fill="${subCol}" opacity="${0.4+0.6*e}">${sub}</text>`;
+  const tag = `${STAGES[st.s].name} · ${STAGES[st.s].place}`, tw = textW(tag,12) + 22;
+  s += `<rect x="12" y="12" width="${tw}" height="24" rx="12" fill="${c}"/><text x="${12+tw/2}" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">${tag}</text>`;
+  // 결합선
+  const bond = (groups,op) => groups.forEach(g => {
+    for(let i=0;i<g.k.length-1;i++){
+      const u = now[g.k[i]], v = now[g.k[i+1]];
+      s += `<line x1="${u.x}" y1="${u.y}" x2="${v.x}" y2="${v.y}" stroke="#adb5bd" stroke-width="5" stroke-linecap="round" opacity="${op*Math.min(u.o,v.o)}"/>`;
+    }
+  });
+  bond(cv.a, 1-e); bond(cv.b, e);
+  // 인산기(P): 붙어 있는 탄소 위에 표시. 새로 붙는 인산기는 위에서 날아옴
+  const phos = (groups,op,fly) => groups.forEach(g => (g.pp||[]).forEach(key => {
+    const q = now[key]; if(!q) return;
+    const y = 90 + (fly ? -30*(1-e) : 0);
+    s += `<g opacity="${op}"><rect x="${q.x-10}" y="${y}" width="20" height="18" rx="5" fill="#ffe066" stroke="#000" stroke-width="1.5"/><text x="${q.x}" y="${y+13}" text-anchor="middle" font-size="12" font-weight="700" fill="#000">P</text></g>`;
+  }));
+  phos(cv.a, 1-e, false); phos(cv.b, e, true);
+  // 탄소 점
+  D.keys.forEach(k => {
+    const q = now[k];
+    s += `<circle cx="${q.x}" cy="${q.y}" r="12" fill="${CCOL[k]}" stroke="#000" stroke-width="1.5" opacity="${q.o}"/>`;
+  });
+  D.gone.forEach(k => {
+    const q = now[k];
+    s += `<text x="${q.x+16}" y="${q.y-14}" font-size="14" font-weight="700" fill="#c92a2a" opacity="${Math.sin(e*Math.PI)}">CO₂</text>`;
+  });
+  // 분자 이름과 탄소 수
+  const lab = (groups,L,op) => groups.forEach((g,i) => {
+    s += `<g opacity="${op}"><text x="${L.cen[i]}" y="176" text-anchor="middle" font-size="${fitFont(g.lab,170,14)}" font-weight="700" fill="#000">${g.lab}</text>`;
+    s += `<text x="${L.cen[i]}" y="194" text-anchor="middle" font-size="12" fill="#5c6670">(${g.k.length}C)</text></g>`;
+  });
+  lab(cv.a, A, 1-e); lab(cv.b, B, e);
+  s += `<text x="320" y="222" text-anchor="middle" font-size="${fitFont('효소: '+st.enz,560,13)}" fill="#495057">효소: ${st.enz}</text>`;
+  s += `<rect x="40" y="230" width="560" height="6" rx="3" fill="#e9ecef"/><rect x="40" y="230" width="${560*p}" height="6" rx="3" fill="${c}"/>`;
+  s += `<text x="320" y="253" text-anchor="middle" font-size="12" fill="#5c6670">${CAPTION[st.s]}</text>`;
+  return s + '</svg>';
+}
+// 산화적 인산화 단계: 탄소는 이미 모두 CO₂로 나간 상태
+function drawCarbonDone(){
+  const c = STAGES[3].color;
+  let s = SVG0('0 0 640 260');
+  s += `<rect width="640" height="260" fill="#fafafa"/>`;
+  s += `<text x="320" y="56" text-anchor="middle" font-size="30" font-weight="700" fill="#000">6C → CO₂ 6개</text>`;
+  s += `<text x="320" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="${c}">탄소는 모두 CO₂로 나갔다</text>`;
+  GC.forEach((col,i) => {
+    const x = 320 + (i-2.5)*60, y = 135 + Math.sin(S.t*2 + i)*4;
+    s += `<circle cx="${x}" cy="${y}" r="13" fill="${col}" stroke="#000" stroke-width="1.5"/>`;
+    s += `<text x="${x}" y="178" text-anchor="middle" font-size="13" font-weight="700" fill="#c92a2a">CO₂</text>`;
+  });
+  s += `<text x="320" y="214" text-anchor="middle" font-size="13" fill="#495057">피루브산 산화에서 2개, TCA 회로에서 4개가 CO₂로 방출되었다.</text>`;
+  s += `<text x="320" y="236" text-anchor="middle" font-size="13" fill="#495057">이 단계는 탄소 변화 없이 전자(e⁻)와 H⁺의 이동으로 ATP를 만든다.</text>`;
+  return s + '</svg>';
+}
+
+/* ===================== 7. 아래 그림: 반응 카드 (해당, 피루브산 산화, 젖산 발효) ===================== */
+function boxList(list, x, w, cy, op){
+  const h = 72, gap = 12, tot = list.length*h + (list.length-1)*gap;
+  let yy = cy - tot/2, s = '';
+  list.forEach(m => {
+    const name = m.n + (m.x ? ` ×${m.x}` : '');
+    const f = fitFont(name, w, 15);
+    s += `<g opacity="${op}"><rect x="${x}" y="${yy}" width="${w}" height="${h}" rx="12" fill="#fff" stroke="#000" stroke-width="1.5"/>`;
+    s += `<text x="${x+w/2}" y="${yy+24}" text-anchor="middle" font-size="${f}" font-weight="700" fill="#212529">${name}</text>`;
+    if(m.c){
+      const gx = 16, sx = x + w/2 - (m.c-1)*gx/2;
+      for(let i=0;i<m.c;i++) s += `<circle cx="${sx+i*gx}" cy="${yy+46}" r="5.5" fill="#495057"/>`;
+      (m.pi||[]).forEach(i => {     // 인산기(P): 붙은 탄소 아래에 표시
+        const px = sx + i*gx;
+        s += `<rect x="${px-8}" y="${yy+54}" width="16" height="13" rx="3" fill="#ffe066" stroke="#000" stroke-width="1"/><text x="${px}" y="${yy+64}" text-anchor="middle" font-size="9" font-weight="700" fill="#000">P</text>`;
+      });
+    }
+    s += '</g>'; yy += h + gap;
+  });
+  return s;
+}
+function drawCard(st,p){
+  const c = STAGES[st.s].color;
+  let s = SVG0('0 0 640 300');
+  s += `<rect width="640" height="300" fill="#fff"/>`;
+  s += `<rect x="20" y="10" width="600" height="34" rx="17" fill="${c}" opacity=".13"/>`;
+  s += `<text x="320" y="33" text-anchor="middle" font-size="${fitFont('효소: '+st.enz,580,16)}" font-weight="700" fill="${c}">효소: ${st.enz}</text>`;
+  s += boxList(st.from, 10, 220, 138, 1 - 0.5*p);
+  s += boxList(st.to, 410, 220, 138, 0.25 + 0.75*p);
+  s += `<line x1="240" y1="138" x2="392" y2="138" stroke="${c}" stroke-width="5"/>`;
+  s += `<polygon points="402,138 388,129 388,147" fill="${c}"/>`;
+  s += `<circle cx="${240+160*p}" cy="138" r="8" fill="${c}" stroke="#fff" stroke-width="2"/>`;
+  const ch = chipsOf(st);
+  if(ch.length){
+    const a = Math.max(0, Math.min(1, (p-0.5)*4)), f = 14;
+    const ws = ch.map(q => textW(q.t,f) + 24);
+    const tot = ws.reduce((q,w) => q+w, 0) + 10*(ch.length-1);
+    let cx = 320 - tot/2;
+    ch.forEach((q,i) => {
+      s += `<g opacity="${a}"><rect x="${cx}" y="240" width="${ws[i]}" height="30" rx="15" fill="${q.col}"/><text x="${cx+ws[i]/2}" y="260" text-anchor="middle" font-size="${f}" font-weight="700" fill="#fff">${q.t}</text></g>`;
+      cx += ws[i] + 10;
+    });
+  }
+  if(st.rep) s += `<text x="320" y="291" text-anchor="middle" font-size="12" fill="#5c6670">※ ${st.rep}</text>`;
+  return s + '</svg>';
+}
+
+/* ===================== 8. 아래 그림: TCA 회로 ===================== */
+const TCA_NODES = [['옥살아세트산',4],['시트르산',6],['아이소시트르산',6],['α-케토글루타르산',5],['석신일 CoA',4],['석신산',4],['푸마르산',4],['말산',4]];
+function drawTCA(st,p){
+  const c = STAGES[2].color, k = st._si;   // k: 이번 단계 번호(0~7)
+  const pos = TCA_NODES.map((_,i) => { const a = (-90+45*i)*Math.PI/180; return {x:320+232*Math.cos(a), y:150+108*Math.sin(a)}; });
+  let s = SVG0('0 0 640 300');
+  s += `<rect width="640" height="300" fill="#fff"/>`;
+  for(let i=0;i<8;i++){
+    const a = pos[i], b = pos[(i+1)%8], act = (i===k);
+    s += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${act?c:'#ced4da'}" stroke-width="${act?6:3}"/>`;
+    const ang = Math.atan2(b.y-a.y, b.x-a.x), qx = a.x+(b.x-a.x)*0.58, qy = a.y+(b.y-a.y)*0.58;
+    const pt = (dx,dy) => `${qx+dx*Math.cos(ang)-dy*Math.sin(ang)},${qy+dx*Math.sin(ang)+dy*Math.cos(ang)}`;
+    s += `<polygon points="${pt(9,0)} ${pt(-7,-7)} ${pt(-7,7)}" fill="${act?c:'#adb5bd'}"/>`;
+  }
+  const A = pos[k], B = pos[(k+1)%8];
+  s += `<circle cx="${A.x+(B.x-A.x)*p}" cy="${A.y+(B.y-A.y)*p}" r="8" fill="${c}" stroke="#fff" stroke-width="2"/>`;
+  TCA_NODES.forEach((nd,i) => {
+    const q = pos[i], on = (i === (k+1)%8), from = (i === k);
+    const f = fitFont(nd[0], 124, 13);
+    s += `<rect x="${q.x-62}" y="${q.y-23}" width="124" height="46" rx="10" fill="${on?c:'#fff'}" fill-opacity="${on?0.22:1}" stroke="${on?c:(from?'#868e96':'#adb5bd')}" stroke-width="${on?3:2}"/>`;
+    s += `<text x="${q.x}" y="${q.y-4}" text-anchor="middle" font-size="${f}" font-weight="700" fill="#212529">${nd[0]}</text>`;
+    const gx = 9, sx = q.x - (nd[1]-1)*gx/2;
+    for(let j=0;j<nd[1];j++) s += `<circle cx="${sx+j*gx}" cy="${q.y+12}" r="3.5" fill="#495057"/>`;
+  });
+  const ao = (k === 0) ? 1 : 0.3;
+  s += `<g opacity="${ao}"><text x="572" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#e64980">아세틸 CoA (2C)</text><line x1="548" y1="24" x2="522" y2="48" stroke="#e64980" stroke-width="3"/><polygon points="518,52 524,41 530,49" fill="#e64980"/></g>`;
+  s += `<text x="320" y="100" text-anchor="middle" font-size="18" font-weight="700" fill="${c}">TCA 회로</text>`;
+  s += `<text x="320" y="122" text-anchor="middle" font-size="13" fill="#5c6670">${k+1} / 8 단계</text>`;
+  const ch = chipsOf(st), a = Math.max(0, Math.min(1, (p-0.5)*4));
+  ch.forEach((q,i) => { s += `<text x="320" y="${150+22*i}" text-anchor="middle" font-size="15" font-weight="700" fill="${q.col}" opacity="${a}">${q.t}</text>`; });
+  if(!ch.length) s += `<text x="320" y="150" text-anchor="middle" font-size="13" fill="#868e96">이 단계에서는 에너지 운반체가 생기지 않음</text>`;
+  s += `<text x="320" y="214" text-anchor="middle" font-size="12" fill="#5c6670">※ 포도당 1분자당 2회전 기준</text>`;
+  return s + '</svg>';
+}
+
+/* ===================== 9. 아래 그림: 산화적 인산화 (내막 확대) ===================== */
+function drawETC(st,p){
+  const id = st.id, ph = (S.t/STEP_SEC*2) % 1;
+  const X = {I:90, II:190, III:300, IV:410, AS:550};
+  let s = SVG0('0 0 640 300');
+  s += `<rect x="0" y="0" width="640" height="140" fill="#e7f5ff"/><rect x="0" y="160" width="640" height="140" fill="#fff4e6"/>`;
+  s += `<text x="12" y="24" font-size="14" font-weight="700" fill="#1864ab">막 사이 공간 (H⁺ 농도 높음)</text>`;
+  s += `<text x="12" y="292" font-size="14" font-weight="700" fill="#d9480f">바탕질</text>`;
+  s += `<circle cx="408" cy="19" r="5" fill="#fab005" stroke="#f59f00"/><text x="418" y="24" font-size="13">전자(e⁻)</text>`;
+  s += `<circle cx="500" cy="19" r="5" fill="#1c7ed6"/><text x="510" y="24" font-size="13">H⁺</text>`;
+  s += `<rect x="0" y="140" width="640" height="20" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>`;
+  s += `<text x="632" y="155" text-anchor="end" font-size="12" font-weight="700" fill="#a8480a">내막</text>`;
+  [['Ⅰ',X.I],['Ⅱ',X.II],['Ⅲ',X.III],['Ⅳ',X.IV]].forEach(q => {
+    s += `<rect x="${q[1]-28}" y="122" width="56" height="56" rx="10" fill="#4dabf7" stroke="#1864ab" stroke-width="2"/>`;
+    s += `<text x="${q[1]}" y="146" text-anchor="middle" font-size="11" fill="#fff">복합체</text>`;
+    s += `<text x="${q[1]}" y="168" text-anchor="middle" font-size="18" font-weight="700" fill="#fff">${q[0]}</text>`;
+  });
+  s += `<rect x="${X.AS-22}" y="132" width="44" height="28" rx="6" fill="#40c057" stroke="#2b8a3e" stroke-width="2"/>`;
+  s += `<rect x="${X.AS-5}" y="160" width="10" height="18" fill="#2b8a3e"/>`;
+  s += `<circle cx="${X.AS}" cy="198" r="26" fill="#69db7c" stroke="#2b8a3e" stroke-width="2"/>`;
+  s += `<text x="${X.AS}" y="195" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">ATP</text>`;
+  s += `<text x="${X.AS}" y="208" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">합성효소</text>`;
+  if(id === 'o1'){
+    const n1 = p < 0.5 ? 'NADH' : 'NAD⁺', f1 = p < 0.5 ? 'FADH₂' : 'FAD';
+    s += `<rect x="52" y="222" width="76" height="26" rx="13" fill="#e8590c"/><text x="90" y="240" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">${n1}</text>`;
+    s += `<rect x="152" y="222" width="76" height="26" rx="13" fill="#9c36b5"/><text x="190" y="240" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">${f1}</text>`;
+    s += `<line x1="90" y1="220" x2="90" y2="182" stroke="#e8590c" stroke-width="3"/><line x1="190" y1="220" x2="190" y2="182" stroke="#9c36b5" stroke-width="3"/>`;
+  }
+  if(id === 'o1' || id === 'o2' || id === 'o3'){
+    [[X.I,X.IV],[X.II,X.III]].forEach(r => {
+      for(let k=0;k<4;k++){
+        const u = (ph + k/4) % 1;
+        s += `<circle cx="${r[0]+(r[1]-r[0])*u}" cy="150" r="5" fill="#fab005" stroke="#f59f00"/>`;
+      }
+    });
+  }
+  if(id === 'o2'){
+    [X.I, X.III, X.IV].forEach(px => {
+      for(let k=0;k<3;k++){
+        const u = (ph + k/3) % 1;
+        s += `<circle cx="${px+(k-1)*12}" cy="${190-90*u}" r="5" fill="#1c7ed6"/>`;
+      }
+    });
+  }
+  let nHp = 0;
+  if(id === 'o2') nHp = Math.floor(36*p);
+  else if(id === 'o3') nHp = 36;
+  else if(id === 'o4') nHp = 36 - Math.floor(24*p);
+  for(let k=0;k<nHp;k++){
+    s += `<circle cx="${40+((k*97)%560)}" cy="${45+((k*37)%80)}" r="5" fill="#1c7ed6" opacity=".85"/>`;
+  }
+  if(id === 'o3'){
+    s += `<circle cx="${X.IV}" cy="238" r="16" fill="#ff8787" stroke="#c92a2a" stroke-width="2"/><text x="${X.IV}" y="243" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">O₂</text>`;
+    s += `<line x1="${X.IV}" y1="220" x2="${X.IV}" y2="184" stroke="#c92a2a" stroke-width="3"/>`;
+    if(p > 0.5) s += `<circle cx="${X.IV+75}" cy="215" r="17" fill="#74c0fc" stroke="#1971c2" stroke-width="2"/><text x="${X.IV+75}" y="220" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">H₂O</text>`;
+    s += `<text x="${X.IV}" y="280" text-anchor="middle" font-size="13" font-weight="700" fill="#495057">O₂ + 4e⁻ + 4H⁺ → 2H₂O</text>`;
+  }
+  if(id === 'o4'){
+    for(let k=0;k<4;k++){
+      const u = (ph + k/4) % 1;
+      s += `<circle cx="${X.AS}" cy="${95+100*u}" r="5" fill="#1c7ed6"/>`;
+    }
+    if(p > 0.4) s += `<rect x="${X.AS-42}" y="236" width="84" height="28" rx="14" fill="#2b8a3e"/><text x="${X.AS}" y="255" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">ATP 생성!</text>`;
+    s += `<text x="${X.AS}" y="282" text-anchor="middle" font-size="12" fill="#495057">ADP + Pᵢ → ATP</text>`;
+  }
+  return s + '</svg>';
+}
+function drawDetail(st,p){
+  if(st.s === 2) return drawTCA(st,p);
+  if(st.s === 3) return drawETC(st,p);
+  return drawCard(st,p);
+}
+
+/* ===================== 10. 화면 갱신 ===================== */
+let infoKey = '', lastIdx = -1;
+
+function renderStats(idx,p){
+  const T = tally(idx,p);
+  $('vAtp').textContent = fmt(T.atp - T.atpu);
+  $('vAtpSub').textContent = `생성 ${fmt(T.atp)}개 − 소모 ${fmt(T.atpu)}개`;
+  $('vNadh').textContent = fmt(T.nadh);
+  $('vFadh').textContent = fmt(T.fadh);
+  $('vCo2').textContent = fmt(T.co2);
+  $('vO2').textContent = fmt(T.o2);
+  $('vHp').textContent = fmt(T.hp);
+  $('vH2o').textContent = fmt(T.h2o);
+  $('vLac').textContent = fmt(T.lac);
+}
+function molText(list){
+  return list.map(m => m.n + (m.x ? ` ×${m.x}` : '') + (m.c ? `(${m.c}C)` : '')).join(' + ');
+}
+function renderInfo(idx,done){
+  const key = idx + '|' + done + '|' + S.N + '|' + S.o2 + '|' + S.shuttle;
+  if(key === infoKey) return;
+  infoKey = key;
+  const st = LIST[idx], g = STAGES[st.s], f = S.o2/100;
+  let h = `<div class="eyebrow">단계 ${idx+1} / ${LIST.length}</div>`;
+  h += `<span class="badge" style="background:${g.color}">${g.name}</span> <span class="small">${g.place}</span>`;
+  h += `<h3>${st._si+1}/${st._sn} · ${st.n}</h3>`;
+  h += `<div class="rxn">${molText(st.from)} → ${molText(st.to)}</div>`;
+  h += `<div class="small">효소·구조: ${st.enz}</div>`;
+  h += `<p style="margin:6px 0">${st.d}</p>`;
+  const ch = chipsOf(st);
+  if(ch.length) h += ch.map(q => `<span class="chip" style="background:${q.col}">${q.t}</span>`).join('') + `<div class="small">※ 위 수치는 포도당 1분자 기준입니다.</div>`;
+  if(st.s === 4) h += `<div class="small">산소 공급 ${S.o2} %이므로 피루브산의 ${fmt((1-f)*100)} %가 젖산 발효로 진행된다고 가정합니다.</div>`;
+  else if(st.s > 0 && f < 1) h += `<div class="small">산소 공급 ${S.o2} %이므로 피루브산의 ${S.o2} %만 이 경로로 진행된다고 가정합니다.</div>`;
+  if(done){
+    const R = results();
+    h += `<div class="done"><b>세포호흡 완료!</b> 포도당 ${S.N}개에서 ATP ${fmt(R.atp)}개가 만들어졌습니다 (포도당 1개당 ${fmt(R.pg)}개).</div>`;
+  }
+  $('info').innerHTML = h;
+}
+
+// 최종 결과 계산
+function results(){
+  const rows = STAGES.map(() => ({on:0,atp:0,nadh:0,fadh:0,co2:0}));
+  let hp=0, o2=0, h2o=0, lac=0, atp=0;
+  LIST.forEach(st => {
+    const y = yieldOf(st), m = mult(st)*S.N, r = rows[st.s];
+    r.on = 1;
+    const net = ((y.atp||0) - (y.atpu||0))*m;
+    r.atp += net; atp += net;
+    if(y.nadh > 0) r.nadh += y.nadh*m;
+    if(y.fadh > 0) r.fadh += y.fadh*m;
+    r.co2 += (y.co2||0)*m;
+    if(y.hp > 0) hp += y.hp*m;
+    o2 += (y.o2||0)*m; h2o += (y.h2o||0)*m; lac += (y.lac||0)*m;
+  });
+  return {rows, hp, o2, h2o, lac, atp, pg: atp/S.N};
+}
+function renderResults(){
+  const R = results();
+  let t = `<tr><th>단계 (장소)</th><th>ATP 순증가(개)</th><th>NADH 생성(개)</th><th>FADH₂ 생성(개)</th><th>CO₂ 방출(개)</th></tr>`;
+  R.rows.forEach((r,i) => {
+    if(!r.on) return;
+    t += `<tr><td>${STAGES[i].name}<br><span class="small">${STAGES[i].place}</span></td><td>${fmt(r.atp)}</td><td>${fmt(r.nadh)}</td><td>${fmt(r.fadh)}</td><td>${fmt(r.co2)}</td></tr>`;
+  });
+  t += `<tr><th>합계</th><th>${fmt(R.atp)}</th><th colspan="3"></th></tr>`;
+  $('tbl').innerHTML = t;
+  const eff = R.pg*ATP_KJ/GLU_KJ*100;
+  let m = `<b>포도당 1개당 ATP ${fmt(R.pg)}개</b> → 에너지 전환 효율 약 ${fmt(eff)} % (나머지 약 ${fmt(100-eff)} %는 열로 방출). `;
+  m += `포도당 1몰 기준으로 ATP에 저장되는 에너지는 약 ${fmt(R.pg*ATP_KJ)} kJ/몰이다.`;
+  if(R.hp > 0) m += `<br><span class="small">산화적 인산화: H⁺ ${fmt(R.hp)}개 이동, O₂ ${fmt(R.o2)}개 소비, H₂O ${fmt(R.h2o)}개 생성</span>`;
+  if(R.lac > 0) m += `<br><span class="small">젖산 발효: 젖산 ${fmt(R.lac)}개 생성 (추가 ATP 없음)</span>`;
+  $('sum').innerHTML = m;
+}
+
+function render(){
+  const len = LIST.length, end = len*STEP_SEC;
+  const done = S.t >= end - 1e-9;
+  const idx = done ? len-1 : Math.min(len-1, Math.floor(S.t/STEP_SEC));
+  const p = done ? 1 : (S.t - idx*STEP_SEC)/STEP_SEC;
+  const st = LIST[idx];
+  $('overview').innerHTML = drawScene(st,p);
+  $('carbon').innerHTML = drawCarbon(st,p);
+  $('detail').innerHTML = drawDetail(st,p);
+  renderStats(idx,p);
+  renderInfo(idx,done);
+  if(idx !== lastIdx){
+    lastIdx = idx;
+    document.querySelectorAll('#stepList li').forEach(li => li.classList.toggle('on', +li.dataset.i === idx));
+    document.querySelectorAll('#pills .pill').forEach(b => b.classList.toggle('on', +b.dataset.s === st.s));
+  }
+  $('lP').textContent = `${idx+1} / ${len} 단계`;
+  if(document.activeElement !== $('scrub')) $('scrub').value = S.t/STEP_SEC;
+}
+
+/* ===================== 11. 재생 제어 ===================== */
+let lastTs = 0;
+function loop(ts){
+  if(S.playing){
+    const dt = Math.min(0.05, (ts-lastTs)/1000);
+    S.t += dt*S.speed;
+    const end = LIST.length*STEP_SEC;
+    if(S.t >= end){ S.t = end; S.playing = false; }
+    render();
+  }
+  lastTs = ts;
+  requestAnimationFrame(loop);
+}
+const END = () => LIST.length*STEP_SEC;
+const curIdx = () => Math.min(LIST.length-1, Math.floor(S.t/STEP_SEC + 1e-9));
+
+$('bPlay').onclick  = () => { if(S.t >= END()) S.t = 0; S.playing = true; };
+$('bPause').onclick = () => { S.playing = false; };
+$('bReset').onclick = () => { S.playing = false; S.t = 0; lastIdx = -1; infoKey = ''; render(); };
+$('bNext').onclick  = () => { S.playing = false; S.t = Math.min(END(), (Math.floor(S.t/STEP_SEC + 1e-9)+1)*STEP_SEC); render(); };
+$('bPrev').onclick  = () => {
+  S.playing = false;
+  const i = curIdx(), p = S.t - i*STEP_SEC;
+  S.t = (p > 0.2 || S.t >= END()) ? i*STEP_SEC : Math.max(0, (i-1)*STEP_SEC);
+  render();
+};
+$('pills').onclick = e => { const b = e.target.closest('.pill'); if(!b) return; S.t = +b.dataset.i*STEP_SEC; render(); };
+$('stepList').onclick = e => { const li = e.target.closest('li'); if(!li) return; S.t = +li.dataset.i*STEP_SEC; render(); };
+$('scrub').oninput = e => { S.t = +e.target.value*STEP_SEC; render(); };
+
+// 조절 막대: 값이 바뀌면 단계 목록과 결과를 바로 다시 계산
+function onParams(){
+  const oldT = S.t, oldEnd = END(), oldIdx = curIdx(), cur = LIST[oldIdx];
+  const frac = (S.t - oldIdx*STEP_SEC)/STEP_SEC;
+  S.N = +$('rN').value; S.o2 = +$('rO').value; S.speed = +$('rS').value; S.shuttle = $('sSh').value;
+  $('lN').textContent = S.N + '개'; $('lN2').textContent = S.N;
+  $('lO').textContent = S.o2 + ' %'; $('lS').textContent = S.speed.toFixed(1) + ' 배';
+  buildList();
+  let ni = LIST.indexOf(cur); if(ni < 0) ni = Math.min(oldIdx, LIST.length-1);
+  S.t = (oldT >= oldEnd - 1e-9 && oldEnd > 0) ? END() : (ni + frac)*STEP_SEC;
+  lastIdx = -1; infoKey = '';
+  renderResults(); render();
+}
+['rN','rO','rS','sSh'].forEach(id => $(id).addEventListener('input', onParams));
+
+/* ===================== 12. 시작 ===================== */
+buildList();
+onParams();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

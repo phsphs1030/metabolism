@@ -1,0 +1,3119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>세포호흡 실시간 분자 시뮬레이션 | 인터랙티브 세포 현미경</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #020617;
+      color: #f8fafc;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Custom sleek range slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: #1e293b;
+      height: 6px;
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #f8fafc;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+      transition: transform 0.15s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+    }
+
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.75);
+    }
+
+    .stage-tab-active {
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+      border-color: rgba(147, 197, 253, 0.6);
+    }
+    .stage-tab-idle {
+      background: rgba(30, 41, 59, 0.85);
+      color: #cbd5e1;
+      border-color: rgba(51, 65, 85, 0.8);
+    }
+    .stage-tab-idle:hover {
+      background: rgba(51, 65, 85, 0.9);
+      color: #ffffff;
+    }
+
+    @keyframes pulseRing {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+      50% { box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+    }
+    .live-dot { animation: pulseRing 2s infinite; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-blue-500/30">
+
+  <!-- ==================== SLIM APP HEADER & STAGE NAVIGATION ==================== -->
+  <header class="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/90 shadow-lg">
+    <div class="max-w-[1440px] mx-auto px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
+      <!-- Brand Title -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-blue-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 shrink-0">
+          <i class="fa-solid fa-atom text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-sm sm:text-base font-black tracking-tight text-white leading-tight flex items-center gap-2">
+            <span>세포호흡 실시간 분자 시뮬레이션</span>
+            <span class="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 live-dot"></span> BIO-VERIFIED 60FPS
+            </span>
+          </h1>
+          <p class="text-[11px] text-slate-400 leading-tight hidden sm:block">
+            세포질 → 미토콘드리아 바탕질 → 내막 크리스타의 분자·전자·H⁺ 이동 정밀 탐구
+          </p>
+        </div>
+      </div>
+
+      <!-- 4 Main Stage Tabs -->
+      <nav class="flex items-center gap-1.5 overflow-x-auto max-w-full py-0.5" aria-label="세포호흡 단계">
+        <button onclick="switchStage('whole')" id="tab-whole"
+          class="stage-tab-active px-3 py-1.5 rounded-xl text-xs font-extrabold border transition flex items-center gap-1.5 whitespace-nowrap">
+          <i class="fa-solid fa-earth-asia"></i>
+          <span>세포 전체</span>
+        </button>
+        <button onclick="switchStage('glycolysis')" id="tab-glycolysis"
+          class="stage-tab-idle px-3 py-1.5 rounded-xl text-xs font-extrabold border transition flex items-center gap-1.5 whitespace-nowrap">
+          <span class="text-[10px] opacity-75">①</span>
+          <span>해당 과정</span>
+        </button>
+        <button onclick="switchStage('tca')" id="tab-tca"
+          class="stage-tab-idle px-3 py-1.5 rounded-xl text-xs font-extrabold border transition flex items-center gap-1.5 whitespace-nowrap">
+          <span class="text-[10px] opacity-75">②</span>
+          <span>피루브산 산화 · TCA</span>
+        </button>
+        <button onclick="switchStage('oxphos')" id="tab-oxphos"
+          class="stage-tab-idle px-3 py-1.5 rounded-xl text-xs font-extrabold border transition flex items-center gap-1.5 whitespace-nowrap">
+          <span class="text-[10px] opacity-75">③</span>
+          <span>산화적 인산화</span>
+        </button>
+      </nav>
+
+      <!-- Global Playback Controls -->
+      <div class="flex items-center gap-1.5">
+        <button onclick="togglePause()" id="btn-pause"
+          class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-white flex items-center gap-1.5 transition"
+          title="일시정지 / 재생">
+          <i id="icon-pause" class="fa-solid fa-pause text-emerald-400"></i>
+          <span id="txt-pause" class="hidden sm:inline">일시정지</span>
+        </button>
+
+        <div class="flex items-center bg-slate-900 rounded-xl p-0.5 border border-slate-800 text-[11px] font-bold">
+          <button onclick="setSpeed(0.5)" id="spd-05" class="px-2 py-1 rounded-lg text-slate-400 hover:text-white transition">0.5x</button>
+          <button onclick="setSpeed(1)" id="spd-10" class="px-2 py-1 rounded-lg bg-blue-600 text-white transition">1x</button>
+          <button onclick="setSpeed(1.8)" id="spd-18" class="px-2 py-1 rounded-lg text-slate-400 hover:text-white transition">1.8x</button>
+        </div>
+
+        <button onclick="resetSimulation()"
+          class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950 border border-slate-700 hover:border-rose-600 text-xs font-bold text-slate-300 hover:text-rose-200 transition"
+          title="현재 단계 초기화">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN INTERACTIVE LAB WORKSPACE ==================== -->
+  <main class="flex-grow max-w-[1440px] w-full mx-auto p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+    <!-- ==================== LEFT/CENTER: 60FPS CELLULAR MICROSCOPE ==================== -->
+    <section class="lg:col-span-8 xl:col-span-9 flex flex-col gap-3">
+
+      <!-- Canvas Frame -->
+      <div class="relative rounded-2xl overflow-hidden border border-slate-700/80 shadow-2xl bg-slate-950">
+        <!-- Top Overlay Bar inside Microscope -->
+        <div class="absolute top-0 inset-x-0 z-10 px-3.5 py-2.5 bg-gradient-to-b from-slate-950/90 via-slate-950/55 to-transparent flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+          <div class="flex items-center gap-2">
+            <span id="stage-location-pill" class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-blue-500/25 text-blue-200 border border-blue-400/40 backdrop-blur-sm">
+              장소: 세포질 + 미토콘드리아 전체
+            </span>
+            <span id="stage-headline" class="text-xs sm:text-sm font-extrabold text-white drop-shadow">
+              진핵세포 내부 세포호흡 통합 실시간 투시도
+            </span>
+          </div>
+
+          <!-- Legend Chips -->
+          <div class="hidden md:flex items-center gap-2.5 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-full border border-slate-700/70 text-[10px] font-bold text-slate-200">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 border border-slate-900"></span>탄소(C)</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>인산(P)</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-yellow-300 shadow-[0_0_6px_#fde047]"></span>ATP</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>NADH</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>FADH₂</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-sky-300 shadow-[0_0_6px_#38bdf8]"></span>e⁻</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>H⁺</span>
+          </div>
+        </div>
+
+        <!-- The Living 60FPS Canvas -->
+        <div id="canvas-wrapper" class="relative w-full h-[430px] sm:h-[515px] xl:h-[555px] bg-slate-950">
+          <canvas id="bio-canvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+          <!-- Interactive Molecule / Enzyme Inspector Popover (Hover or Tap to Pin!) -->
+          <div id="inspector-card" class="hidden absolute top-12 left-3 z-20 max-w-[290px] bg-slate-900/95 backdrop-blur-md border border-sky-400/60 rounded-xl p-3 shadow-2xl transition-opacity duration-150">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <div class="flex items-center gap-1.5">
+                <span id="insp-badge" class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-sky-500/20 text-sky-300">분자 탐지</span>
+                <span id="insp-carbon" class="text-[10px] font-bold text-amber-300"></span>
+              </div>
+              <button id="insp-close" onclick="unpinInspector()" class="hidden text-slate-400 hover:text-white text-xs px-1" title="닫기">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <div id="insp-title" class="text-xs font-extrabold text-white"></div>
+            <p id="insp-desc" class="text-[11px] text-slate-300 mt-1 leading-relaxed"></p>
+          </div>
+        </div>
+
+        <!-- Bottom Live Reaction Ticker & Quick Inject Hint -->
+        <div class="absolute bottom-0 inset-x-0 z-10 px-3.5 py-2.5 bg-gradient-to-t from-slate-950/95 via-slate-950/75 to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-2 pointer-events-none">
+          <div class="flex items-center gap-2 max-w-2xl">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0"></span>
+            <p id="live-ticker" class="text-xs font-semibold text-slate-100 leading-snug">
+              효소·분자를 클릭(또는 호버)하면 설명이 고정되고, 빈 공간을 클릭하면 분자가 추가 투입됩니다.
+            </p>
+          </div>
+          <span class="text-[10px] font-bold text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800 self-start sm:self-auto">
+            <i class="fa-solid fa-hand-pointer text-sky-400 mr-1"></i>객체 클릭: 정보 고정 · 빈 공간 클릭: 분자 투입
+          </span>
+        </div>
+      </div>
+
+      <!-- Real-Time Biochemical Telemetry Bar -->
+      <div class="glass-panel rounded-2xl p-3 sm:p-3.5 grid grid-cols-1 xl:grid-cols-12 gap-3 items-center">
+        <!-- 6 Live Molecule Counters -->
+        <div class="xl:col-span-8 grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+          <div class="bg-slate-900/90 rounded-xl py-2 px-1.5 border border-amber-500/40">
+            <div class="text-[10px] text-amber-300 font-bold">순생성 ATP</div>
+            <div id="stat-atp" class="text-sm sm:text-base font-black text-amber-400">0</div>
+            <div id="stat-atp-split" class="text-[9px] text-slate-400">기질 0 · 산화 0</div>
+          </div>
+          <div class="bg-slate-900/90 rounded-xl py-2 px-1.5 border border-emerald-500/35">
+            <div class="text-[10px] text-emerald-300 font-bold">NADH</div>
+            <div id="stat-nadh" class="text-sm sm:text-base font-black text-emerald-400">0</div>
+            <div class="text-[9px] text-slate-400">1개 ≈ 2.5 ATP</div>
+          </div>
+          <div class="bg-slate-900/90 rounded-xl py-2 px-1.5 border border-cyan-500/35">
+            <div class="text-[10px] text-cyan-300 font-bold">FADH₂</div>
+            <div id="stat-fadh2" class="text-sm sm:text-base font-black text-cyan-400">0</div>
+            <div class="text-[9px] text-slate-400">1개 ≈ 1.5 ATP</div>
+          </div>
+          <div class="bg-slate-900/90 rounded-xl py-2 px-1.5 border border-rose-500/35">
+            <div class="text-[10px] text-rose-300 font-bold">방출 CO₂</div>
+            <div id="stat-co2" class="text-sm sm:text-base font-black text-rose-400">0</div>
+            <div class="text-[9px] text-slate-400">탈탄산 반응</div>
+          </div>
+          <div class="bg-slate-900/90 rounded-xl py-2 px-1.5 border border-sky-500/35">
+            <div class="text-[10px] text-sky-300 font-bold">소비 O₂</div>
+            <div id="stat-o2" class="text-sm sm:text-base font-black text-sky-400">0</div>
+            <div class="text-[9px] text-slate-400">최종 전자수용체</div>
+          </div>
+          <div class="bg-slate-900/90 rounded-xl py-2 px-1.5 border border-indigo-500/35">
+            <div class="text-[10px] text-indigo-300 font-bold">생성 H₂O</div>
+            <div id="stat-h2o" class="text-sm sm:text-base font-black text-indigo-300">0</div>
+            <div class="text-[9px] text-slate-400">O₂ 환원 산물</div>
+          </div>
+        </div>
+
+        <!-- Dynamic Synced Energy Partition Bar -->
+        <div class="xl:col-span-4 bg-slate-900/90 rounded-xl p-2.5 border border-slate-800 space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] font-bold">
+            <span class="text-slate-200"><i class="fa-solid fa-fire-flame-curved text-orange-400 mr-1"></i>에너지 전환 효율</span>
+            <span id="eff-ratio-text" class="text-amber-300">ATP 34% : 열 66%</span>
+          </div>
+          <div class="w-full h-3 rounded-full overflow-hidden flex bg-slate-800 border border-slate-700">
+            <div id="eff-bar-atp" class="bg-gradient-to-r from-amber-400 to-yellow-300 h-full transition-all duration-500" style="width: 34%"></div>
+            <div id="eff-bar-heat" class="bg-gradient-to-r from-rose-500 to-orange-500 h-full transition-all duration-500" style="width: 66%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-slate-400">
+            <span id="eff-sub-left">최대 32 ATP × 7.3 = 233.6 kcal</span>
+            <span id="eff-sub-right">686 kcal 중 나머지 열 방출</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== RIGHT: INTERACTIVE CONTROL LAB PANEL ==================== -->
+    <aside class="lg:col-span-4 xl:col-span-3 flex flex-col gap-3">
+
+      <!-- ================================================================ -->
+      <!-- PANEL A: 세포 전체 통합 제어 (WHOLE CELL CONTROLS)                -->
+      <!-- ================================================================ -->
+      <div id="ctrl-whole" class="ctrl-panel glass-panel rounded-2xl p-4 space-y-3.5">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">호흡기질 직접 투입 (탄소 수 보존)</span>
+          <h2 class="text-sm font-extrabold text-white mt-1.5">어떤 유기물을 세포에 넣을까요?</h2>
+          <div class="grid grid-cols-3 gap-1.5 mt-2">
+            <button onclick="injectWholeSubstrate('glucose')"
+              class="p-2 rounded-xl bg-blue-600/25 hover:bg-blue-600/45 border border-blue-400/50 text-center transition active:scale-95">
+              <div class="text-base">🍬</div>
+              <div class="text-[11px] font-extrabold text-blue-200 mt-0.5">포도당(C₆)</div>
+              <div class="text-[9px] text-slate-400">2 C₃ → 6 CO₂</div>
+            </button>
+            <button onclick="injectWholeSubstrate('fat')"
+              class="p-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/40 border border-amber-400/50 text-center transition active:scale-95">
+              <div class="text-base">🧈</div>
+              <div class="text-[11px] font-extrabold text-amber-200 mt-0.5">지방</div>
+              <div class="text-[9px] text-slate-400">C₃ + β-산화</div>
+            </button>
+            <button onclick="injectWholeSubstrate('protein')"
+              class="p-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-400/50 text-center transition active:scale-95">
+              <div class="text-base">🥩</div>
+              <div class="text-[11px] font-extrabold text-emerald-200 mt-0.5">아미노산</div>
+              <div class="text-[9px] text-slate-400">-NH₂ → 1 C₃</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Cell Type Preset -->
+        <div class="pt-3 border-t border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold text-white">세포 종류 (미토콘드리아 수)</span>
+            <span id="cell-mito-count-badge" class="text-[11px] font-bold text-emerald-300">약 2,500개</span>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5 text-[11px] font-bold">
+            <button onclick="setCellType('liver')" id="ctype-liver" class="py-1.5 px-2 rounded-lg bg-indigo-600 text-white border border-indigo-400">간세포 (최다)</button>
+            <button onclick="setCellType('muscle')" id="ctype-muscle" class="py-1.5 px-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">골격근세포</button>
+            <button onclick="setCellType('skin')" id="ctype-skin" class="py-1.5 px-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">피부세포</button>
+            <button onclick="setCellType('rbc')" id="ctype-rbc" class="py-1.5 px-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">적혈구 (0개!)</button>
+          </div>
+          <p id="cell-type-note" class="text-[11px] text-slate-400 leading-relaxed bg-slate-900/70 p-2 rounded-lg border border-slate-800">
+            물질대사가 활발해 에너지를 많이 소비하는 세포일수록 미토콘드리아 수가 많습니다.
+          </p>
+        </div>
+
+        <!-- Environmental Controls: O2 & Temperature -->
+        <div class="pt-3 border-t border-slate-800 space-y-2.5">
+          <div>
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span class="text-sky-300"><i class="fa-solid fa-wind mr-1"></i>세포 내 산소(O₂) 공급</span>
+              <span id="whole-o2-val" class="text-white">100% (충분)</span>
+            </div>
+            <input type="range" id="whole-o2-slider" min="0" max="100" value="100" oninput="updateWholeEnv()" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span class="text-orange-300"><i class="fa-solid fa-temperature-half mr-1"></i>세포 온도 (효소 활성)</span>
+              <span id="whole-temp-val" class="text-emerald-300">37°C (최적)</span>
+            </div>
+            <input type="range" id="whole-temp-slider" min="5" max="60" value="37" oninput="updateWholeEnv()" class="w-full" />
+            <div id="whole-temp-msg" class="text-[10px] text-slate-400 mt-1">
+              세포호흡은 효소가 촉매하므로 약 37°C에서 가장 활발하며 고온에서 변성됩니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- Shuttle Selection (Why 32 ATP vs 30 ATP varies by cell!) -->
+        <div class="pt-3 border-t border-slate-800 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold text-amber-300">세포질 2 NADH 전자 셔틀</span>
+            <button onclick="toggleShuttleType()" id="shuttle-toggle-btn"
+              class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-400/40 transition">
+              말산 셔틀 (32 ATP) ⇄
+            </button>
+          </div>
+          <div id="shuttle-detail-txt" class="text-[10px] text-slate-400 leading-relaxed bg-slate-900/75 p-2 rounded-lg border border-slate-800">
+            간·심장세포는 <strong>말산-아스파르트산 셔틀</strong>로 세포질 NADH 전자를 바탕질 NADH로 넘겨 최대 <strong class="text-amber-300">32 ATP</strong>를 합성합니다. (골격근·뇌의 글리세롤-3-인산 셔틀은 FADH₂로 넘겨 30 ATP)
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================ -->
+      <!-- PANEL B: ① 해당 과정 제어 (GLYCOLYSIS CONTROLS)                   -->
+      <!-- ================================================================ -->
+      <div id="ctrl-glycolysis" class="ctrl-panel hidden glass-panel rounded-2xl p-4 space-y-4">
+        <div>
+          <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">세포질 · 무산소 가능</span>
+          <h2 class="text-sm font-extrabold text-white mt-1.5">해당 과정 조작 패널</h2>
+          <p class="text-[11px] text-slate-400 mt-0.5">무기 인산(Pᵢ) 유입과 탈수소·기질수준인산화의 에너지 변화를 관찰하세요.</p>
+
+          <button onclick="spawnMoleculeForStage()"
+            class="w-full mt-2.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 transition active:scale-95">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>포도당(C₆) 분자 추가 투입하기</span>
+          </button>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 space-y-2.5">
+          <div class="flex items-center justify-between bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+            <div>
+              <div class="text-xs font-extrabold text-emerald-300">조효소 NAD⁺ 공급 상태</div>
+              <div class="text-[10px] text-slate-400">고갈 시 탈수소효소에서 반응 정지!</div>
+            </div>
+            <button onclick="toggleGlyNAD()" id="btn-gly-nad"
+              class="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-emerald-600 text-white shadow transition">
+              충분함
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+            <div>
+              <div class="text-xs font-extrabold text-sky-300">산소(O₂) 환경 전환</div>
+              <div class="text-[10px] text-slate-400">해당 과정은 산소 유무와 무관!</div>
+            </div>
+            <button onclick="toggleGlyO2()" id="btn-gly-o2"
+              class="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-sky-600 text-white shadow transition">
+              산소 있음
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Synced Energy Profile Mini-Chart -->
+        <div class="pt-3 border-t border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold text-white">실시간 에너지 준위 변화</span>
+            <span id="gly-phase-pill" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-amber-300">대기 중</span>
+          </div>
+          <div class="bg-slate-950 rounded-xl p-2 border border-slate-800">
+            <svg viewBox="0 0 280 120" class="w-full h-28">
+              <rect x="30" y="10" width="90" height="90" fill="rgba(244,63,94,0.08)" />
+              <rect x="120" y="10" width="145" height="90" fill="rgba(16,185,129,0.08)" />
+              <line x1="120" y1="10" x2="120" y2="100" stroke="#475569" stroke-dasharray="3" />
+              <text x="75" y="22" font-size="9" font-weight="bold" fill="#fda4af" text-anchor="middle">에너지 투입 (-2 ATP)</text>
+              <text x="192" y="22" font-size="9" font-weight="bold" fill="#6ee7b7" text-anchor="middle">회수 (+2 NADH, +4 ATP)</text>
+              <line x1="30" y1="10" x2="30" y2="100" stroke="#64748b" stroke-width="1.5" />
+              <line x1="30" y1="100" x2="268" y2="100" stroke="#64748b" stroke-width="1.5" />
+              <polyline points="34,62 65,62 65,48 85,48 85,34 122,34" fill="none" stroke="#f43f5e" stroke-width="2.5" />
+              <polyline points="122,34 148,34 148,54 178,54 178,72 212,72 212,86 258,86" fill="none" stroke="#10b981" stroke-width="2.5" />
+              <text x="48" y="75" font-size="8" fill="#cbd5e1" text-anchor="middle">포도당</text>
+              <text x="108" y="45" font-size="8" font-weight="bold" fill="#fda4af" text-anchor="middle">과당 2인산</text>
+              <text x="235" y="96" font-size="8" font-weight="bold" fill="#6ee7b7" text-anchor="middle">2 피루브산</text>
+              <circle id="gly-live-dot" cx="48" cy="62" r="5" fill="#facc15" stroke="#ffffff" stroke-width="1.5" />
+            </svg>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            • <strong>무기 인산(Pᵢ) 결합:</strong> 탈수소 단계에서 <strong>ATP가 아닌</strong> 세포질의 자유 무기 인산(2 Pᵢ)이 결합합니다.<br/>
+            • <strong>CO₂ 방출 0분자:</strong> 탄소 6개가 모두 피루브산 2분자(C₃×2)로 전환됩니다.
+          </p>
+        </div>
+      </div>
+
+      <!-- ================================================================ -->
+      <!-- PANEL C: ② 피루브산 산화 · TCA 회로 제어 (MATRIX CONTROLS)        -->
+      <!-- ================================================================ -->
+      <div id="ctrl-tca" class="ctrl-panel hidden glass-panel rounded-2xl p-4 space-y-3.5">
+        <div>
+          <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">미토콘드리아 바탕질</span>
+          <h2 class="text-sm font-extrabold text-white mt-1.5">피루브산 산화 &amp; TCA 회로 제어</h2>
+          <p class="text-[11px] text-slate-400 mt-0.5">대기 중인 옥살아세트산(C₄)과 아세틸 CoA(C₂)가 만나 시트르산(C₆) 회로를 순환합니다.</p>
+
+          <div class="grid grid-cols-2 gap-1.5 mt-2">
+            <button onclick="spawnTCAPyruvate(1)"
+              class="py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow transition active:scale-95">
+              + 피루브산 1분자
+            </button>
+            <button onclick="spawnTCAPyruvate(2)"
+              class="py-2 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow transition active:scale-95">
+              + 2분자 (포도당 1개)
+            </button>
+          </div>
+        </div>
+
+        <!-- O2 Switch + Matrix NAD+/FAD Pool Gauge (Indirect Inhibition!) -->
+        <div class="pt-3 border-t border-slate-800 space-y-2">
+          <div class="flex items-center justify-between bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+            <div>
+              <div class="text-xs font-extrabold text-sky-300">산소(O₂) 공급 (전자전달계 가동)</div>
+              <div class="text-[10px] text-slate-400">O₂ 없음 → NAD⁺·FAD 고갈(간접 저해)</div>
+            </div>
+            <button onclick="toggleTCAO2()" id="btn-tca-o2"
+              class="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-emerald-600 text-white shadow transition shrink-0">
+              O₂ 있음
+            </button>
+          </div>
+
+          <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-1">
+            <div class="flex justify-between text-[11px] font-bold">
+              <span class="text-emerald-300">바탕질 NAD⁺ · FAD 잔량</span>
+              <span id="tca-nad-txt" class="text-white">100% (충분)</span>
+            </div>
+            <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div id="tca-nad-bar" class="h-full bg-emerald-400 transition-all duration-200" style="width: 100%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enzyme Spotlight Filter -->
+        <div class="pt-3 border-t border-slate-800 space-y-2">
+          <div class="text-xs font-extrabold text-white">핵심 반응 지점 하이라이트</div>
+          <div class="grid grid-cols-2 gap-1.5 text-[11px] font-bold">
+            <button onclick="setTCASpotlight('all')" id="tca-hl-all" class="py-1.5 px-2 rounded-lg bg-blue-600 text-white ring-2 ring-white">전체 보기</button>
+            <button onclick="setTCASpotlight('co2')" id="tca-hl-co2" class="py-1.5 px-2 rounded-lg bg-slate-800 text-rose-300 hover:bg-slate-700">CO₂ 방출 (3곳)</button>
+            <button onclick="setTCASpotlight('nadh')" id="tca-hl-nadh" class="py-1.5 px-2 rounded-lg bg-slate-800 text-emerald-300 hover:bg-slate-700">NADH 생성 (4곳)</button>
+            <button onclick="setTCASpotlight('atp')" id="tca-hl-atp" class="py-1.5 px-2 rounded-lg bg-slate-800 text-amber-300 hover:bg-slate-700">★기질수준 ATP</button>
+            <button onclick="setTCASpotlight('fadh2')" id="tca-hl-fadh2" class="col-span-2 py-1.5 px-2 rounded-lg bg-slate-800 text-cyan-300 hover:bg-slate-700">FADH₂ 생성 지점 (C₄ → C₄)</button>
+          </div>
+        </div>
+
+        <!-- Live Carbon Skeleton Tracker -->
+        <div class="pt-3 border-t border-slate-800 space-y-1.5">
+          <div class="text-[11px] font-extrabold text-indigo-300">피루브산 1분자 완전 산화 산물</div>
+          <div class="grid grid-cols-4 gap-1.5 text-center text-[11px]">
+            <div class="bg-slate-900 rounded-lg py-1.5 border border-slate-800">
+              <div class="text-rose-400 font-black">3 CO₂</div>
+              <div class="text-[9px] text-slate-400">산화1+회로2</div>
+            </div>
+            <div class="bg-slate-900 rounded-lg py-1.5 border border-slate-800">
+              <div class="text-emerald-400 font-black">4 NADH</div>
+              <div class="text-[9px] text-slate-400">산화1+회로3</div>
+            </div>
+            <div class="bg-slate-900 rounded-lg py-1.5 border border-slate-800">
+              <div class="text-cyan-400 font-black">1 FADH₂</div>
+              <div class="text-[9px] text-slate-400">C₄ 산화</div>
+            </div>
+            <div class="bg-slate-900 rounded-lg py-1.5 border border-amber-500/40">
+              <div class="text-amber-400 font-black">1 ATP</div>
+              <div class="text-[9px] text-slate-400">C₅→C₄ 기질</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================ -->
+      <!-- PANEL D: ③ 산화적 인산화 · 억제제 · 실시간 그래프 · pH 실험실       -->
+      <!-- ================================================================ -->
+      <div id="ctrl-oxphos" class="ctrl-panel hidden glass-panel rounded-2xl p-4 space-y-3">
+        <div>
+          <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-400/30">미토콘드리아 내막 · 화학삼투</span>
+          <h2 class="text-sm font-extrabold text-white mt-1">전자전달계 &amp; 억제제 · pH 실험실</h2>
+
+          <!-- Direct NADH vs FADH2 Injection Buttons (Exact 2.5 : 1.5 ratio!) -->
+          <div class="grid grid-cols-2 gap-1.5 mt-2">
+            <button onclick="injectOxCarrier('nadh')"
+              class="py-1.5 px-2 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/45 border border-emerald-400/50 text-emerald-200 font-extrabold text-[11px] transition active:scale-95">
+              + NADH 투입<br/><span class="text-[9px] text-emerald-300/85 font-medium">I→Q→III→IV (10H⁺≈2.5ATP)</span>
+            </button>
+            <button onclick="injectOxCarrier('fadh2')"
+              class="py-1.5 px-2 rounded-xl bg-cyan-600/25 hover:bg-cyan-600/45 border border-cyan-400/50 text-cyan-200 font-extrabold text-[11px] transition active:scale-95">
+              + FADH₂ 투입<br/><span class="text-[9px] text-cyan-300/85 font-medium">II→Q→III→IV (6H⁺≈1.5ATP)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 6 Experiment Condition Selector (Rotenone & Cyanide Separated!) -->
+        <div class="pt-2 border-t border-slate-800 space-y-1">
+          <div class="text-[11px] font-extrabold text-white">약물 억제제 / 인공 pH 실험 (연속 투여 가능!)</div>
+          <div class="grid grid-cols-1 gap-1 text-[11px] font-bold">
+            <button onclick="setOxMode('normal')" id="oxm-normal"
+              class="oxm-btn text-left px-2.5 py-1.5 rounded-lg bg-blue-600 text-white border border-blue-400 flex items-center justify-between">
+              <span>① 정상 산화적 인산화</span>
+              <span class="text-[9.5px] opacity-85">I·II → Q → III → IV</span>
+            </button>
+            <button onclick="setOxMode('rotenone')" id="oxm-rotenone"
+              class="oxm-btn text-left px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-between">
+              <span>② 로테논 (복합체 I 억제)</span>
+              <span class="text-[9.5px] text-cyan-300">NADH✗ · FADH₂○</span>
+            </button>
+            <button onclick="setOxMode('cyanide')" id="oxm-cyanide"
+              class="oxm-btn text-left px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-between">
+              <span>③ 청산가리·CO (복합체 IV 억제)</span>
+              <span class="text-[9.5px] text-rose-400">전달 완전 차단</span>
+            </button>
+            <button onclick="setOxMode('atp_block')" id="oxm-atp_block"
+              class="oxm-btn text-left px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-between">
+              <span>④ 올리고마이신 (ATP 합성효소 억제)</span>
+              <span class="text-[9.5px] text-amber-400">터빈 봉쇄·O₂↓</span>
+            </button>
+            <button onclick="setOxMode('dnp')" id="oxm-dnp"
+              class="oxm-btn text-left px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-between">
+              <span>⑤ 짝풀림제 (DNP 지용성 운반체)</span>
+              <span id="oxm-dnp-tag" class="text-[9.5px] text-orange-400">O₂↑↑ · 열↑↑ · ATP↓</span>
+            </button>
+            <button onclick="setOxMode('ph_lab')" id="oxm-ph_lab"
+              class="oxm-btn text-left px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-between">
+              <span>⑥ 인공 pH 기울기 실험 (전자전달 OFF)</span>
+              <span class="text-[9.5px] text-emerald-400">평형 시 정지!</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- O2 Slider OR Manual pH Sliders -->
+        <div id="ox-o2-control" class="pt-2 border-t border-slate-800">
+          <div class="flex justify-between text-[11px] font-bold mb-1">
+            <span class="text-sky-300"><i class="fa-solid fa-wind mr-1"></i>최종 전자수용체 O₂ 농도</span>
+            <span id="ox-o2-label" class="text-white">100%</span>
+          </div>
+          <input type="range" id="ox-o2-slider" min="0" max="100" value="100" oninput="updateOxO2()" class="w-full" />
+        </div>
+
+        <div id="ox-ph-control" class="hidden pt-2 border-t border-slate-800 space-y-2 bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-500/30">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold text-emerald-300">🧪 인공 수용액 pH 설정</span>
+            <button onclick="resetManualPHBuffer()" class="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold transition">
+              🔄 수용액 교체
+            </button>
+          </div>
+          <div>
+            <div class="flex justify-between text-[10.5px] font-bold mb-0.5">
+              <span class="text-rose-300">외부 완충액 (막사이공간 고정)</span>
+              <span id="ph-ims-val" class="text-white">pH 7.0</span>
+            </div>
+            <input type="range" id="ph-ims-slider" min="5" max="9" step="0.5" value="7" oninput="updateManualPH()" class="w-full" />
+          </div>
+          <div>
+            <div class="flex justify-between text-[10.5px] font-bold mb-0.5">
+              <span class="text-emerald-300">미토콘드리아 바탕질 (초기값)</span>
+              <span id="ph-mat-val" class="text-white">pH 9.0</span>
+            </div>
+            <input type="range" id="ph-mat-slider" min="5" max="9" step="0.5" value="9" oninput="updateManualPH()" class="w-full" />
+          </div>
+          <div id="ph-lab-status" class="text-[10px] font-bold text-emerald-300 leading-snug">
+            ΔpH = +2.0 → 외부 완충액(pH 7.0)은 고정되고 바탕질이 pH 7.0에 도달하면 정지합니다!
+          </div>
+        </div>
+
+        <!-- LIVE REAL-TIME TIME-SERIES GRAPH (O2 Consumption vs ATP Synthesis) -->
+        <div class="pt-2 border-t border-slate-800 space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] font-extrabold">
+            <span class="text-white"><i class="fa-solid fa-chart-line text-sky-400 mr-1"></i>실시간 O₂ 소비 · ATP 합성 그래프</span>
+            <div class="flex items-center gap-2 text-[9.5px]">
+              <span class="text-sky-400">━ O₂ 소비</span>
+              <span class="text-amber-400">━ ATP 합성</span>
+            </div>
+          </div>
+          <div class="bg-slate-950 rounded-xl p-1.5 border border-slate-800">
+            <canvas id="ox-chart" width="280" height="92" class="w-full h-[92px] block"></canvas>
+          </div>
+        </div>
+
+        <!-- 4 Compact Live Physiological Gauges -->
+        <div class="pt-2 border-t border-slate-800 grid grid-cols-2 gap-x-2.5 gap-y-1.5 text-[10.5px] font-bold">
+          <div>
+            <div class="flex justify-between mb-0.5"><span class="text-slate-300">전자(e⁻)</span><span id="g-eflow-txt" class="text-sky-300">정상</span></div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden"><div id="g-eflow-bar" class="h-full bg-sky-400 transition-all duration-300" style="width:75%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-0.5"><span class="text-slate-300">O₂ 소비</span><span id="g-o2-txt" class="text-indigo-300">정상</span></div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden"><div id="g-o2-bar" class="h-full bg-indigo-400 transition-all duration-300" style="width:72%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-0.5"><span class="text-slate-300">ATP 합성</span><span id="g-atp-txt" class="text-amber-300">활발</span></div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden"><div id="g-atp-bar" class="h-full bg-amber-400 transition-all duration-300" style="width:85%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-0.5"><span class="text-slate-300">열 방출</span><span id="g-heat-txt" class="text-rose-300">정상</span></div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden"><div id="g-heat-bar" class="h-full bg-rose-500 transition-all duration-300" style="width:55%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contextual Scientific Insight Footer Card -->
+      <div class="glass-panel rounded-2xl p-3.5 text-xs space-y-1.5 border-l-4 border-l-emerald-400">
+        <div class="font-extrabold text-emerald-300 flex items-center gap-1.5">
+          <i class="fa-solid fa-lightbulb"></i>
+          <span id="insight-title">핵심 관찰 포인트</span>
+        </div>
+        <p id="insight-body" class="text-[11px] text-slate-300 leading-relaxed">
+          포도당(C₆H₁₂O₆)은 전자와 수소를 잃고 CO₂로 산화되며, 최종 전자 수용체인 산소(O₂)는 전자와 H⁺을 얻어 물(H₂O)로 환원됩니다.
+        </p>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    /* =========================================================================
+     * CORE SIMULATION STATE & BIOCHEMICALLY VERIFIED ENGINE
+     * ========================================================================= */
+    const canvas = document.getElementById('bio-canvas');
+    const ctx = canvas.getContext('2d');
+    const oxChartCanvas = document.getElementById('ox-chart');
+    const oxChartCtx = oxChartCanvas ? oxChartCanvas.getContext('2d') : null;
+
+    // Polyfill roundRect safely
+    if (ctx && typeof ctx.roundRect !== 'function') {
+      ctx.roundRect = function(x, y, w, h, r) {
+        const rad = typeof r === 'number' ? r : 8;
+        this.moveTo(x + rad, y);
+        this.lineTo(x + w - rad, y);
+        this.quadraticCurveTo(x + w, y, x + w, y + rad);
+        this.lineTo(x + w, y + h - rad);
+        this.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+        this.lineTo(x + rad, y + h);
+        this.quadraticCurveTo(x, y + h, x, y + h - rad);
+        this.lineTo(x, y + rad);
+        this.quadraticCurveTo(x, y, x + rad, y);
+        this.closePath();
+        return this;
+      };
+    }
+
+    let W = 900, H = 515, DPR = 1;
+    let currentStage = 'whole'; // 'whole' | 'glycolysis' | 'tca' | 'oxphos'
+    let paused = false;
+    let simSpeed = 1.0;
+    let simTime = 0;
+    let frameCount = 0;
+
+    // Interactive State Variables
+    let wholeO2 = 100;             // 0 ~ 100%
+    let wholeTemp = 37;            // 5 ~ 60°C
+    let cellType = 'liver';        // 'liver' | 'muscle' | 'skin' | 'rbc'
+    let shuttleType = 'malate';    // 'malate' (32 ATP) | 'g3p' (30 ATP)
+
+    let glyHasNAD = true;
+    let glyHasO2 = true;
+
+    let tcaHasO2 = true;
+    let tcaNadPool = 100;          // 0 ~ 100% (indirect inhibition via NAD+/FAD depletion!)
+    let tcaSpotlight = 'all';      // 'all' | 'co2' | 'nadh' | 'atp' | 'fadh2'
+
+    let oxMode = 'normal';         // 'normal' | 'rotenone' | 'cyanide' | 'atp_block' | 'dnp' | 'ph_lab'
+    let oxO2 = 100;                // 0 ~ 100%
+    let oligoStackedWithDNP = false; // True when DNP is added sequentially on top of Oligomycin
+    let manualPhIMS = 7.0;
+    let manualPhMatrix = 9.0;
+    let livePhLabMatrix = 9.0;     // Small-volume matrix pH drops toward fixed large-volume external buffer (manualPhIMS)
+    let phLabEquilibrated = false;
+
+    // Live Telemetry Counters
+    const stats = {
+      atpSub: 0,
+      atpOx: 0,
+      nadh: 0,
+      fadh2: 0,
+      co2: 0,
+      o2: 0,
+      h2o: 0
+    };
+
+    // Dynamic Entity Pools
+    let entities = [];
+    let sparks = [];
+    let protons = [];
+    let electrons = [];
+    let o2Mols = [];
+    let dnpShuttles = [];          // Lipophilic DNP protonophore carriers!
+    let oxChartData = [];          // Time-series history for O2 vs ATP live chart
+    let pendingChartMarker = null;
+
+    let hoverables = [];
+    let mousePos = { x: -999, y: -999 };
+    let pinnedInspector = null;    // Clicked entity pinned for mobile/desktop inspection
+    let rotorAngle = 0;
+
+    function getTempFactor() {
+      if (currentStage !== 'whole') return 1.0;
+      if (wholeTemp >= 53) return 0.0;
+      if (wholeTemp <= 37) {
+        return Math.max(0.15, 0.15 + ((wholeTemp - 5) / 32) * 0.85);
+      } else {
+        return Math.max(0.05, 1.0 - ((wholeTemp - 37) / 16) * 0.95);
+      }
+    }
+
+    function resizeCanvas() {
+      const wrap = document.getElementById('canvas-wrapper');
+      if (!wrap) return;
+      const rect = wrap.getBoundingClientRect();
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      W = rect.width || 900;
+      H = rect.height || 515;
+      canvas.width = Math.floor(W * DPR);
+      canvas.height = Math.floor(H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    /* =========================================================================
+     * UI TELEMETRY & UNIFIED ENERGY EFFICIENCY BAR SYNC
+     * ========================================================================= */
+    function updateStatsUI() {
+      const totalAtp = Math.round((stats.atpSub + stats.atpOx) * 10) / 10;
+      const subFmt = Math.round(stats.atpSub * 10) / 10;
+      const oxFmt = Math.round(stats.atpOx * 10) / 10;
+
+      document.getElementById('stat-atp').textContent = totalAtp;
+      document.getElementById('stat-atp-split').textContent = `기질 ${subFmt} · 산화 ${oxFmt}`;
+      document.getElementById('stat-nadh').textContent = stats.nadh;
+      document.getElementById('stat-fadh2').textContent = stats.fadh2;
+      document.getElementById('stat-co2').textContent = stats.co2;
+      document.getElementById('stat-o2').textContent = Math.round(stats.o2 * 10) / 10;
+      document.getElementById('stat-h2o').textContent = stats.h2o;
+    }
+
+    function updateEnergyBar() {
+      const effAtp = document.getElementById('eff-bar-atp');
+      const effHeat = document.getElementById('eff-bar-heat');
+      const effTxt = document.getElementById('eff-ratio-text');
+      const subL = document.getElementById('eff-sub-left');
+      const subR = document.getElementById('eff-sub-right');
+
+      const setBar = (atpPct, title, left, right) => {
+        const clamped = Math.max(0, Math.min(100, atpPct));
+        effAtp.style.width = `${clamped}%`;
+        effHeat.style.width = `${100 - clamped}%`;
+        effTxt.textContent = title;
+        subL.textContent = left;
+        subR.textContent = right;
+      };
+
+      if (currentStage === 'whole') {
+        if (wholeTemp >= 53) {
+          setBar(0, '효소 변성 (반응 정지)', 'ATP 합성 0%', '고온(≥53°C) 단백질 구조 파괴');
+        } else if (cellType === 'rbc' || wholeO2 === 0) {
+          setBar(2.5, '해당 과정만: ATP 2.1%', '2 ATP × 7.3 = 14.6 kcal', '에너지 대부분 젖산·피루브산에 잔류');
+        } else if (shuttleType === 'malate') {
+          setBar(34, 'ATP 34% : 열 66%', '최대 32 ATP × 7.3 = 233.6 kcal', '686 kcal 중 나머지 열 방출');
+        } else {
+          setBar(31.9, 'ATP 31.9% : 열 68.1%', '30 ATP × 7.3 = 219.0 kcal', '글리세롤-3-인산 셔틀 적용');
+        }
+      } else if (currentStage === 'glycolysis') {
+        setBar(2.5, '해당 단계: 순 +2 ATP (2.1%)', '기질수준 +2 ATP, +2 NADH', '나머지 에너지는 피루브산(C₃)에 저장');
+      } else if (currentStage === 'tca') {
+        setBar(4, 'TCA 직접: +2 ATP + 다량 전자', '기질수준 +2 ATP (포도당당)', '대부분 8 NADH · 2 FADH₂로 저장');
+      } else if (currentStage === 'oxphos') {
+        if (oxMode === 'ph_lab') {
+          const liveDiff = getLivePhDiff();
+          if (liveDiff >= 0.15 && !phLabEquilibrated) {
+            setBar(38, `화학삼투 합성 중 (바탕질 pH ${livePhLabMatrix.toFixed(1)})`, `외부 완충액 pH ${manualPhIMS.toFixed(1)} 고정`, '바탕질이 외부 pH와 같아지면 종료');
+          } else {
+            setBar(0, `평형 도달 (양쪽 모두 pH ${manualPhIMS.toFixed(1)})`, 'ΔpH = 0 · ATP 합성 자연 종료', '수용액 교체 시 재가동');
+          }
+        } else if (oxO2 === 0 || oxMode === 'cyanide') {
+          setBar(0, '복합체 IV 차단 (ATP 0%)', '전자 이동 및 H⁺ 펌프 완전 중단', '기질수준인산화만 일부 유지 가능');
+        } else if (oxMode === 'rotenone') {
+          setBar(12, '복합체 I 차단 (효율 급감)', 'NADH 경로 차단 · FADH₂ 경로만 가동', 'ATP 합성량 대폭 감소');
+        } else if (oxMode === 'atp_block') {
+          setBar(0, '올리고마이신 봉쇄 (ATP 0%)', 'ATP 합성효소 통로 차단', 'H⁺ 역압력으로 O₂ 소비도 감소');
+        } else if (oxMode === 'dnp') {
+          if (oligoStackedWithDNP) {
+            setBar(0, '올리고마이신 + DNP: ATP 0% · 열 100%', 'ATP 합성효소 봉쇄 유지 + DNP 누출', 'O₂ 소비만 수직 상승 (대표 기출!)');
+          } else {
+            setBar(4, '짝풀림제 DNP: ATP↓ 열 96%↑', 'H⁺이 인지질층으로 누출되어 기울기 붕괴', 'O₂ 소비 폭증 · 치명적 고열 발생!');
+          }
+        } else {
+          const f = oxO2 / 100;
+          const pct = Math.round(34 * f);
+          setBar(pct, `ATP ${pct}% : 열 ${100 - pct}%`, 'NADH≈2.5 ATP · FADH₂≈1.5 ATP', '산화적 인산화 최대 28 ATP');
+        }
+      }
+    }
+
+    function setTicker(msg) {
+      document.getElementById('live-ticker').textContent = msg;
+    }
+
+    function setInsight(title, body) {
+      document.getElementById('insight-title').textContent = title;
+      document.getElementById('insight-body').textContent = body;
+    }
+
+    function addSpark(x, y, text, color = '#facc15', vx = 0, vy = -1.1, kind = 'pill') {
+      sparks.push({
+        x, y, text, color,
+        vx: vx + (Math.random() - 0.5) * 0.4,
+        vy,
+        life: kind === 'ring' ? 38 : 96,
+        maxLife: kind === 'ring' ? 38 : 96,
+        kind
+      });
+    }
+
+    function registerHover(x, y, r, badge, title, carbon, desc) {
+      hoverables.push({ x, y, r, badge, title, carbon, desc });
+    }
+
+    function unpinInspector() {
+      pinnedInspector = null;
+      document.getElementById('insp-close').classList.add('hidden');
+      document.getElementById('inspector-card').classList.add('hidden');
+    }
+
+    /* =========================================================================
+     * STAGE SWITCHING & CONTROL HANDLERS
+     * ========================================================================= */
+    function switchStage(stage) {
+      currentStage = stage;
+      entities = [];
+      sparks = [];
+      electrons = [];
+      protons = [];
+      o2Mols = [];
+      dnpShuttles = [];
+      unpinInspector();
+
+      ['whole', 'glycolysis', 'tca', 'oxphos'].forEach(s => {
+        const tab = document.getElementById(`tab-${s}`);
+        const ctrl = document.getElementById(`ctrl-${s}`);
+        if (s === stage) {
+          tab.className = 'stage-tab-active px-3 py-1.5 rounded-xl text-xs font-extrabold border transition flex items-center gap-1.5 whitespace-nowrap';
+          ctrl.classList.remove('hidden');
+        } else {
+          tab.className = 'stage-tab-idle px-3 py-1.5 rounded-xl text-xs font-extrabold border transition flex items-center gap-1.5 whitespace-nowrap';
+          ctrl.classList.add('hidden');
+        }
+      });
+
+      const locPill = document.getElementById('stage-location-pill');
+      const head = document.getElementById('stage-headline');
+
+      if (stage === 'whole') {
+        locPill.textContent = '장소: 세포질 + 미토콘드리아 전체';
+        head.textContent = '진핵세포 내부 세포호흡 통합 실시간 투시도';
+        setInsight(
+          '세포호흡 통합 경로 (탄소 수 보존)',
+          '포도당(C₆), 지방(글리세롤 C₃ + 지방산 β-산화), 단백질(탈아미노화 후 C₃ 유기산)이 각기 다른 지점으로 진입합니다. 적혈구·무산소 조건에서는 젖산 전환으로 NAD⁺를 재생해 해당 과정을 유지합니다.'
+        );
+        initWholeCellScene();
+      } else if (stage === 'glycolysis') {
+        locPill.textContent = '장소: 세포질 (Cytosol)';
+        head.textContent = '① 해당 과정: 포도당(C₆) → 과당 2인산 → (+2 Pᵢ) → 2 피루브산(C₃)';
+        setInsight(
+          '해당 과정 핵심 메커니즘',
+          '2 ATP를 투자해 활성화한 뒤, 탈수소효소 단계에서 ATP가 아닌 세포질의 자유 무기 인산(2 Pᵢ)이 결합하고 2 NADH가 생성됩니다. 이후 기질수준인산화로 4 ATP를 회수(순 +2 ATP)합니다.'
+        );
+        spawnGlycolysisGlucose();
+      } else if (stage === 'tca') {
+        locPill.textContent = '장소: 미토콘드리아 바탕질 (Matrix)';
+        head.textContent = '② 피루브산의 산화 & TCA 회로 (옥살아세트산 순환)';
+        setInsight(
+          '무산소 시 간접 저해 & 옥살아세트산 순환',
+          'O₂는 피루브산 수송의 직접 열쇠가 아닙니다! 산소가 없으면 전자전달계가 멈춰 바탕질의 NAD⁺·FAD가 고갈되고, 이로 인해 피루브산 산화와 TCA 회로가 간접적으로 정지합니다.'
+        );
+        tcaNadPool = tcaHasO2 ? 100 : 10;
+        updateTCANadUI();
+        spawnTCAPyruvate(1);
+      } else if (stage === 'oxphos') {
+        locPill.textContent = '장소: 미토콘드리아 내막 (크리스타)';
+        head.textContent = '③ 산화적 인산화: 복합체 I·II → 유비퀴논(Q) 병렬 전달 & 화학삼투';
+        setInsight(
+          '병렬 전자 전달(Q) & 정밀 화학삼투 비율',
+          '복합체 I(NADH)과 바탕질 측 복합체 II(FADH₂)는 모두 유비퀴논(Q)으로 전자를 넘깁니다! NADH는 복합체 I·III·IV에서 총 10 H⁺(≈2.5 ATP), FADH₂는 III·IV에서 총 6 H⁺(≈1.5 ATP)을 능동수송합니다.'
+        );
+        initOxPhosScene();
+        updateOxGauges();
+      }
+
+      updateEnergyBar();
+    }
+
+    function togglePause() {
+      paused = !paused;
+      document.getElementById('icon-pause').className = paused ? 'fa-solid fa-play text-amber-400' : 'fa-solid fa-pause text-emerald-400';
+      document.getElementById('txt-pause').textContent = paused ? '재생하기' : '일시정지';
+    }
+
+    function setSpeed(spd) {
+      simSpeed = spd;
+      const map = { 0.5: 'spd-05', 1: 'spd-10', 1.8: 'spd-18' };
+      Object.entries(map).forEach(([k, id]) => {
+        const el = document.getElementById(id);
+        el.className = parseFloat(k) === spd
+          ? 'px-2 py-1 rounded-lg bg-blue-600 text-white transition'
+          : 'px-2 py-1 rounded-lg text-slate-400 hover:text-white transition';
+      });
+    }
+
+    function resetSimulation() {
+      stats.atpSub = 0; stats.atpOx = 0; stats.nadh = 0;
+      stats.fadh2 = 0; stats.co2 = 0; stats.o2 = 0; stats.h2o = 0;
+      oxChartData = [];
+      updateStatsUI();
+      switchStage(currentStage);
+    }
+
+    function spawnMoleculeForStage(x, y) {
+      if (currentStage === 'whole') injectWholeSubstrate('glucose', x, y);
+      else if (currentStage === 'glycolysis') spawnGlycolysisGlucose(x, y);
+      else if (currentStage === 'tca') spawnTCAPyruvate(1);
+      else if (currentStage === 'oxphos') {
+        const pick = oxMode === 'rotenone' ? 'fadh2' : (Math.random() < 0.72 ? 'nadh' : 'fadh2');
+        injectOxCarrier(pick);
+      }
+    }
+
+    /* =========================================================================
+     * PANEL INTERACTION HANDLERS
+     * ========================================================================= */
+    function setCellType(type) {
+      cellType = type;
+      const info = {
+        liver:  { count: '약 2,500개', note: '간세포는 물질대사가 매우 활발해 미토콘드리아가 가장 많으며 말산 셔틀로 최대 32 ATP를 합성합니다.' },
+        muscle: { count: '약 1,200개', note: '골격근세포는 근수축에 많은 ATP가 필요해 피부세포보다 훨씬 많은 미토콘드리아를 가집니다.' },
+        skin:   { count: '약 200개',   note: '피부(진피)세포는 에너지 소비량이 비교적 적어 미토콘드리아 수가 적습니다.' },
+        rbc:    { count: '0개 (없음!)', note: '성숙한 적혈구는 미토콘드리아가 0개! 산소를 소비하지 않고 세포질에서 해당 과정(2 ATP) + 젖산 발효(NAD⁺ 재생)만 진행합니다.' }
+      };
+      ['liver', 'muscle', 'skin', 'rbc'].forEach(t => {
+        const b = document.getElementById(`ctype-${t}`);
+        b.className = t === type
+          ? 'py-1.5 px-2 rounded-lg bg-indigo-600 text-white border border-indigo-400'
+          : 'py-1.5 px-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700';
+      });
+      document.getElementById('cell-mito-count-badge').textContent = info[type].count;
+      document.getElementById('cell-type-note').textContent = info[type].note;
+      setTicker(`세포 전환: ${type === 'rbc' ? '적혈구 (미토콘드리아 0개 → 해당 과정 + 젖산 전환으로 NAD⁺ 재생!)' : info[type].note}`);
+      updateEnergyBar();
+    }
+
+    function toggleShuttleType() {
+      shuttleType = shuttleType === 'malate' ? 'g3p' : 'malate';
+      const btn = document.getElementById('shuttle-toggle-btn');
+      const txt = document.getElementById('shuttle-detail-txt');
+      if (shuttleType === 'malate') {
+        btn.textContent = '말산 셔틀 (32 ATP) ⇄';
+        txt.innerHTML = '간·심장세포는 <strong>말산-아스파르트산 셔틀</strong>로 세포질 2 NADH 전자를 바탕질 NADH로 넘겨(5 ATP) 최대 <strong class="text-amber-300">32 ATP</strong>를 합성합니다.';
+        setTicker('말산-아스파르트산 셔틀 활성화: 세포질 2 NADH → 5 ATP (포도당당 총 32 ATP)');
+      } else {
+        btn.textContent = '글리세롤 셔틀 (30 ATP) ⇄';
+        txt.innerHTML = '골격근·뇌세포는 <strong>글리세롤-3-인산 셔틀</strong>로 세포질 2 NADH 전자를 내막 FAD(FADH₂)로 넘겨(3 ATP) 총 <strong class="text-cyan-300">30 ATP</strong>를 합성합니다.';
+        setTicker('글리세롤-3-인산 셔틀 활성화: 세포질 2 NADH → FADH₂ 경로(3 ATP) → 포도당당 총 30 ATP!');
+      }
+      updateEnergyBar();
+    }
+
+    function updateWholeEnv() {
+      wholeO2 = parseInt(document.getElementById('whole-o2-slider').value, 10);
+      wholeTemp = parseInt(document.getElementById('whole-temp-slider').value, 10);
+
+      const o2El = document.getElementById('whole-o2-val');
+      o2El.textContent = wholeO2 === 0 ? '0% (무산소!)' : `${wholeO2}% ${wholeO2 > 60 ? '(충분)' : '(부족)'}`;
+      o2El.className = wholeO2 === 0 ? 'text-rose-400 font-black' : 'text-white';
+
+      const tEl = document.getElementById('whole-temp-val');
+      const tMsg = document.getElementById('whole-temp-msg');
+      if (wholeTemp >= 53) {
+        tEl.textContent = `${wholeTemp}°C (효소 변성!)`;
+        tEl.className = 'text-rose-400 font-black';
+        tMsg.textContent = '⚠️ 고온으로 호흡 효소의 입체 구조가 변성되어 세포호흡이 완전히 정지했습니다!';
+      } else if (wholeTemp < 20) {
+        tEl.textContent = `${wholeTemp}°C (저온 둔화)`;
+        tEl.className = 'text-sky-300';
+        tMsg.textContent = '❄️ 저온에서는 분자 운동과 효소 반응 속도가 크게 느려집니다.';
+      } else {
+        tEl.textContent = `${wholeTemp}°C (${Math.abs(wholeTemp - 37) <= 5 ? '최적 활성' : '활성 저하'})`;
+        tEl.className = Math.abs(wholeTemp - 37) <= 5 ? 'text-emerald-300' : 'text-amber-300';
+        tMsg.textContent = '사람의 체온 부근(약 37°C)에서 호흡 효소가 가장 활발하게 작용합니다.';
+      }
+
+      if (wholeO2 === 0) {
+        setTicker('⚠️ 무산소 상태: 전자전달계 정지 → 세포질에서 피루브산이 젖산으로 환원되며 NAD⁺를 재생합니다!');
+      }
+      updateEnergyBar();
+    }
+
+    function toggleGlyNAD() {
+      glyHasNAD = !glyHasNAD;
+      const b = document.getElementById('btn-gly-nad');
+      if (glyHasNAD) {
+        b.textContent = '충분함';
+        b.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-emerald-600 text-white shadow transition';
+        setTicker('✅ NAD⁺가 공급되어 탈수소효소 반응(2 Pᵢ 결합 + 2 NADH)이 정상 재개됩니다!');
+      } else {
+        b.textContent = '고갈됨!';
+        b.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-rose-600 text-white shadow transition';
+        setTicker('🚨 NAD⁺ 고갈! 전자와 H⁺을 받아줄 조효소가 없어 해당 과정이 탈수소효소 앞에서 멈춥니다!');
+      }
+    }
+
+    function toggleGlyO2() {
+      glyHasO2 = !glyHasO2;
+      const b = document.getElementById('btn-gly-o2');
+      if (glyHasO2) {
+        b.textContent = '산소 있음';
+        b.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-sky-600 text-white shadow transition';
+        setTicker('산소(O₂) 존재: 생성된 피루브산이 미토콘드리아 바탕질로 이동해 산소호흡을 이어갑니다.');
+      } else {
+        b.textContent = '산소 없음';
+        b.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-amber-600 text-white shadow transition';
+        setTicker('💡 산소(O₂)가 없어도 해당 과정은 계속 일어납니다! (생성된 피루브산은 세포질 발효로 NAD⁺를 재생)');
+      }
+    }
+
+    function toggleTCAO2() {
+      tcaHasO2 = !tcaHasO2;
+      const b = document.getElementById('btn-tca-o2');
+      if (tcaHasO2) {
+        b.textContent = 'O₂ 있음';
+        b.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-emerald-600 text-white shadow transition shrink-0';
+        setTicker('✅ O₂ 재공급: 전자전달계가 NADH를 NAD⁺로 산화시켜 피루브산 산화와 TCA 회로가 재개됩니다!');
+      } else {
+        b.textContent = 'O₂ 없음';
+        b.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-rose-600 text-white shadow transition shrink-0';
+        setTicker('⚠️ O₂ 차단: 전자전달계 정지 → 바탕질의 NAD⁺·FAD가 빠르게 고갈되어 PDH와 TCA가 간접 저해됩니다!');
+      }
+    }
+
+    function updateTCANadUI() {
+      const pct = Math.round(tcaNadPool);
+      const bar = document.getElementById('tca-nad-bar');
+      const txt = document.getElementById('tca-nad-txt');
+      if (!bar || !txt) return;
+      bar.style.width = `${pct}%`;
+      if (pct <= 12) {
+        bar.className = 'h-full bg-rose-500 transition-all duration-200';
+        txt.textContent = `${pct}% (고갈 → 간접 저해!)`;
+        txt.className = 'text-rose-400 font-black';
+      } else if (pct < 55) {
+        bar.className = 'h-full bg-amber-400 transition-all duration-200';
+        txt.textContent = `${pct}% (감소 중)`;
+        txt.className = 'text-amber-300';
+      } else {
+        bar.className = 'h-full bg-emerald-400 transition-all duration-200';
+        txt.textContent = `${pct}% (충분)`;
+        txt.className = 'text-emerald-300';
+      }
+    }
+
+    function setTCASpotlight(hl) {
+      tcaSpotlight = hl;
+      ['all', 'co2', 'nadh', 'atp', 'fadh2'].forEach(k => {
+        const b = document.getElementById(`tca-hl-${k}`);
+        if (k === hl) {
+          b.classList.add('ring-2', 'ring-white', 'bg-blue-600', 'text-white');
+        } else {
+          b.classList.remove('ring-2', 'ring-white', 'bg-blue-600');
+        }
+      });
+    }
+
+    function setOxMode(mode) {
+      const prevMode = oxMode;
+      // Allow realistic sequential co-treatment: Oligomycin -> +DNP keeps Oligomycin clamp active!
+      if (mode === 'dnp' && (prevMode === 'atp_block' || (prevMode === 'dnp' && oligoStackedWithDNP))) {
+        oligoStackedWithDNP = true;
+      } else {
+        oligoStackedWithDNP = false;
+      }
+      oxMode = mode;
+
+      const markerNames = {
+        normal: '정상',
+        rotenone: '로테논',
+        cyanide: '청산가리',
+        atp_block: '올리고마이신',
+        dnp: oligoStackedWithDNP ? '올리고+DNP' : 'DNP',
+        ph_lab: 'pH실험'
+      };
+      pendingChartMarker = markerNames[mode] || null;
+
+      ['normal', 'rotenone', 'cyanide', 'atp_block', 'dnp', 'ph_lab'].forEach(k => {
+        const b = document.getElementById(`oxm-${k}`);
+        if (!b) return;
+        if (k === mode) {
+          b.className = 'oxm-btn text-left px-2.5 py-1.5 rounded-lg bg-blue-600 text-white border border-blue-400 flex items-center justify-between shadow-lg shadow-blue-600/20';
+        } else if (k === 'atp_block' && oligoStackedWithDNP) {
+          b.className = 'oxm-btn text-left px-2.5 py-1.5 rounded-lg bg-amber-950/70 text-amber-200 border border-amber-400/80 flex items-center justify-between';
+        } else {
+          b.className = 'oxm-btn text-left px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-between';
+        }
+      });
+
+      const dnpTag = document.getElementById('oxm-dnp-tag');
+      if (dnpTag) {
+        dnpTag.textContent = oligoStackedWithDNP ? '동시처리 · O₂↑↑ ATP 0' : 'O₂↑↑ · 열↑↑ · ATP↓';
+      }
+
+      const o2Ctrl = document.getElementById('ox-o2-control');
+      const phCtrl = document.getElementById('ox-ph-control');
+
+      if (mode === 'ph_lab') {
+        o2Ctrl.classList.add('hidden');
+        phCtrl.classList.remove('hidden');
+        electrons = [];
+        entities = [];
+        dnpShuttles = [];
+        resetManualPHBuffer();
+      } else {
+        o2Ctrl.classList.remove('hidden');
+        phCtrl.classList.add('hidden');
+        if (mode === 'dnp') initDNPShuttles();
+        else dnpShuttles = [];
+      }
+
+      if (mode === 'normal') {
+        setTicker('✅ 정상 산화적 인산화: NADH(I→Q→III→IV)와 FADH₂(II→Q→III→IV) 전자가 유비퀴논(Q)에서 합류해 H⁺ 기울기를 형성합니다!');
+        setInsight('병렬 전자 전달 & 정밀 화학삼투', 'NADH 1분자는 I·III·IV에서 10 H⁺(시각 5개)을 펌핑해 약 2.5 ATP를, FADH₂ 1분자는 III·IV에서 6 H⁺(시각 3개)을 펌핑해 약 1.5 ATP를 합성합니다.');
+      } else if (mode === 'rotenone') {
+        setTicker('🧪 [로테논 처리: 복합체 I 차단] NADH 산화는 막히지만, 복합체 II로 들어가는 FADH₂는 유비퀴논(Q)을 통해 전자전달이 계속됩니다!');
+        setInsight('로테논(복합체 I) vs 청산가리(복합체 IV)', '로테논은 복합체 I만 선택적으로 차단합니다. 따라서 FADH₂(+ FADH₂ 투입 클릭!)를 통한 복합체 II → Q → III → IV 경로는 살아 있어 O₂ 소비와 ATP 합성이 일부 유지됩니다.');
+      } else if (mode === 'cyanide') {
+        setTicker('🚨 [청산가리·일산화탄소(CO): 복합체 IV 차단] 최종 전자 전달이 막혀 NADH·FADH₂ 모두 정지하고 O₂ 소비와 ATP 합성이 0으로 급락합니다!');
+        setInsight('청산가리(CN⁻) · 일산화탄소(CO) 작용', '최종 단계인 복합체 IV를 차단하므로 NADH와 FADH₂ 경로가 모두 멈추고, O₂ 소비와 H⁺ 능동수송, ATP 합성이 전면 중단됩니다.');
+      } else if (mode === 'atp_block') {
+        setTicker('🚨 [올리고마이신: ATP 합성효소 봉쇄] ATP 합성 0! 막사이공간 H⁺ 과축적 역압력으로 O₂ 소비량도 감소합니다. (지금 ⑤ DNP를 누르면 동시 처리!)');
+        setInsight('올리고마이신 + DNP 연속 투여 실험', '올리고마이신 봉쇄를 유지한 상태에서 [⑤ 짝풀림제 DNP]를 누르면 두 약물이 중첩 처리되어, ATP 합성은 0인 채 O₂ 소비만 수직 상승하는 핵심 기출 패턴을 관찰할 수 있습니다!');
+      } else if (mode === 'dnp') {
+        if (oligoStackedWithDNP) {
+          setTicker('🔥 [올리고마이신 + DNP 동시 처리!] ATP 합성효소는 봉쇄 유지(ATP=0), 지용성 DNP가 H⁺ 역압력을 해소하며 O₂ 소비가 수직 상승합니다!');
+          setInsight('올리고마이신 + DNP 중첩 효과', '올리고마이신이 ATP 합성효소를 막고 있어도, 지용성 DNP가 인지질층으로 H⁺을 빼주므로 전자전달계의 역압력이 풀려 O₂ 소비와 열 방출만 폭증합니다!');
+        } else {
+          setTicker('🔥 [짝풀림제 DNP] 지용성 DNP 분자가 인지질 이중층을 왕복하며 H⁺을 운반! ATP는 못 만들지만 O₂ 소비와 열 방출이 폭주합니다!');
+          setInsight('지용성 양성자 운반체 DNP', 'DNP는 단백질 통로가 아니라 지용성 저분자입니다. 막사이공간의 H⁺과 결합해 인지질층을 직접 통과한 뒤 바탕질에 놓아주며 에너지를 전부 열(Heat)로 방출합니다.');
+        }
+      } else if (mode === 'ph_lab') {
+        setTicker('🧪 [인공 pH 기울기 실험] 대용량 외부 완충액의 pH는 유지된 채, 부피가 작은 바탕질의 pH만 하강하여 평형에 도달하면 합성이 종료됩니다!');
+        setInsight('대용량 외부 완충액과 평형 도달', '미토콘드리아(pH 9)를 훨씬 큰 부피의 pH 7 완충액에 넣으므로 외부는 pH 7.0으로 유지되고, H⁺ 유입으로 바탕질만 pH 9.0→7.0으로 변하며 평형 시 합성이 멈춥니다.');
+      }
+
+      updateOxGauges();
+      updateEnergyBar();
+    }
+
+    function updateOxO2() {
+      oxO2 = parseInt(document.getElementById('ox-o2-slider').value, 10);
+      const lbl = document.getElementById('ox-o2-label');
+      lbl.textContent = oxO2 === 0 ? '0% (산소 고갈!)' : `${oxO2}%`;
+      lbl.className = oxO2 === 0 ? 'text-rose-400 font-black' : 'text-white';
+      if (oxO2 === 0) {
+        pendingChartMarker = 'O₂고갈';
+        setTicker('⚠️ 산소(O₂) 고갈! 복합체 IV에서 전자를 받을 최종 수용체가 없어 전자전달계 전체가 멈춥니다!');
+      }
+      updateOxGauges();
+      updateEnergyBar();
+    }
+
+    function updateManualPH() {
+      manualPhIMS = parseFloat(document.getElementById('ph-ims-slider').value);
+      manualPhMatrix = parseFloat(document.getElementById('ph-mat-slider').value);
+      document.getElementById('ph-ims-val').textContent = `pH ${manualPhIMS.toFixed(1)}`;
+      document.getElementById('ph-mat-val').textContent = `pH ${manualPhMatrix.toFixed(1)}`;
+      resetManualPHBuffer();
+    }
+
+    function resetManualPHBuffer() {
+      phLabEquilibrated = false;
+      livePhLabMatrix = manualPhMatrix;
+      pendingChartMarker = `pH${manualPhIMS.toFixed(0)}/${manualPhMatrix.toFixed(0)}`;
+      const imsBot = H * 0.34;
+      const memBot = H * 0.59;
+      // Lower pH = MORE protons (External IMS buffer is large volume; matrix starts at manualPhMatrix)
+      const targetIMS = Math.max(6, Math.round((9.6 - manualPhIMS) * 9));
+      const targetMat = Math.max(4, Math.round((9.6 - manualPhMatrix) * 8));
+      protons = [];
+      for (let i = 0; i < targetIMS; i++) {
+        protons.push({
+          x: 35 + Math.random() * (W - 70),
+          y: 55 + Math.random() * (imsBot - 75),
+          vx: (Math.random() - 0.5) * 1.7,
+          vy: (Math.random() - 0.5) * 1.4,
+          zone: 'ims'
+        });
+      }
+      for (let i = 0; i < targetMat; i++) {
+        protons.push({
+          x: 35 + Math.random() * (W - 70),
+          y: memBot + 25 + Math.random() * (H - memBot - 65),
+          vx: (Math.random() - 0.5) * 1.3,
+          vy: (Math.random() - 0.5) * 1.1,
+          zone: 'matrix'
+        });
+      }
+      if (manualPhMatrix - manualPhIMS < 0.15) {
+        phLabEquilibrated = true;
+      }
+      updateManualPHStatus();
+      updateOxGauges();
+      updateEnergyBar();
+    }
+
+    function getLivePhValues() {
+      const imsCount = protons.filter(p => p.zone === 'ims').length;
+      const matCount = protons.filter(p => p.zone === 'matrix').length;
+      if (oxMode === 'ph_lab') {
+        // Large external buffer stays constant at manualPhIMS; small matrix equilibrates toward it!
+        const imsPh = manualPhIMS;
+        const matPh = livePhLabMatrix;
+        return { imsPh, matPh, imsCount, matCount };
+      } else {
+        const imsPh = Math.max(6.2, Math.min(8.0, 7.85 - imsCount * 0.032));
+        const matPh = Math.max(7.1, Math.min(8.4, 7.35 + (32 - matCount) * 0.022));
+        return { imsPh, matPh, imsCount, matCount };
+      }
+    }
+
+    function getLivePhDiff() {
+      const { imsPh, matPh } = getLivePhValues();
+      return matPh - imsPh;
+    }
+
+    function updateManualPHStatus() {
+      const st = document.getElementById('ph-lab-status');
+      if (!st) return;
+      const diff = getLivePhDiff();
+      if (phLabEquilibrated || diff < 0.15) {
+        st.textContent = `⚖️ 평형 도달: 바탕질도 외부 완충액과 같은 pH ${manualPhIMS.toFixed(1)}이 되어 ATP 합성이 종료되었습니다! [수용액 교체]로 재실험하세요.`;
+        st.className = 'text-[10px] font-bold text-amber-300 leading-snug';
+      } else {
+        const fold = Math.max(1, Math.round(Math.pow(10, diff)));
+        st.textContent = `✅ 외부 pH ${manualPhIMS.toFixed(1)} 고정 · 현재 바탕질 pH ${livePhLabMatrix.toFixed(1)} (ΔpH +${diff.toFixed(1)}, 약 ${fold}배) → 일시적 ATP 합성 중!`;
+        st.className = 'text-[10px] font-bold text-emerald-300 leading-snug';
+      }
+    }
+
+    function updateOxGauges() {
+      const setBar = (id, pct, txt, colorClass) => {
+        document.getElementById(`g-${id}-bar`).style.width = `${pct}%`;
+        const t = document.getElementById(`g-${id}-txt`);
+        t.textContent = txt;
+        t.className = colorClass;
+      };
+
+      if (oxMode === 'ph_lab') {
+        const diff = getLivePhDiff();
+        setBar('eflow', 0, 'OFF', 'text-slate-400');
+        setBar('o2', 0, 'OFF', 'text-slate-400');
+        if (diff >= 0.15 && !phLabEquilibrated) {
+          setBar('atp', Math.min(100, diff * 48), `합성 중`, 'text-emerald-300');
+          setBar('heat', 18, '낮음', 'text-slate-300');
+        } else {
+          setBar('atp', 0, '평형 정지', 'text-amber-300');
+          setBar('heat', 4, '없음', 'text-slate-400');
+        }
+        return;
+      }
+
+      if (oxO2 === 0 || oxMode === 'cyanide') {
+        setBar('eflow', 3, '차단 (0%)', 'text-rose-400');
+        setBar('o2', 3, '중단 (0%)', 'text-rose-400');
+        setBar('atp', 3, '중단 (0%)', 'text-rose-400');
+        setBar('heat', 8, '급감', 'text-slate-400');
+      } else if (oxMode === 'rotenone') {
+        const f = oxO2 / 100;
+        setBar('eflow', Math.round(32 * f), 'FADH₂만 가동', 'text-cyan-300');
+        setBar('o2', Math.round(30 * f), '크게 감소', 'text-cyan-300');
+        setBar('atp', Math.round(24 * f), '일부 유지', 'text-amber-300');
+        setBar('heat', Math.round(30 * f), '감소', 'text-slate-300');
+      } else if (oxMode === 'atp_block') {
+        setBar('eflow', 16, '역압력 저하', 'text-amber-300');
+        setBar('o2', 16, '감소함', 'text-amber-300');
+        setBar('atp', 3, '봉쇄 (0%)', 'text-rose-400');
+        setBar('heat', 22, '감소', 'text-slate-400');
+      } else if (oxMode === 'dnp') {
+        setBar('eflow', 100, '폭주 (145%)', 'text-orange-400');
+        setBar('o2', 100, '★ 급증!', 'text-orange-400');
+        setBar('atp', oligoStackedWithDNP ? 2 : 6, oligoStackedWithDNP ? '봉쇄 (0%)' : '급감', 'text-rose-400');
+        setBar('heat', 100, '★ 고열 폭증!', 'text-rose-400');
+      } else {
+        const f = oxO2 / 100;
+        setBar('eflow', Math.round(78 * f), oxO2 > 60 ? '정상' : '저하', 'text-sky-300');
+        setBar('o2', Math.round(74 * f), oxO2 > 60 ? '정상' : '감소', 'text-indigo-300');
+        setBar('atp', Math.round(88 * f), oxO2 > 60 ? '활발' : '저하', 'text-amber-300');
+        setBar('heat', Math.round(55 * f), '정상 (66%)', 'text-rose-300');
+      }
+    }
+
+    function sampleOxChart() {
+      if (!oxChartCtx || currentStage !== 'oxphos') return;
+      let o2Rate = 0, atpRate = 0;
+
+      if (oxMode === 'ph_lab') {
+        const diff = getLivePhDiff();
+        o2Rate = 2;
+        atpRate = (!phLabEquilibrated && diff >= 0.15) ? Math.min(88, diff * 44) : 2;
+      } else if (oxO2 === 0 || oxMode === 'cyanide') {
+        o2Rate = 3; atpRate = 3;
+      } else if (oxMode === 'rotenone') {
+        const f = oxO2 / 100;
+        o2Rate = 28 * f; atpRate = 22 * f;
+      } else if (oxMode === 'atp_block') {
+        o2Rate = 16 * (oxO2 / 100); atpRate = 3;
+      } else if (oxMode === 'dnp') {
+        o2Rate = 95 * (oxO2 / 100); atpRate = oligoStackedWithDNP ? 2 : 6;
+      } else {
+        const f = oxO2 / 100;
+        o2Rate = 64 * f; atpRate = 72 * f;
+      }
+
+      // Smooth jitter for organic physiological monitor feel
+      const jitter = () => (Math.random() - 0.5) * 2.2;
+      oxChartData.push({
+        o2: Math.max(2, Math.min(97, o2Rate + jitter())),
+        atp: Math.max(2, Math.min(97, atpRate + jitter())),
+        marker: pendingChartMarker
+      });
+      pendingChartMarker = null;
+      if (oxChartData.length > 130) oxChartData.shift();
+
+      drawOxChart();
+    }
+
+    function drawOxChart() {
+      if (!oxChartCtx) return;
+      const cw = oxChartCanvas.width;
+      const ch = oxChartCanvas.height;
+      oxChartCtx.clearRect(0, 0, cw, ch);
+
+      // Subtle grid lines
+      oxChartCtx.strokeStyle = 'rgba(51, 65, 85, 0.55)';
+      oxChartCtx.lineWidth = 1;
+      for (let g = 1; g <= 3; g++) {
+        const gy = (ch / 4) * g;
+        oxChartCtx.beginPath();
+        oxChartCtx.moveTo(0, gy); oxChartCtx.lineTo(cw, gy);
+        oxChartCtx.stroke();
+      }
+
+      if (oxChartData.length < 2) return;
+      const stepX = cw / 129;
+
+      // Event markers (Vertical dashed lines when inhibitor/mode changes!)
+      oxChartData.forEach((pt, idx) => {
+        if (pt.marker) {
+          const mx = idx * stepX;
+          oxChartCtx.strokeStyle = 'rgba(244, 63, 94, 0.7)';
+          oxChartCtx.setLineDash([3, 3]);
+          oxChartCtx.beginPath();
+          oxChartCtx.moveTo(mx, 12); oxChartCtx.lineTo(mx, ch);
+          oxChartCtx.stroke();
+          oxChartCtx.setLineDash([]);
+          oxChartCtx.fillStyle = '#fda4af';
+          oxChartCtx.font = '700 8.5px "Noto Sans KR", sans-serif';
+          oxChartCtx.textAlign = 'left';
+          oxChartCtx.fillText(pt.marker, Math.min(cw - 40, mx + 2), 10);
+        }
+      });
+
+      // Plot O2 Consumption Line (Sky Blue)
+      oxChartCtx.strokeStyle = '#38bdf8';
+      oxChartCtx.lineWidth = 2;
+      oxChartCtx.beginPath();
+      oxChartData.forEach((pt, idx) => {
+        const x = idx * stepX;
+        const y = ch - (pt.o2 / 100) * (ch - 14) - 4;
+        if (idx === 0) oxChartCtx.moveTo(x, y); else oxChartCtx.lineTo(x, y);
+      });
+      oxChartCtx.stroke();
+
+      // Plot ATP Synthesis Line (Amber Yellow)
+      oxChartCtx.strokeStyle = '#facc15';
+      oxChartCtx.lineWidth = 2;
+      oxChartCtx.beginPath();
+      oxChartData.forEach((pt, idx) => {
+        const x = idx * stepX;
+        const y = ch - (pt.atp / 100) * (ch - 14) - 4;
+        if (idx === 0) oxChartCtx.moveTo(x, y); else oxChartCtx.lineTo(x, y);
+      });
+      oxChartCtx.stroke();
+    }
+
+    /* =========================================================================
+     * MOLECULE DRAWING PRIMITIVES
+     * ========================================================================= */
+    function drawCarbonMolecule(x, y, carbons, opts = {}) {
+      const r = opts.r || 7.0;
+      const gap = r * 2.02;
+      const startX = x - ((carbons - 1) * gap) / 2;
+
+      ctx.save();
+      if (opts.glow) {
+        ctx.shadowColor = opts.glow;
+        ctx.shadowBlur = 13;
+      }
+
+      if (opts.leftP) {
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(startX - gap, y); ctx.lineTo(startX, y);
+        ctx.stroke();
+        drawBead(startX - gap, y, r, '#facc15', '#fef08a', '#0f172a', 'P');
+      }
+
+      if (opts.rightP) {
+        const endX = startX + (carbons - 1) * gap;
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(endX, y); ctx.lineTo(endX + gap, y);
+        ctx.stroke();
+        drawBead(endX + gap, y, r, '#facc15', '#fef08a', '#0f172a', 'P');
+      }
+
+      if (opts.coa) {
+        ctx.fillStyle = '#ec4899';
+        ctx.beginPath();
+        ctx.roundRect(startX - gap * 1.85, y - 8.5, 29, 17, 8.5);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 9px "Noto Sans KR", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('CoA', startX - gap * 1.85 + 14.5, y);
+      }
+
+      if (carbons > 1) {
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(startX + (carbons - 1) * gap, y);
+        ctx.stroke();
+      }
+
+      for (let i = 0; i < carbons; i++) {
+        const cx = startX + i * gap;
+        drawBead(cx, y, r, opts.fill || '#334155', opts.stroke || '#e2e8f0', '#ffffff', 'C');
+      }
+
+      if (opts.label) {
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = opts.labelColor || '#f1f5f9';
+        ctx.font = '700 10.5px "Noto Sans KR", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(opts.label, x, y + r + 5);
+      }
+      ctx.restore();
+    }
+
+    function drawBead(x, y, r, fill, stroke, textCol, text) {
+      const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+      g.addColorStop(0, '#ffffff55');
+      g.addColorStop(0.35, fill);
+      g.addColorStop(1, fill);
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.fillStyle = textCol;
+      ctx.font = `800 ${Math.max(7.5, Math.round(r * 1.1))}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, y + 0.5);
+    }
+
+    function drawPill(x, y, text, bg, border, txtCol = '#0f172a', glow = null) {
+      ctx.save();
+      if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 10; }
+      ctx.font = '800 10px "Noto Sans KR", sans-serif';
+      const w = Math.max(40, ctx.measureText(text).width + 13);
+      const h = 19;
+      ctx.fillStyle = bg;
+      ctx.strokeStyle = border;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(x - w / 2, y - h / 2, w, h, h / 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = txtCol;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, y + 0.5);
+      ctx.restore();
+    }
+
+    /* =========================================================================
+     * SCENE 0: WHOLE CELL PANORAMA (STRICT CARBON CONSERVATION + NAD+ RECYCLING)
+     * ========================================================================= */
+    function initWholeCellScene() {
+      entities = [];
+      o2Mols = [];
+      for (let i = 0; i < 12; i++) {
+        o2Mols.push({
+          x: Math.random() * W,
+          y: 60 + Math.random() * (H - 120),
+          vx: (Math.random() - 0.5) * 1.1,
+          vy: (Math.random() - 0.5) * 1.1
+        });
+      }
+      injectWholeSubstrate('glucose');
+    }
+
+    function injectWholeSubstrate(kind, cx, cy) {
+      const startX = cx && cx < W * 0.35 ? cx : 68;
+      const startY = cy || (H * 0.52 + (Math.random() - 0.5) * 100);
+
+      // Biochemical accuracy guard: mature RBCs and anaerobic (O2=0) conditions rely on glucose glycolysis!
+      if ((kind === 'fat' || kind === 'protein') && (cellType === 'rbc' || wholeO2 === 0)) {
+        const reason = cellType === 'rbc'
+          ? '⚠️ 적혈구는 미토콘드리아와 지방·아미노산 분해 효소가 없어 포도당의 해당 과정에만 의존합니다!'
+          : '⚠️ 무산소(O₂ 0%) 조건에서는 지방·아미노산 산화가 진행될 수 없어 포도당의 해당 과정이 주 경로입니다!';
+        setTicker(reason);
+        addSpark(Math.max(150, startX + 70), startY, cellType === 'rbc' ? '적혈구는 포도당만 이용 가능!' : '지방·아미노산 산화에는 O₂ 필요!', '#fb7185', 0, -0.9);
+        return;
+      }
+
+      if (kind === 'glucose') {
+        entities.push({ kind: 'pathway', origin: 'glucose', mult: 2, x: startX, y: startY, stage: 0, timer: 0 });
+        setTicker('🍬 포도당(C₆) 투입! 2 피루브산(C₃×2) → 2 아세틸 CoA → TCA 2회전(총 6 CO₂) 전 과정을 진행합니다.');
+      } else if (kind === 'fat') {
+        // Strictly conserved: Glycerol (C3 -> 1 pyruvate -> 3 CO2) + Fatty Acid C4 fragment (beta-ox -> 2 Acetyl-CoA -> 4 CO2)
+        entities.push({ kind: 'fat_glycerol', mult: 1, x: startX, y: startY - 24, stage: 0, timer: 0 });
+        entities.push({ kind: 'fat_acid', mult: 2, x: startX, y: startY + 26, stage: 0, timer: 0 });
+        setTicker('🧈 지방 투입! 글리세롤(C₃)은 해당 과정(피루브산 1분자)으로, 지방산(C₄ 단편)은 β-산화를 거쳐 2 아세틸 CoA로 진입합니다.');
+      } else if (kind === 'protein') {
+        // Strictly conserved: C3 amino acid (e.g. Alanine) -> deamination -> 1 Pyruvate (C3) -> 3 CO2
+        entities.push({ kind: 'protein_aa', mult: 1, x: startX, y: startY, stage: 0, timer: 0 });
+        setTicker('🥩 아미노산(알라닌 C₃ 모델) 투입! 아미노기(-NH₂) 제거 후 1분자 피루브산(C₃)으로 전환되어 호흡 경로에 합류합니다.');
+      }
+    }
+
+    function renderWholeCell(dt) {
+      const tf = getTempFactor();
+      const effDt = dt * tf;
+      const hasMito = cellType !== 'rbc';
+      const scale = Math.min(1, W / 820);
+
+      const bg = ctx.createRadialGradient(W * 0.35, H * 0.5, 40, W * 0.5, H * 0.5, W * 0.75);
+      bg.addColorStop(0, '#0f172a');
+      bg.addColorStop(1, '#020617');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(14, 42, W - 28, H - 84, 34);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+      ctx.font = '800 11.5px "Noto Sans KR", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('세포질 (Cytosol · 해당 과정 구역)', 30, 66);
+
+      // Glycolysis Zone
+      const glyX = W * 0.21;
+      const glyY = H * 0.52;
+      const glyW = Math.max(108, 146 * scale);
+      ctx.fillStyle = 'rgba(37, 99, 235, 0.12)';
+      ctx.strokeStyle = 'rgba(96, 165, 250, 0.45)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.roundRect(glyX - glyW / 2, glyY - 92, glyW, 184, 22);
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#93c5fd';
+      ctx.font = '800 11.5px "Noto Sans KR", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('① 해당 과정', glyX, glyY - 70);
+      ctx.font = '600 9.5px "Noto Sans KR", sans-serif';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText('순 +2 ATP · +2 NADH', glyX, glyY + 78);
+      registerHover(glyX, glyY, glyW * 0.46, '세포질 효소군', '해당 과정 (Glycolysis)', 'C₆ → 2 C₃', '산소 없이도 포도당을 피루브산 2분자로 분해합니다. 무산소 시 피루브산이 젖산으로 환원되며 NAD⁺를 재생합니다.');
+
+      // Mitochondrion Bounds
+      const mLeft = W * 0.38;
+      const mRight = W - 28;
+      const mTop = 64;
+      const mBot = H - 62;
+      const mW = mRight - mLeft;
+      const mH = mBot - mTop;
+      const mCx = mLeft + mW * 0.5;
+      const mCy = mTop + mH * 0.5;
+
+      const tcaX = mLeft + mW * 0.33;
+      const tcaY = mCy;
+      const etcX = mLeft + mW * 0.76;
+      const etcY = mCy;
+
+      if (hasMito) {
+        const bgCount = cellType === 'liver' ? 5 : (cellType === 'muscle' ? 3 : 1);
+        for (let b = 0; b < bgCount; b++) {
+          ctx.save();
+          ctx.globalAlpha = 0.15;
+          ctx.translate(W * 0.12 + (b * 95) % (W * 0.2), b % 2 === 0 ? 105 : H - 105);
+          ctx.rotate(b * 0.7);
+          ctx.fillStyle = '#10b981';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 26, 13, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Outer & Inner Membrane
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.10)';
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.roundRect(mLeft, mTop, mW, mH, Math.min(mW, mH) * 0.28);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(6, 78, 59, 0.45)';
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(mLeft + 12, mTop + 12, mW - 24, mH - 24, Math.min(mW, mH) * 0.24);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#6ee7b7';
+        ctx.font = '800 11.5px "Noto Sans KR", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('미토콘드리아 (외막 · 내막 크리스타 · 바탕질)', mCx, mTop + 32);
+
+        // TCA Wheel
+        const wheelR = Math.max(38, 52 * scale);
+        ctx.strokeStyle = 'rgba(52, 211, 153, 0.45)';
+        ctx.lineWidth = 9;
+        ctx.beginPath();
+        ctx.arc(tcaX, tcaY, wheelR, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(tcaX, tcaY, wheelR, simTime * 1.4 * tf, simTime * 1.4 * tf + 1.2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 11.5px "Noto Sans KR", sans-serif';
+        ctx.fillText('② TCA 회로', tcaX, tcaY - 4);
+        ctx.fillStyle = '#a7f3d0';
+        ctx.font = '700 9.5px "Noto Sans KR", sans-serif';
+        ctx.fillText('바탕질 순환', tcaX, tcaY + 12);
+        registerHover(tcaX, tcaY, wheelR, '미토콘드리아 바탕질', '피루브산 산화 & TCA 회로', 'C₃ → 3 CO₂', '피루브산 1분자당 3 CO₂, 4 NADH, 1 FADH₂, 기질수준 1 ATP를 생성합니다.');
+
+        // ETC Complex Box
+        const etcW = Math.max(106, 140 * scale);
+        ctx.fillStyle = 'rgba(99, 102, 241, 0.22)';
+        ctx.strokeStyle = '#818cf8';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(etcX - etcW / 2, etcY - 80, etcW, 160, 20);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(etcX, etcY + 34);
+        ctx.rotate(rotorAngle);
+        for (let k = 0; k < 6; k++) {
+          ctx.rotate(Math.PI / 3);
+          ctx.fillStyle = k % 2 === 0 ? '#facc15' : '#f59e0b';
+          ctx.beginPath();
+          ctx.ellipse(11, 0, 8.5, 4.2, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+        if (wholeO2 > 0 && tf > 0) rotorAngle += 0.08 * effDt * (wholeO2 / 100);
+
+        ctx.fillStyle = '#e0e7ff';
+        ctx.font = '800 11.5px "Noto Sans KR", sans-serif';
+        ctx.fillText('③ 산화적 인산화', etcX, etcY - 52);
+        ctx.fillStyle = '#c7d2fe';
+        ctx.font = '600 9.5px "Noto Sans KR", sans-serif';
+        ctx.fillText('전자전달계 + 화학삼투', etcX, etcY - 34);
+        ctx.fillStyle = '#fde047';
+        ctx.font = '800 10.5px "Noto Sans KR", sans-serif';
+        ctx.fillText(shuttleType === 'malate' ? '최대 +28 ATP!' : '셔틀 적용 +26 ATP', etcX, etcY - 12);
+        registerHover(etcX, etcY, etcW * 0.48, '미토콘드리아 내막', '산화적 인산화 (ETC + 화학삼투)', 'NADH≈2.5 · FADH₂≈1.5', '고에너지 전자를 산소(O₂)에 전달해 H⁺ 기울기를 형성하고 최대 28 ATP(글리세롤 셔틀 시 26 ATP)를 합성합니다.');
+
+      } else {
+        // Mature RBC Mode
+        ctx.fillStyle = 'rgba(225, 29, 72, 0.08)';
+        ctx.strokeStyle = 'rgba(244, 63, 94, 0.45)';
+        ctx.setLineDash([8, 6]);
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(mLeft, mTop + 30, mW, mH - 60, 26);
+        ctx.fill();
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#fda4af';
+        ctx.font = '800 15px "Noto Sans KR", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('적혈구: 미토콘드리아 없음 (0개)', mCx, mCy - 14);
+        ctx.font = '600 11.5px "Noto Sans KR", sans-serif';
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillText('세포질에서 해당 과정(+2 ATP) 후 젖산 전환으로 NAD⁺를 재생하여 생존합니다.', mCx, mCy + 12);
+      }
+
+      // Ambient O2
+      const visibleO2 = Math.round((wholeO2 / 100) * o2Mols.length);
+      for (let i = 0; i < visibleO2; i++) {
+        const o = o2Mols[i];
+        o.x += o.vx * dt; o.y += o.vy * dt;
+        if (o.x < 30 || o.x > W - 30) o.vx *= -1;
+        if (o.y < 55 || o.y > H - 55) o.vy *= -1;
+        ctx.save();
+        ctx.globalAlpha = 0.65;
+        drawBead(o.x - 4, o.y, 4.4, '#0284c7', '#bae6fd', '#fff', 'O');
+        drawBead(o.x + 4, o.y, 4.4, '#0284c7', '#bae6fd', '#fff', 'O');
+        ctx.restore();
+      }
+
+      if (wholeTemp >= 53) {
+        ctx.fillStyle = 'rgba(153, 27, 27, 0.88)';
+        ctx.beginPath();
+        ctx.roundRect(W * 0.5 - 165, H * 0.5 - 24, 330, 48, 14);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 12.5px "Noto Sans KR", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🔥 고온(≥53°C) 효소 변성! 모든 호흡 반응 정지', W * 0.5, H * 0.5 + 4);
+      }
+
+      if (entities.length === 0 && tf > 0) injectWholeSubstrate('glucose');
+
+      // Update Moving Substrates with STRICT CARBON CONSERVATION
+      for (let i = entities.length - 1; i >= 0; i--) {
+        const e = entities[i];
+
+        if (e.kind === 'pathway') {
+          if (e.stage === 0) {
+            e.x += (glyX - e.x) * 0.04 * effDt + 0.6 * effDt;
+            e.y += (glyY - e.y) * 0.04 * effDt;
+            drawCarbonMolecule(e.x, e.y, 6, { label: '포도당 (C₆)', glow: '#38bdf8' });
+            registerHover(e.x, e.y, 26, '호흡기질', '포도당 (C₆H₁₂O₆)', '6탄소 화합물', '해당 과정에서 3탄소 피루브산 2분자로 분해됩니다.');
+
+            if (Math.hypot(glyX - e.x, glyY - e.y) < 16) {
+              e.stage = 1;
+              stats.atpSub += 2;
+              stats.nadh += 2;
+              updateStatsUI();
+              addSpark(e.x, e.y - 26, '★ 해당 과정: +2 ATP, +2 NADH', '#facc15', 0, -1.2);
+              if (hasMito && wholeO2 > 0) {
+                const cyAtp = shuttleType === 'malate' ? 5 : 3;
+                const cyLbl = shuttleType === 'malate' ? '2 NADH (말산셔틀)' : '2 NADH→FADH₂';
+                const cyCol = shuttleType === 'malate' ? '#10b981' : '#06b6d4';
+                entities.push({ kind: 'carrier_shuttle', x: e.x, y: e.y - 30, targetX: etcX, targetY: etcY, label: cyLbl, color: cyCol, atpYield: cyAtp, o2Cost: 1, h2oYield: 2 });
+              }
+            }
+          } else if (e.stage === 1) {
+            // Pyruvate stage: e.mult is 2 (from glucose) or 1 (from glycerol / C3 amino acid!)
+            if (!hasMito || wholeO2 === 0) {
+              if (e.origin === 'glucose') {
+                // Anaerobic / RBC (Glucose only): Convert to Lactate & Recycle NAD+ visibly!
+                e.x += 0.35 * effDt;
+                e.timer += effDt;
+                if (e.timer < 55) {
+                  drawCarbonMolecule(e.x, e.y - 16, 3, { label: '피루브산(C₃)' });
+                  drawCarbonMolecule(e.x, e.y + 16, 3, { label: '피루브산(C₃)' });
+                } else {
+                  drawCarbonMolecule(e.x, e.y, 3, { fill: '#be123c', stroke: '#fda4af', label: '2 젖산(C₃) 환원' });
+                  if (!e.recycled) {
+                    e.recycled = true;
+                    addSpark(e.x, e.y - 22, '↺ NADH→NAD⁺ 재생! (해당 과정 유지)', '#34d399', -0.9, -0.9);
+                    entities.push({ kind: 'nad_recycle', x: e.x, y: e.y - 14, targetX: glyX, targetY: glyY - 20 });
+                  }
+                  if (e.timer > 115) entities.splice(i, 1);
+                }
+              } else {
+                // Non-glucose pyruvate (from amino acid / glycerol) stalls when O2 drops mid-flight
+                e.timer += effDt;
+                drawCarbonMolecule(e.x, e.y, 3, { fill: '#64748b', stroke: '#fca5a5', label: '미토콘드리아·O₂ 필요!' });
+                if (e.timer > 75) entities.splice(i, 1);
+              }
+            } else {
+              // Aerobic: Enter Mitochondrion for PDH
+              const entryX = mLeft + 46;
+              e.x += (entryX - e.x) * 0.045 * effDt + 0.8 * effDt;
+              e.y += (tcaY - e.y) * 0.045 * effDt;
+              if (e.mult === 2) {
+                drawCarbonMolecule(e.x, e.y - 15, 3, { label: '피루브산(C₃)' });
+                drawCarbonMolecule(e.x, e.y + 15, 3, { label: '피루브산(C₃)' });
+              } else {
+                drawCarbonMolecule(e.x, e.y, 3, { label: '1 피루브산(C₃)' });
+              }
+              if (e.x >= entryX - 8) {
+                e.stage = 2;
+                stats.co2 += e.mult;
+                stats.nadh += e.mult;
+                updateStatsUI();
+                addSpark(e.x, e.y - 28, `💨 피루브산 산화: -${e.mult} CO₂, +${e.mult} NADH`, '#34d399', -0.4, -1.3);
+                entities.push({ kind: 'carrier_shuttle', x: e.x, y: e.y - 20, targetX: etcX, targetY: etcY, label: `${e.mult} NADH`, color: '#10b981', atpYield: e.mult * 2.5, o2Cost: e.mult * 0.5, h2oYield: e.mult });
+              }
+            }
+          } else if (e.stage === 2) {
+            // Acetyl-CoA (e.mult = 1 or 2) -> TCA
+            e.x += (tcaX - e.x) * 0.05 * effDt;
+            e.y += (tcaY - e.y) * 0.05 * effDt;
+            e.timer += effDt;
+            drawCarbonMolecule(e.x, e.y, 2, { coa: true, label: `${e.mult} 아세틸 CoA (C₂)`, glow: '#f472b6' });
+            if (e.timer > 52) {
+              const co2Out = e.mult * 2;
+              const nadhOut = e.mult * 3;
+              const fadhOut = e.mult;
+              const atpOut = e.mult;
+              stats.co2 += co2Out;
+              stats.nadh += nadhOut;
+              stats.fadh2 += fadhOut;
+              stats.atpSub += atpOut;
+              updateStatsUI();
+              addSpark(tcaX, tcaY - 38, `💨 TCA ${e.mult}회전: -${co2Out} CO₂, ★+${atpOut} ATP`, '#facc15', 0, -1.2);
+              entities.push({ kind: 'carrier_shuttle', x: tcaX, y: tcaY - 16, targetX: etcX, targetY: etcY, label: `${nadhOut} NADH`, color: '#10b981', atpYield: nadhOut * 2.5, o2Cost: nadhOut * 0.5, h2oYield: nadhOut });
+              entities.push({ kind: 'carrier_shuttle', x: tcaX, y: tcaY + 18, targetX: etcX, targetY: etcY, label: `${fadhOut} FADH₂`, color: '#06b6d4', atpYield: fadhOut * 1.5, o2Cost: fadhOut * 0.5, h2oYield: fadhOut });
+              entities.splice(i, 1);
+            }
+          }
+        } else if (e.kind === 'fat_glycerol') {
+          if (!hasMito || wholeO2 === 0) {
+            e.timer += effDt;
+            drawCarbonMolecule(e.x, e.y, 3, { fill: '#b45309', stroke: '#fca5a5', label: '글리세롤 (O₂ 필요!)' });
+            if (e.timer > 75) entities.splice(i, 1);
+          } else {
+            e.x += (glyX - e.x) * 0.045 * effDt + 0.6 * effDt;
+            e.y += (glyY - e.y) * 0.045 * effDt;
+            drawCarbonMolecule(e.x, e.y, 3, { fill: '#b45309', stroke: '#fde047', label: '글리세롤(C₃)' });
+            if (Math.hypot(glyX - e.x, glyY - e.y) < 18) {
+              // Glycerol -> G3P -> 1 Pyruvate yields net +1 ATP, +1 NADH (G3P DH), +1 FADH2/NADH (Glycerol-3-P DH)
+              addSpark(e.x, e.y - 22, '글리세롤(C₃) → 1 피루브산 (+1 ATP, +1 NADH, +1 FADH₂)', '#fde047', 0, -1.1);
+              e.kind = 'pathway'; e.origin = 'glycerol'; e.mult = 1; e.stage = 1; e.timer = 0;
+              stats.atpSub += 1; stats.nadh += 1; stats.fadh2 += 1; updateStatsUI();
+              const cyAtp = shuttleType === 'malate' ? 2.5 : 1.5;
+              entities.push({ kind: 'carrier_shuttle', x: e.x, y: e.y - 24, targetX: etcX, targetY: etcY, label: '1 NADH + 1 FADH₂', color: '#10b981', atpYield: cyAtp + 1.5, o2Cost: 1.0, h2oYield: 2 });
+            }
+          }
+        } else if (e.kind === 'fat_acid') {
+          if (!hasMito || wholeO2 === 0) {
+            e.timer += effDt;
+            drawCarbonMolecule(e.x, e.y, 4, { fill: '#b45309', stroke: '#fbbf24', label: '지방산 C₄ (산소 필요!)' });
+            if (e.timer > 90) entities.splice(i, 1);
+          } else {
+            e.x += (tcaX - 35 - e.x) * 0.04 * effDt + 0.85 * effDt;
+            e.y += (tcaY + 32 - e.y) * 0.04 * effDt;
+            drawCarbonMolecule(e.x, e.y, 4, { fill: '#b45309', stroke: '#fbbf24', label: '지방산(C₄) β-산화' });
+            if (Math.hypot(tcaX - 35 - e.x, tcaY + 32 - e.y) < 24) {
+              stats.nadh += 1; stats.fadh2 += 1; updateStatsUI();
+              addSpark(e.x, e.y - 22, 'β-산화: +1 NADH, +1 FADH₂ → 2 아세틸 CoA(C₂×2)', '#fbbf24', 0, -1.2);
+              entities.push({ kind: 'carrier_shuttle', x: e.x, y: e.y + 16, targetX: etcX, targetY: etcY, label: 'β-산화 e⁻', color: '#f59e0b', atpYield: 4, o2Cost: 1, h2oYield: 2 });
+              e.kind = 'pathway'; e.origin = 'fat_acid'; e.mult = 2; e.stage = 2; e.timer = 10; // Strictly C4 -> 2 Acetyl-CoA -> 4 CO2!
+            }
+          }
+        } else if (e.kind === 'protein_aa') {
+          if (!hasMito || wholeO2 === 0) {
+            e.timer += effDt;
+            drawPill(e.x, e.y, '아미노산 (O₂ 필요!)', '#475569', '#fca5a5', '#ffffff');
+            if (e.timer > 75) entities.splice(i, 1);
+          } else if (e.stage === 0) {
+            e.x += (glyX + 35 - e.x) * 0.04 * effDt + 0.65 * effDt;
+            e.y += (glyY - e.y) * 0.04 * effDt;
+            drawPill(e.x, e.y, '아미노산 C₃(-NH₂)', '#10b981', '#a7f3d0', '#022c22', '#34d399');
+            if (e.x >= glyX + 12) {
+              e.stage = 1;
+              addSpark(e.x, e.y - 24, '🧪 탈아미노(-NH₂) → NH₃ → 간에서 요소 합성!', '#a7f3d0', -0.5, -1.35);
+            }
+          } else {
+            // Strictly 1 Pyruvate (C3 -> 3 CO2), marked origin='protein' (no glycolysis NADH generated)
+            e.kind = 'pathway'; e.origin = 'protein'; e.mult = 1; e.stage = 1; e.timer = 0;
+          }
+        } else if (e.kind === 'nad_recycle') {
+          e.x += (e.targetX - e.x) * 0.08 * effDt;
+          e.y += (e.targetY - e.y) * 0.08 * effDt;
+          drawPill(e.x, e.y, 'NAD⁺ ↺', '#34d399', '#ffffff', '#022c22', '#34d399');
+          if (Math.hypot(e.targetX - e.x, e.targetY - e.y) < 16) entities.splice(i, 1);
+        } else if (e.kind === 'carrier_shuttle') {
+          e.x += (e.targetX - e.x) * 0.055 * effDt;
+          e.y += (e.targetY - e.y) * 0.055 * effDt;
+          drawPill(e.x, e.y, e.label, e.color, '#ffffff', '#020617', e.color);
+
+          const ex = e.x + Math.cos(simTime * 14) * 18;
+          const ey = e.y + Math.sin(simTime * 14) * 9;
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath(); ctx.arc(ex, ey, 3, 0, Math.PI * 2); ctx.fill();
+
+          if (Math.hypot(e.targetX - e.x, e.targetY - e.y) < 18) {
+            if (wholeO2 > 0) {
+              stats.atpOx = Math.round((stats.atpOx + e.atpYield) * 10) / 10;
+              stats.o2 = Math.round((stats.o2 + e.o2Cost) * 10) / 10;
+              stats.h2o += e.h2oYield;
+              updateStatsUI();
+              addSpark(etcX, etcY - 30, `⚡ 산화적 인산화 +${e.atpYield} ATP!`, '#fde047', 0, -1.4);
+              addSpark(etcX, etcY + 54, `💧 +${e.h2oYield} H₂O (O₂ 환원) · 🔥 열`, '#38bdf8', 0.4, 1.0);
+              addSpark(etcX, etcY + 34, '', '#facc15', 0, 0, 'ring');
+            }
+            entities.splice(i, 1);
+          }
+        }
+      }
+    }
+
+    /* =========================================================================
+     * SCENE 1: GLYCOLYSIS (WITH EXPLICIT FREE Pi INFLUX AT DEHYDROGENASE!)
+     * ========================================================================= */
+    function spawnGlycolysisGlucose(cx, cy) {
+      entities.push({
+        x: cx && cx < W * 0.25 ? cx : 60,
+        y: cy || (H * 0.52 + (Math.random() - 0.5) * 85),
+        stage: 0,
+        sep: 0,
+        piOffset: 44
+      });
+    }
+
+    function renderGlycolysis(dt) {
+      ctx.fillStyle = '#0b1120';
+      ctx.fillRect(0, 0, W, H);
+
+      const scale = Math.min(1, W / 820);
+      const mitoX = W * 0.85;
+      const z1 = W * 0.23;
+      const z2 = W * 0.49;
+      const z3 = W * 0.70;
+      const boxW = Math.max(96, 140 * scale);
+
+      ctx.fillStyle = 'rgba(59, 130, 246, 0.05)';
+      for (let i = 0; i < 7; i++) {
+        ctx.beginPath();
+        ctx.arc(((i * 155 + simTime * 10) % mitoX), (70 + i * 65) % (H - 60), 26, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const drawChamber = (cx, title, sub, fill, stroke, txtCol, hoverDesc) => {
+        ctx.fillStyle = fill;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(cx - boxW / 2, 62, boxW, H - 124, 18);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = txtCol;
+        ctx.font = `800 ${Math.max(10, Math.round(11.5 * scale))}px "Noto Sans KR", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(title, cx, 85);
+        ctx.font = `600 ${Math.max(9, Math.round(9.8 * scale))}px "Noto Sans KR", sans-serif`;
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillText(sub, cx, 102);
+        registerHover(cx, H * 0.5, boxW * 0.45, '세포질 효소', title, sub, hoverDesc);
+      };
+
+      drawChamber(z1, '① ATP 소모 (구간 I)', '인산화효소 (-2 ATP)', 'rgba(225, 29, 72, 0.12)', 'rgba(244, 63, 94, 0.45)', '#fda4af',
+        '포도당(C₆)에 ATP 2분자의 인산기를 붙여 에너지 준위가 높은 과당 2인산(C₆)으로 활성화합니다.');
+      drawChamber(z2, '② 탈수소 + Pᵢ 결합', glyHasNAD ? '+2 Pᵢ · 2 NAD⁺→NADH' : '⚠️ NAD⁺ 고갈 정지!', glyHasNAD ? 'rgba(16, 185, 129, 0.12)' : 'rgba(220, 38, 38, 0.25)', glyHasNAD ? 'rgba(52, 211, 153, 0.45)' : '#ef4444', glyHasNAD ? '#6ee7b7' : '#fca5a5',
+        '기질 산화 에너지로 ATP 소모 없이 세포질의 자유 무기 인산(2 Pᵢ)을 결합시키고, 2 NAD⁺를 2 NADH로 환원합니다.');
+      drawChamber(z3, '③ 기질수준인산화', '인산기 전달 (+4 ATP)', 'rgba(245, 158, 11, 0.12)', 'rgba(251, 191, 36, 0.5)', '#fde047',
+        '효소가 기질(1,3-BPGA 등)에 붙은 인산기 4개를 ADP에 직접 전달해 4 ATP를 합성합니다 (순생성 2 ATP).');
+
+      // Right Edge
+      ctx.fillStyle = glyHasO2 ? 'rgba(16, 185, 129, 0.14)' : 'rgba(245, 158, 11, 0.10)';
+      ctx.fillRect(mitoX, 0, W - mitoX, H);
+      ctx.strokeStyle = glyHasO2 ? '#10b981' : '#f59e0b';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(mitoX, 0); ctx.lineTo(mitoX, H * 0.37);
+      ctx.moveTo(mitoX, H * 0.63); ctx.lineTo(mitoX, H);
+      ctx.stroke();
+
+      ctx.fillStyle = glyHasO2 ? '#6ee7b7' : '#fcd34d';
+      ctx.font = '800 11.5px "Noto Sans KR", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(glyHasO2 ? '미토콘드리아' : '무산소 상태', (mitoX + W) / 2, 76);
+      ctx.font = '600 9.5px "Noto Sans KR", sans-serif';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText(glyHasO2 ? '작아진 피루브산' : '발효 경로 전환', (mitoX + W) / 2, H * 0.5 - 5);
+      ctx.fillText(glyHasO2 ? '막 통과 가능 →' : '(NAD⁺ 재생)', (mitoX + W) / 2, H * 0.5 + 11);
+
+      if (entities.length === 0) spawnGlycolysisGlucose();
+
+      let trackDotX = 48, trackDotY = 62, phaseTxt = '포도당 유입';
+
+      for (let i = entities.length - 1; i >= 0; i--) {
+        const m = entities[i];
+
+        if (m.stage === 0) {
+          m.x += 1.55 * dt;
+          drawCarbonMolecule(m.x, m.y, 6, { label: '포도당 (C₆)', glow: '#38bdf8' });
+          registerHover(m.x, m.y, 26, '반응물', '포도당 (C₆H₁₂O₆)', '6탄소', '크기가 커서 미토콘드리아 막을 통과할 수 없습니다.');
+          if (i === 0) { trackDotX = 52; trackDotY = 62; phaseTxt = '반응 전 (포도당)'; }
+
+          if (m.x >= z1) {
+            m.stage = 1;
+            stats.atpSub -= 2;
+            updateStatsUI();
+            addSpark(m.x, m.y - 26, '-2 ATP 소모 (인산기 2개 부착!)', '#fb7185', 0, -1.2);
+            setTicker('구간 I (에너지 투입기): 2 ATP를 소모해 포도당이 과당 2인산(C₆)으로 활성화되었습니다!');
+          }
+        } else if (m.stage === 1) {
+          m.x += 1.25 * dt;
+          const vib = Math.sin(simTime * 22) * 2;
+          drawCarbonMolecule(m.x, m.y + vib, 6, { leftP: true, rightP: true, glow: '#f43f5e', label: '과당 2인산 (C₆)', labelColor: '#fda4af' });
+          registerHover(m.x, m.y, 32, '활성화 중간체', '과당 2인산 (FBP)', '6탄소 + P 2개', 'ATP 2분자로 인산화되어 에너지 준위가 가장 높은 상태입니다.');
+          if (i === 0) { trackDotX = 108; trackDotY = 34; phaseTxt = '구간 I (에너지 상승!)'; }
+
+          if (m.x >= (z1 + z2) * 0.52) {
+            m.stage = 2; m.sep = 6; m.piOffset = 48;
+            addSpark(m.x, m.y, '⚡ 6탄소 → 3탄소(G3P) × 2분자 분열!', '#38bdf8', 0, -1.1);
+          }
+        } else if (m.stage === 2) {
+          if (m.sep < 58) m.sep += 1.2 * dt;
+          const blockedByNAD = !glyHasNAD && m.x >= z2 - 42;
+          if (!blockedByNAD) {
+            m.x += 1.32 * dt;
+            if (m.x > z2 - 50 && m.piOffset > 0) m.piOffset = Math.max(0, m.piOffset - 1.4 * dt);
+          }
+          const jitter = blockedByNAD ? Math.sin(simTime * 16) * 2 : 0;
+
+          drawCarbonMolecule(m.x + jitter, m.y - m.sep, 3, { leftP: true, label: blockedByNAD ? 'NAD⁺ 대기 중...' : 'G3P (3탄소-P)' });
+          drawCarbonMolecule(m.x + jitter, m.y + m.sep, 3, { leftP: true, label: blockedByNAD ? 'NAD⁺ 대기 중...' : 'G3P (3탄소-P)' });
+
+          // Visually show Free Inorganic Phosphate (Pi) flying in from cytosol (NOT ATP!)
+          if (!blockedByNAD && m.x > z2 - 55) {
+            drawBead(m.x + 28 + m.piOffset, m.y - m.sep - m.piOffset * 0.5, 6.5, '#fb923c', '#ffedd5', '#0f172a', 'Pᵢ');
+            drawBead(m.x + 28 + m.piOffset, m.y + m.sep + m.piOffset * 0.5, 6.5, '#fb923c', '#ffedd5', '#0f172a', 'Pᵢ');
+          }
+
+          if (i === 0) { trackDotX = 160; trackDotY = 54; phaseTxt = blockedByNAD ? 'NAD⁺ 고갈 정지!' : '구간 II (무기인산 Pᵢ 유입)'; }
+
+          if (!blockedByNAD && m.x >= z2) {
+            m.stage = 3;
+            stats.nadh += 2;
+            updateStatsUI();
+            addSpark(m.x, m.y - m.sep - 22, '🧪 자유 Pᵢ 결합 (ATP 미소모!) · +1 NADH', '#34d399', 0.4, -1.3);
+            addSpark(m.x, m.y + m.sep - 22, '🧪 자유 Pᵢ 결합 · +1 NADH', '#34d399', 0.4, -1.1);
+            setTicker('구간 II (탈수소 + 무기인산 결합): ATP가 아닌 세포질의 자유 무기 인산(2 Pᵢ)이 결합하고 2 NADH가 생성됩니다!');
+          }
+        } else if (m.stage === 3) {
+          m.x += 1.35 * dt;
+          drawCarbonMolecule(m.x, m.y - m.sep, 3, { leftP: true, rightP: true, glow: '#34d399', label: '1,3-BPGA (C₃-P₂)' });
+          drawCarbonMolecule(m.x, m.y + m.sep, 3, { leftP: true, rightP: true, glow: '#34d399', label: '1,3-BPGA (C₃-P₂)' });
+          if (i === 0) { trackDotX = 195; trackDotY = 72; phaseTxt = '구간 II (기질수준인산화)'; }
+
+          if (m.x >= z3) {
+            m.stage = 4;
+            stats.atpSub += 4;
+            updateStatsUI();
+            addSpark(m.x, m.y - m.sep - 22, '★ +2 ATP (기질수준인산화!)', '#facc15', 0.5, -1.5);
+            addSpark(m.x, m.y + m.sep - 22, '★ +2 ATP (기질수준인산화!)', '#facc15', 0.5, -1.3);
+            setTicker('★ 기질수준인산화 완료! 총 4 ATP 합성 (순생성 +2 ATP, CO₂ 방출 0) → 2 피루브산(C₃) 완성!');
+          }
+        } else if (m.stage === 4) {
+          m.x += 1.7 * dt;
+          if (m.sep > 22) m.sep -= 0.7 * dt;
+          drawCarbonMolecule(m.x, m.y - m.sep, 3, { glow: '#60a5fa', label: '피루브산 (C₃)', labelColor: '#93c5fd' });
+          drawCarbonMolecule(m.x, m.y + m.sep, 3, { glow: '#60a5fa', label: '피루브산 (C₃)', labelColor: '#93c5fd' });
+          registerHover(m.x, m.y - m.sep, 20, '해당 최종 산물', '피루브산 (C₃H₄O₃)', '3탄소 화합물', '포도당의 화학 에너지 상당량이 남아 있으며 산소 존재 시 미토콘드리아로 들어갑니다.');
+          if (i === 0) { trackDotX = 242; trackDotY = 86; phaseTxt = '완료: 2 피루브산 (순 +2 ATP)'; }
+          if (m.x > W - 25) entities.splice(i, 1);
+        }
+      }
+
+      const dot = document.getElementById('gly-live-dot');
+      if (dot) { dot.setAttribute('cx', trackDotX); dot.setAttribute('cy', trackDotY); }
+      const pill = document.getElementById('gly-phase-pill');
+      if (pill) pill.textContent = phaseTxt;
+    }
+
+    /* =========================================================================
+     * SCENE 2: PYRUVATE OXIDATION + TCA CYCLE (INDIRECT NAD+ INHIBITION + WAITING OAA)
+     * ========================================================================= */
+    function spawnTCAPyruvate(count) {
+      for (let i = 0; i < count; i++) {
+        entities.push({
+          x: 50 - i * 40,
+          y: H * 0.5 + (i === 0 ? -16 : 16),
+          stage: 0,
+          angle: -Math.PI / 2,
+          lastStation: 0,
+          timer: 0
+        });
+      }
+    }
+
+    function renderTCA(dt) {
+      // Update Matrix NAD+/FAD Pool smoothly based on O2 availability (Indirect Inhibition!)
+      if (tcaHasO2) {
+        tcaNadPool = Math.min(100, tcaNadPool + 0.55 * dt);
+      } else {
+        tcaNadPool = Math.max(0, tcaNadPool - 0.55 * dt);
+      }
+      if (frameCount % 6 === 0) updateTCANadUI();
+      const nadDepleted = tcaNadPool <= 8;
+
+      const scale = Math.min(1, W / 840);
+      const outerX = W * 0.14;
+      const innerX = W * 0.21;
+      const pdhX = W * 0.34;
+      const tcaCx = W * 0.67;
+      const tcaCy = H * 0.53;
+      const tcaR = Math.min(W * 0.19, H * 0.32);
+
+      // Zones
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, outerX, H);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '800 10.5px "Noto Sans KR", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('세포질', outerX * 0.5, 66);
+
+      ctx.fillStyle = '#1e1b4b';
+      ctx.fillRect(outerX, 0, innerX - outerX, H);
+      ctx.fillStyle = '#a5b4fc';
+      ctx.font = '700 9.5px "Noto Sans KR", sans-serif';
+      ctx.fillText('막사이', (outerX + innerX) * 0.5, 66);
+
+      ctx.fillStyle = '#042f2e';
+      ctx.fillRect(innerX, 0, W - innerX, H);
+      ctx.fillStyle = '#6ee7b7';
+      ctx.font = '800 11.5px "Noto Sans KR", sans-serif';
+      ctx.fillText('미토콘드리아 바탕질 (Matrix)', (innerX + W) * 0.5, 66);
+
+      // Outer & Inner Membrane Walls (Open transport channel — NO fake physical O2 door!)
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(outerX - 3.5, 0, 7, H * 0.38);
+      ctx.fillRect(outerX - 3.5, H * 0.62, 7, H * 0.38);
+
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(innerX - 4.5, 0, 9, H * 0.38);
+      ctx.fillRect(innerX - 4.5, H * 0.62, 9, H * 0.38);
+
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.roundRect(innerX - 9, H * 0.37, 18, 14, 5);
+      ctx.roundRect(innerX - 9, H * 0.63 - 14, 18, 14, 5);
+      ctx.fill();
+
+      // Accumulated NADH indicators in matrix when O2 is OFF
+      if (!tcaHasO2) {
+        const pile = Math.round((100 - tcaNadPool) / 16);
+        for (let k = 0; k < pile; k++) {
+          const px = innerX + 32 + (k * 46) % (W - innerX - 80);
+          const py = H - 72 - (k % 2) * 22;
+          drawPill(px, py, 'NADH 축적', '#065f46', '#34d399', '#a7f3d0');
+        }
+      }
+
+      // PDH Complex
+      const pdhR = Math.max(38, 48 * scale);
+      const pdhPulse = (tcaSpotlight === 'co2' || tcaSpotlight === 'nadh') ? 1 : 0;
+      ctx.fillStyle = nadDepleted ? 'rgba(220, 38, 38, 0.20)' : (pdhPulse ? 'rgba(52, 211, 153, 0.28)' : 'rgba(16, 185, 129, 0.14)');
+      ctx.strokeStyle = nadDepleted ? '#f43f5e' : (pdhPulse ? '#fde047' : '#34d399');
+      ctx.lineWidth = (pdhPulse || nadDepleted) ? 3 : 2;
+      ctx.beginPath();
+      ctx.arc(pdhX, H * 0.5, pdhR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = nadDepleted ? '#fda4af' : '#a7f3d0';
+      ctx.font = '800 10.5px "Noto Sans KR", sans-serif';
+      ctx.fillText('피루브산 산화', pdhX, H * 0.5 - 22);
+      ctx.font = '600 9px "Noto Sans KR", sans-serif';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText(nadDepleted ? 'NAD⁺ 고갈 정지!' : '-1 CO₂ · +1 NADH', pdhX, H * 0.5 + 26);
+      ctx.fillText(nadDepleted ? '(무산소 간접 저해)' : '+조효소 A 결합', pdhX, H * 0.5 + 39);
+      registerHover(pdhX, H * 0.5, pdhR, '바탕질 효소 복합체', '피루브산 탈수소효소 복합체', 'C₃ → C₂ (아세틸 CoA)',
+        'O₂가 없으면 전자전달계가 멈춰 NAD⁺가 재생되지 않으므로, 이 탈수소 효소 반응이 간접적으로 정지합니다.');
+
+      // TCA Cycle Ring
+      ctx.strokeStyle = nadDepleted ? 'rgba(244, 63, 94, 0.22)' : 'rgba(45, 212, 191, 0.22)';
+      ctx.lineWidth = Math.max(15, 20 * scale);
+      ctx.beginPath();
+      ctx.arc(tcaCx, tcaCy, tcaR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Center Hub
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = nadDepleted ? '#f43f5e' : '#6366f1';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(tcaCx, tcaCy, Math.max(32, 38 * scale), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 12px "Noto Sans KR", sans-serif';
+      ctx.fillText('TCA 회로', tcaCx, tcaCy - 4);
+      ctx.fillStyle = nadDepleted ? '#fda4af' : '#a5b4fc';
+      ctx.font = '600 9px "Noto Sans KR", sans-serif';
+      ctx.fillText(nadDepleted ? 'NAD⁺·FAD 고갈' : '시트르산 순환', tcaCx, tcaCy + 11);
+
+      // Permanently Waiting Oxaloacetate (C4) docked near top-left of TCA Ring!
+      const hasOrbiting = entities.some(m => m.stage === 3);
+      if (!hasOrbiting) {
+        const oaaX = tcaCx + Math.cos(-Math.PI * 0.62) * tcaR;
+        const oaaY = tcaCy + Math.sin(-Math.PI * 0.62) * tcaR;
+        drawCarbonMolecule(oaaX, oaaY, 4, { r: 5.8, glow: '#c084fc', label: '대기 중: 옥살아세트산(C₄)', labelColor: '#e9d5ff' });
+        registerHover(oaaX, oaaY, 22, 'TCA 출발 물질', '옥살아세트산 (C₄)', '4탄소 화합물', '회로 상단에서 대기하다가 아세틸 CoA(C₂)와 결합해 6탄소 시트르산을 형성하고, 1회전 끝에 다시 재생됩니다.');
+      }
+
+      // 6 TCA Enzyme Nodes (Responsive label placement so nothing clips right edge!)
+      const nodes = [
+        { ang: -Math.PI * 0.38, id: '①', lbl: '시트르산(C₆)', tag: 'all', col: '#60a5fa', desc: '대기 중인 옥살아세트산(C₄)과 아세틸 CoA(C₂)가 결합해 시트르산(C₆)을 합성합니다.' },
+        { ang: 0.05,            id: '②', lbl: 'C₆→C₅ (-CO₂,+NADH)', tag: 'co2 nadh', col: '#34d399', desc: '시트르산이 산화되며 CO₂ 1분자 방출, NADH 1분자 생성 후 5탄소(C₅)가 됩니다.' },
+        { ang: Math.PI * 0.37,  id: '③★', lbl: 'C₅→C₄ (+ATP!)', tag: 'co2 nadh atp', col: '#facc15', desc: 'CO₂ 1분자 방출, NADH 1분자 생성과 함께 기질수준인산화로 1 ATP가 합성됩니다!' },
+        { ang: Math.PI * 0.72,  id: '④', lbl: 'C₄ (+FADH₂)', tag: 'fadh2', col: '#22d3ee', desc: '4탄소 화합물이 산화되어 FAD가 FADH₂로 환원됩니다.' },
+        { ang: Math.PI,         id: '⑤', lbl: '+H₂O 첨가', tag: 'all', col: '#38bdf8', desc: '4탄소 화합물에 물 분자(H₂O)가 첨가됩니다.' },
+        { ang: -Math.PI * 0.72, id: '⑥', lbl: 'C₄ 재생(+NADH)', tag: 'nadh', col: '#c084fc', desc: 'NADH 1분자를 생성하며 옥살아세트산(C₄)이 재생성되어 다음 회전을 준비합니다.' }
+      ];
+
+      nodes.forEach(n => {
+        const nx = tcaCx + Math.cos(n.ang) * tcaR;
+        const ny = tcaCy + Math.sin(n.ang) * tcaR;
+        const isHL = tcaSpotlight !== 'all' && n.tag.includes(tcaSpotlight);
+
+        ctx.save();
+        if (isHL) { ctx.shadowColor = n.col; ctx.shadowBlur = 16; }
+        ctx.fillStyle = isHL ? n.col : '#0f172a';
+        ctx.strokeStyle = n.col;
+        ctx.lineWidth = isHL ? 3 : 2;
+        ctx.beginPath();
+        ctx.arc(nx, ny, isHL ? 14.5 : 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = isHL ? '#020617' : n.col;
+        ctx.font = '800 9.5px "Noto Sans KR", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(n.id, nx, ny);
+        ctx.restore();
+
+        const lx = Math.min(W - 58, Math.max(innerX + 46, tcaCx + Math.cos(n.ang) * (tcaR + 30 * scale)));
+        const ly = tcaCy + Math.sin(n.ang) * (tcaR + 24 * scale);
+        ctx.fillStyle = isHL ? '#fef08a' : '#e2e8f0';
+        ctx.font = `${isHL ? '800' : '700'} ${Math.max(8.5, Math.round(9.8 * scale))}px "Noto Sans KR", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(n.lbl, lx, ly);
+
+        registerHover(nx, ny, 18, `TCA 단계 ${n.id}`, n.lbl, '바탕질 효소 반응', n.desc);
+      });
+
+      if (entities.length === 0) spawnTCAPyruvate(1);
+
+      for (let i = entities.length - 1; i >= 0; i--) {
+        const m = entities[i];
+
+        if (m.stage === 0) {
+          m.x += 1.65 * dt;
+          drawCarbonMolecule(m.x, m.y, 3, { r: 6.5, label: '피루브산(C₃)' });
+          if (m.x >= pdhX - 4) {
+            m.stage = 1; m.timer = 0;
+          }
+        } else if (m.stage === 1) {
+          if (nadDepleted) {
+            // Stalled right at PDH due to NAD+ depletion!
+            const vib = Math.sin(simTime * 15) * 2;
+            drawCarbonMolecule(m.x + vib, m.y, 3, { r: 6.5, glow: '#f43f5e', label: 'NAD⁺ 고갈 대기!', labelColor: '#fda4af' });
+          } else {
+            m.timer += dt;
+            const vib = Math.sin(simTime * 24) * 2;
+            drawCarbonMolecule(m.x + vib, m.y, 3, { r: 6.5, glow: '#34d399', label: '탈탄산·탈수소 중' });
+            if (m.timer > 32) {
+              m.stage = 2;
+              stats.co2 += 1; stats.nadh += 1; updateStatsUI();
+              if (!tcaHasO2) tcaNadPool = Math.max(0, tcaNadPool - 25);
+              addSpark(m.x, m.y - 26, '💨 -1 CO₂ · ⚡ +1 NADH', '#34d399', -0.4, -1.4);
+              setTicker('피루브산(C₃) → 아세틸 CoA(C₂) 산화 완료! 이제 대기 중인 옥살아세트산(C₄)과 결합합니다.');
+            }
+          }
+        } else if (m.stage === 2) {
+          const topX = tcaCx;
+          const topY = tcaCy - tcaR;
+          m.x += (topX - m.x) * 0.06 * dt;
+          m.y += (topY - m.y) * 0.06 * dt;
+          drawCarbonMolecule(m.x, m.y, 2, { r: 6.5, coa: true, glow: '#f472b6', label: '아세틸 CoA(C₂)' });
+          if (Math.hypot(topX - m.x, topY - m.y) < 12) {
+            m.stage = 3; m.angle = -Math.PI / 2; m.lastStation = 1;
+            addSpark(topX, topY - 18, '옥살아세트산(C₄) + 아세틸 CoA(C₂) → 시트르산(C₆)!', '#60a5fa', 0.3, -1.2);
+          }
+        } else if (m.stage === 3) {
+          if (!nadDepleted) {
+            m.angle += 0.012 * dt;
+          }
+          const mx = tcaCx + Math.cos(m.angle) * tcaR;
+          const my = tcaCy + Math.sin(m.angle) * tcaR;
+          const prog = m.angle + Math.PI / 2;
+
+          if (!nadDepleted) {
+            if (prog > 1.3 && m.lastStation < 2) {
+              m.lastStation = 2;
+              stats.co2 += 1; stats.nadh += 1; updateStatsUI();
+              if (!tcaHasO2) tcaNadPool = Math.max(0, tcaNadPool - 25);
+              addSpark(mx + 14, my - 12, '💨 -1 CO₂ · ⚡ +1 NADH', '#34d399', 0.8, -1.1);
+            } else if (prog > 2.4 && m.lastStation < 3) {
+              m.lastStation = 3;
+              stats.co2 += 1; stats.nadh += 1; stats.atpSub += 1; updateStatsUI();
+              if (!tcaHasO2) tcaNadPool = Math.max(0, tcaNadPool - 25);
+              addSpark(mx + 12, my + 16, '★ +1 ATP (기질수준인산화!)', '#facc15', 0.7, 1.0);
+              addSpark(mx + 12, my - 10, '💨 -1 CO₂ · +1 NADH', '#34d399', 0.9, -0.5);
+            } else if (prog > 3.6 && m.lastStation < 4) {
+              m.lastStation = 4;
+              stats.fadh2 += 1; updateStatsUI();
+              if (!tcaHasO2) tcaNadPool = Math.max(0, tcaNadPool - 25);
+              addSpark(mx - 18, my + 16, '✨ +1 FADH₂ 생성', '#22d3ee', -0.8, 0.9);
+            } else if (prog > 4.65 && m.lastStation < 5) {
+              m.lastStation = 5;
+              addSpark(mx - 22, my, '💧 +H₂O 첨가', '#38bdf8', -0.7, -0.3);
+            } else if (prog > 5.5 && m.lastStation < 6) {
+              m.lastStation = 6;
+              stats.nadh += 1; updateStatsUI();
+              addSpark(mx - 14, my - 18, '⚡ +1 NADH · 옥살아세트산(C₄) 재생!', '#c084fc', -0.5, -1.2);
+            }
+          }
+
+          let cNum = 6, lbl = '시트르산(C₆)', gl = '#60a5fa';
+          if (m.lastStation === 2) { cNum = 5; lbl = '5탄소(C₅)'; gl = '#34d399'; }
+          else if (m.lastStation >= 3 && m.lastStation < 6) { cNum = 4; lbl = '4탄소(C₄)'; gl = '#facc15'; }
+          else if (m.lastStation >= 6) { cNum = 4; lbl = '옥살아세트산(C₄)'; gl = '#c084fc'; }
+
+          drawCarbonMolecule(mx, my, cNum, { r: 6.2, glow: nadDepleted ? '#f43f5e' : gl, label: nadDepleted ? 'NAD⁺ 고갈 정지' : lbl });
+          registerHover(mx, my, 22, 'TCA 중간 산물', lbl, `${cNum}탄소 화합물`, '탈탄산·탈수소 효소 작용을 거쳐 옥살아세트산(C₄)으로 재생됩니다.');
+
+          if (prog >= Math.PI * 2) entities.splice(i, 1);
+        }
+      }
+    }
+
+    /* =========================================================================
+     * SCENE 3: OXIDATIVE PHOSPHORYLATION (COQ PARALLEL PATH + DNP PROTONOPHORE + 2.5:1.5 RATIO)
+     * ========================================================================= */
+    function initOxPhosScene() {
+      protons = [];
+      electrons = [];
+      entities = [];
+      o2Mols = [];
+      dnpShuttles = [];
+
+      const imsBot = H * 0.34;
+      const memBot = H * 0.59;
+
+      for (let i = 0; i < 30; i++) {
+        protons.push({
+          x: 35 + Math.random() * (W - 70),
+          y: 55 + Math.random() * (imsBot - 75),
+          vx: (Math.random() - 0.5) * 1.6,
+          vy: (Math.random() - 0.5) * 1.4,
+          zone: 'ims'
+        });
+      }
+      for (let i = 0; i < 16; i++) {
+        protons.push({
+          x: 35 + Math.random() * (W - 70),
+          y: memBot + 25 + Math.random() * (H - memBot - 65),
+          vx: (Math.random() - 0.5) * 1.3,
+          vy: (Math.random() - 0.5) * 1.1,
+          zone: 'matrix'
+        });
+      }
+      for (let i = 0; i < 8; i++) {
+        o2Mols.push({
+          x: W * 0.35 + Math.random() * (W * 0.45),
+          y: memBot + 25 + Math.random() * (H - memBot - 70),
+          vx: (Math.random() - 0.5) * 1.0,
+          vy: (Math.random() - 0.5) * 1.0
+        });
+      }
+
+      if (oxMode === 'dnp') initDNPShuttles();
+      if (oxMode === 'ph_lab') resetManualPHBuffer();
+    }
+
+    function initDNPShuttles() {
+      dnpShuttles = [];
+      const imsBot = H * 0.34;
+      const memBot = H * 0.59;
+      for (let i = 0; i < 6; i++) {
+        dnpShuttles.push({
+          x: W * 0.64 + (i % 3) * (W * 0.045) + (Math.random() - 0.5) * 14,
+          y: imsBot + 15 + Math.random() * (memBot - imsBot - 30),
+          dir: i % 2 === 0 ? -1 : 1, // -1 moving up to IMS, +1 carrying H+ down to Matrix
+          hasH: i % 2 === 1
+        });
+      }
+    }
+
+    function injectOxCarrier(type) {
+      if (oxMode === 'ph_lab') {
+        setTicker('🧪 현재는 전자전달이 꺼진 [인공 pH 실험] 모드입니다. 정상/억제제 모드에서 NADH·FADH₂를 투입해 보세요.');
+        return;
+      }
+      const isFADH2 = type === 'fadh2';
+      entities.push({
+        isFADH2,
+        x: isFADH2 ? W * 0.23 + (Math.random() - 0.5) * 30 : W * 0.11 + (Math.random() - 0.5) * 30,
+        y: H - 46
+      });
+    }
+
+    function renderOxPhos(dt) {
+      const scale = Math.min(1, W / 850);
+      const imsBot = H * 0.34;
+      const memBot = H * 0.59;
+      const memMid = (imsBot + memBot) * 0.5;
+      const memH = memBot - imsBot;
+
+      const { imsPh, matPh, imsCount, matCount } = getLivePhValues();
+      const liveDiff = matPh - imsPh;
+
+      // Zone 1: Intermembrane Space
+      const acidGlow = Math.min(0.45, imsCount / 85);
+      ctx.fillStyle = `rgb(${Math.round(30 + acidGlow * 120)}, ${Math.round(27 - acidGlow * 10)}, ${Math.round(75 - acidGlow * 20)})`;
+      ctx.fillRect(0, 0, W, imsBot);
+
+      // Zone 2: Inner Membrane Phospholipid Bilayer
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, imsBot, W, memH);
+
+      for (let x = 10; x < W; x += 14) {
+        const wave = Math.sin(simTime * 3 + x * 0.05) * 1.6;
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(x - 2, imsBot + 7 + wave); ctx.lineTo(x - 2, memMid - 4);
+        ctx.moveTo(x + 2, imsBot + 7 + wave); ctx.lineTo(x + 2, memMid - 4);
+        ctx.moveTo(x - 2, memBot - 7 - wave); ctx.lineTo(x - 2, memMid + 4);
+        ctx.moveTo(x + 2, memBot - 7 - wave); ctx.lineTo(x + 2, memMid + 4);
+        ctx.stroke();
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath();
+        ctx.arc(x, imsBot + 5 + wave, 4.2, 0, Math.PI * 2);
+        ctx.arc(x, memBot - 5 - wave, 4.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (oxMode === 'dnp') {
+        ctx.fillStyle = `rgba(239, 68, 68, ${0.12 + Math.sin(simTime * 10) * 0.06})`;
+        ctx.fillRect(0, imsBot - 8, W, memH + 16);
+      }
+
+      // Zone 3: Matrix
+      ctx.fillStyle = '#064e3b';
+      ctx.fillRect(0, memBot, W, H - memBot);
+
+      // Live pH Readouts
+      ctx.fillStyle = '#fecdd3';
+      ctx.font = `800 ${Math.max(10, Math.round(11.5 * scale))}px "Noto Sans KR", sans-serif`;
+      ctx.textAlign = 'left';
+      const imsNote = oxMode === 'ph_lab' ? '대용량 외부 완충액 고정' : `H⁺ 입자 ${imsCount}개 · 1입자=2H⁺`;
+      ctx.fillText(`막사이공간 (IMS)  |  pH ${imsPh.toFixed(1)}  (${imsNote})`, 16, 60);
+
+      ctx.fillStyle = '#a7f3d0';
+      const matNote = oxMode === 'ph_lab'
+        ? (phLabEquilibrated ? '평형 도달 완료!' : `pH ${manualPhMatrix.toFixed(1)} → ${manualPhIMS.toFixed(1)} 하강 중`)
+        : `H⁺ 입자 ${matCount}개`;
+      ctx.fillText(`미토콘드리아 바탕질 (Matrix)  |  pH ${matPh.toFixed(1)}  (${matNote})`, 16, H - 46);
+
+      const c1X  = W * 0.11;
+      const c2X  = W * 0.23;
+      const coqX = W * 0.33;
+      const c3X  = W * 0.43;
+      const cytX = W * 0.51;
+      const c4X  = W * 0.59;
+      const atpX = W * 0.86;
+
+      // Parallel Electron Route Guide Lines (NADH bypasses Complex II via CoQ!)
+      ctx.save();
+      ctx.strokeStyle = 'rgba(52, 211, 153, 0.42)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      // Complex I -> curves ABOVE Complex II -> CoQ
+      ctx.beginPath();
+      ctx.moveTo(c1X, memMid - 10);
+      ctx.quadraticCurveTo(c2X, imsBot + 16, coqX, memMid - 2);
+      ctx.stroke();
+
+      // Complex II (matrix side) -> CoQ
+      ctx.strokeStyle = 'rgba(34, 211, 238, 0.45)';
+      ctx.beginPath();
+      ctx.moveTo(c2X, memBot - 18);
+      ctx.quadraticCurveTo((c2X + coqX) * 0.5, memMid + 12, coqX, memMid + 2);
+      ctx.stroke();
+
+      // CoQ -> Complex III -> Cyt c (IMS side) -> Complex IV
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.45)';
+      ctx.beginPath();
+      ctx.moveTo(coqX, memMid);
+      ctx.lineTo(c3X, memMid);
+      ctx.quadraticCurveTo(cytX, imsBot + 8, c4X, memMid);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = 'rgba(253, 224, 71, 0.8)';
+      ctx.font = `700 ${Math.max(8.5, Math.round(9.8 * scale))}px "Noto Sans KR", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('복합체 I · II 병렬 진입 → 유비퀴논(Q) 합류 → III → Cyt c → IV ──▶', (c1X + c4X) * 0.5, imsBot - 16);
+      ctx.restore();
+
+      const pW = Math.max(46, Math.round(68 * scale));
+      const drawSpanProtein = (cx, w, name, sub, col, border, desc) => {
+        ctx.fillStyle = col;
+        ctx.strokeStyle = border;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(cx - w / 2, imsBot - 12, w, memH + 24, 14);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `800 ${Math.max(9.5, Math.round(11 * scale))}px "Noto Sans KR", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(name, cx, memMid - 4);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = `600 ${Math.max(8, Math.round(9 * scale))}px "Noto Sans KR", sans-serif`;
+        ctx.fillText(sub, cx, memMid + 11);
+        registerHover(cx, memMid, w * 0.52, '내막 관통 단백질', name, sub, desc);
+      };
+
+      // Complex I (Spans membrane, pumps 4 H+)
+      drawSpanProtein(c1X, pW, '복합체 I', 'NADH·4H⁺↑', '#2563eb', '#93c5fd',
+        'NADH로부터 2e⁻를 받아 유비퀴논(Q)으로 전달하며 4 H⁺(시각 2개)을 막사이공간으로 능동수송합니다.');
+
+      // Complex II (Biochemically accurate: anchored ONLY on the Matrix half, does NOT span to IMS, pumps 0 H+!)
+      const c2W = Math.max(44, Math.round(62 * scale));
+      const c2Top = memMid + 4;
+      const c2H = (memBot - c2Top) + 14;
+      ctx.fillStyle = '#0d9488';
+      ctx.strokeStyle = '#5eead4';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(c2X - c2W / 2, c2Top, c2W, c2H, 12);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `800 ${Math.max(9, Math.round(10.5 * scale))}px "Noto Sans KR", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('복합체 II', c2X, c2Top + c2H * 0.38);
+      ctx.fillStyle = '#ccfbf1';
+      ctx.font = `600 ${Math.max(8, Math.round(8.8 * scale))}px "Noto Sans KR", sans-serif`;
+      ctx.fillText('FADH₂·0H⁺', c2X, c2Top + c2H * 0.68);
+      registerHover(c2X, c2Top + c2H * 0.5, c2W * 0.52, '바탕질 측 효소', '복합체 II (숙신산 탈수소효소)', 'H⁺ 펌프 없음',
+        '내막 바탕질 쪽에만 붙어 있어 H⁺을 능동수송하지 않습니다. FADH₂의 전자를 유비퀴논(Q)으로 전달하며, 로테논의 영향을 받지 않습니다!');
+
+      // Mobile Lipid Carrier: Ubiquinone (CoQ)
+      const qBob = Math.sin(simTime * 4) * 3;
+      drawBead(coqX, memMid + qBob, Math.max(10, 12 * scale), '#d97706', '#fde047', '#ffffff', 'Q');
+      registerHover(coqX, memMid, 16, '지용성 전자 운반체', '유비퀴논 (조효소 Q)', 'I·II → III 병렬 합류',
+        '인지질 이중층 내부를 자유롭게 이동하며 복합체 I(NADH)과 복합체 II(FADH₂)에서 온 전자를 모두 받아 복합체 III로 넘깁니다.');
+
+      // Complex III (Spans membrane, pumps 4 H+)
+      drawSpanProtein(c3X, pW, '복합체 III', 'Q→Cyt·4H⁺↑', '#2563eb', '#93c5fd',
+        '유비퀴논(Q)으로부터 전자를 받아 사이토크롬 c로 전달하며 4 H⁺(시각 2개)을 능동수송합니다.');
+
+      // Mobile IMS Carrier: Cytochrome c (Cyt c)
+      const cytBob = Math.cos(simTime * 4.5) * 2.5;
+      drawBead(cytX, imsBot + 6 + cytBob, Math.max(10, 11.5 * scale), '#7c3aed', '#ddd6fe', '#ffffff', 'Cyt');
+      registerHover(cytX, imsBot + 6, 15, '막사이 전자 운반체', '사이토크롬 c (Cyt c)', 'III → IV 전달',
+        '내막의 막사이공간 표면을 따라 이동하며 복합체 III에서 복합체 IV로 전자를 운반합니다.');
+
+      // Complex IV (Spans membrane, pumps 2 H+ AND consumes 2 H+ from matrix to make H2O!)
+      drawSpanProtein(c4X, Math.max(50, Math.round(72 * scale)), '복합체 IV', 'O₂→H₂O·2H⁺↑', '#1d4ed8', '#93c5fd',
+        '2 H⁺(시각 1개)을 능동수송하고, 바탕질의 2 H⁺을 소비해 ½O₂와 결합시켜 H₂O를 생성합니다 (바탕질 pH 상승 기여!).');
+
+      // DNP Lipophilic Shuttles (Mobile small molecules across the phospholipid bilayer!)
+      if (oxMode === 'dnp') {
+        if (dnpShuttles.length === 0) initDNPShuttles();
+        dnpShuttles.forEach(d => {
+          d.y += d.dir * 2.1 * dt;
+          if (d.dir < 0 && d.y <= imsBot + 6) {
+            // Reached IMS: pick up a real proton from IMS if available
+            const imsP = protons.find(p => p.zone === 'ims');
+            if (imsP) {
+              imsP.zone = 'dnp_bound';
+              d.boundProton = imsP;
+              d.hasH = true;
+            }
+            d.dir = 1;
+          } else if (d.dir > 0 && d.y >= memBot - 6) {
+            // Reached Matrix: release proton + Heat!
+            if (d.boundProton) {
+              d.boundProton.x = d.x;
+              d.boundProton.y = memBot + 18;
+              d.boundProton.zone = 'matrix';
+              d.boundProton = null;
+            }
+            if (d.hasH) {
+              addSpark(d.x, memBot + 24, '🔥 DNP H⁺ 방출 → 열(Heat)!', '#fb7185', (Math.random() - 0.5) * 1.4, 1.1);
+            }
+            d.hasH = false;
+            d.dir = -1;
+          }
+          if (d.boundProton) {
+            d.boundProton.x = d.x + 8;
+            d.boundProton.y = d.y;
+          }
+          // Draw tiny orange lipophilic DNP shuttle molecule
+          drawPill(d.x, d.y, d.hasH ? 'DNP-H' : 'DNP⁻', '#ea580c', '#fed7aa', '#ffffff', '#f97316');
+          registerHover(d.x, d.y, 18, '지용성 양성자 운반체', 'DNP (2,4-다이니트로페놀)', '인지질층 직접 투과',
+            '단백질 통로가 아니라 지용성 저분자로, 막사이공간에서 H⁺과 결합해 인지질 이중층을 직접 통과한 뒤 바탕질에 H⁺과 열을 방출합니다.');
+        });
+      }
+
+      // ATP Synthase Channel + Physically Spinning Rotor
+      const atpW = Math.max(52, Math.round(74 * scale));
+      ctx.fillStyle = '#b45309';
+      ctx.strokeStyle = '#fde047';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(atpX - atpW / 2, imsBot - 12, atpW, memH + 12, 13);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(atpX - 9, memBot - 2, 18, 24);
+
+      const rotorY = memBot + 34;
+      ctx.save();
+      ctx.translate(atpX, rotorY);
+      ctx.rotate(rotorAngle);
+      for (let k = 0; k < 6; k++) {
+        ctx.rotate(Math.PI / 3);
+        ctx.fillStyle = k % 2 === 0 ? '#facc15' : '#f59e0b';
+        ctx.strokeStyle = '#fef9c3';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(16 * scale, 0, 11 * scale, 6.8 * scale, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath(); ctx.arc(0, 0, 7 * scale, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = `800 ${Math.max(9, Math.round(10.5 * scale))}px "Noto Sans KR", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('ATP 합성효소', atpX, memMid - 4);
+      ctx.font = `600 ${Math.max(8, Math.round(9 * scale))}px "Noto Sans KR", sans-serif`;
+      ctx.fillText('4H⁺ → 1 ATP', atpX, memMid + 11);
+      registerHover(atpX, memMid + 15, atpW * 0.65, '화학삼투 나노 터빈', 'ATP 합성효소', '약 4 H⁺ → 1 ATP',
+        'H⁺이 농도 기울기를 따라 막사이공간에서 바탕질로 촉진확산할 때 회전하며 ADP + Pᵢ → ATP를 합성합니다.');
+
+      // Inhibitor Visual Clamps
+      const drawClamp = (cx, line1, line2) => {
+        ctx.fillStyle = '#dc2626';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.arc(cx, memMid, Math.max(22, 26 * scale), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `900 ${Math.max(8.5, Math.round(10 * scale))}px "Noto Sans KR", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(line1, cx, memMid - 3);
+        ctx.font = `700 ${Math.max(7.5, Math.round(8.5 * scale))}px "Noto Sans KR", sans-serif`;
+        ctx.fillText(line2, cx, memMid + 10);
+      };
+
+      if (oxMode === 'rotenone') drawClamp(c1X, '로테논', '복합체 I 차단');
+      if (oxMode === 'cyanide')  drawClamp(c4X, '청산가리', '복합체 IV 차단');
+      if (oxMode === 'atp_block' || (oxMode === 'dnp' && oligoStackedWithDNP)) drawClamp(atpX, '올리고마이신', '통로 봉쇄');
+
+      // Ambient O2 Molecules in Matrix
+      const showO2Count = oxMode === 'ph_lab' ? 0 : Math.round((oxO2 / 100) * o2Mols.length);
+      for (let i = 0; i < showO2Count; i++) {
+        const o = o2Mols[i];
+        o.x += o.vx * dt; o.y += o.vy * dt;
+        if (o.x < 30 || o.x > W - 30) o.vx *= -1;
+        if (o.y < memBot + 22 || o.y > H - 55) o.vy *= -1;
+        drawBead(o.x - 5, o.y, 5.2, '#0284c7', '#bae6fd', '#fff', 'O');
+        drawBead(o.x + 5, o.y, 5.2, '#0284c7', '#bae6fd', '#fff', 'O');
+      }
+
+      // Auto-spawn NADH / FADH2
+      const spawnRate = oxMode === 'dnp' ? 0.045 : 0.025;
+      if (oxMode !== 'ph_lab' && Math.random() < spawnRate * dt && entities.length < 5) {
+        const fadhProb = oxMode === 'rotenone' ? 0.55 : 0.25;
+        injectOxCarrier(Math.random() < fadhProb ? 'fadh2' : 'nadh');
+      }
+
+      // NADH / FADH2 swimming to Complex I or Complex II
+      for (let i = entities.length - 1; i >= 0; i--) {
+        const m = entities[i];
+        const tx = m.isFADH2 ? c2X : c1X;
+        const ty = memBot + 16;
+        m.x += (tx - m.x) * 0.055 * dt;
+        m.y += (ty - m.y) * 0.055 * dt;
+
+        drawPill(m.x, m.y, m.isFADH2 ? 'FADH₂' : 'NADH', m.isFADH2 ? '#06b6d4' : '#10b981', '#ffffff', '#020617', m.isFADH2 ? '#22d3ee' : '#34d399');
+
+        if (Math.hypot(tx - m.x, ty - m.y) < 14) {
+          const blockedAtC1 = !m.isFADH2 && oxMode === 'rotenone';
+          const canTransfer = !blockedAtC1 && oxMode !== 'cyanide' && oxO2 > 0 && !(oxMode === 'atp_block' && electrons.length >= 2);
+
+          if (canTransfer) {
+            electrons.push({
+              isFADH2: m.isFADH2,
+              t: 0, // 0..1 parametric progress along exact parallel pathway!
+              p1: false, p3: false, p4: false,
+              trail: []
+            });
+            addSpark(m.x, m.y + 18, m.isFADH2 ? 'FAD 산화 (+2e⁻ → Q)' : 'NAD⁺ 산화 (+2e⁻ → Q)', '#6ee7b7', -0.3, 0.9);
+          } else {
+            const msg = blockedAtC1 ? '로테논 차단! (NADH 불가)' : (oxO2 === 0 ? 'O₂ 고갈! 전달 불가' : '전자전달 정체!');
+            addSpark(m.x, m.y + 16, msg, '#fb7185', 0, 0.9);
+          }
+          entities.splice(i, 1);
+        }
+      }
+
+      // Parametric Parallel Electron Path Evaluation (Strictly bypasses Complex II for NADH!)
+      function getElectronPos(isFADH2, t) {
+        // Segment 0..0.38: I -> Q (arcing ABOVE C2) OR II -> Q
+        // Segment 0.38..0.65: Q -> III
+        // Segment 0.65..1.00: III -> Cyt c -> IV
+        if (t <= 0.38) {
+          const u = t / 0.38;
+          if (!isFADH2) {
+            // Quadratic Bezier: c1X -> control(c2X, imsBot+14) -> coqX
+            const x = (1 - u) * (1 - u) * c1X + 2 * (1 - u) * u * c2X + u * u * coqX;
+            const y = (1 - u) * (1 - u) * (memMid - 8) + 2 * (1 - u) * u * (imsBot + 14) + u * u * memMid;
+            return { x, y };
+          } else {
+            // Complex II (matrix half) -> Q
+            const x = (1 - u) * (1 - u) * c2X + 2 * (1 - u) * u * ((c2X + coqX) * 0.5) + u * u * coqX;
+            const y = (1 - u) * (1 - u) * (memBot - 16) + 2 * (1 - u) * u * (memMid + 10) + u * u * memMid;
+            return { x, y };
+          }
+        } else if (t <= 0.65) {
+          const u = (t - 0.38) / 0.27;
+          return { x: coqX + (c3X - coqX) * u, y: memMid };
+        } else {
+          const u = (t - 0.65) / 0.35;
+          // III -> Cyt c (IMS surface) -> IV
+          const x = (1 - u) * (1 - u) * c3X + 2 * (1 - u) * u * cytX + u * u * c4X;
+          const y = (1 - u) * (1 - u) * memMid + 2 * (1 - u) * u * (imsBot + 6) + u * u * memMid;
+          return { x, y };
+        }
+      }
+
+      const eBlocked = oxMode === 'cyanide' || oxO2 === 0;
+      const eStep = (oxMode === 'dnp' ? 0.011 : (oxMode === 'atp_block' ? 0.0022 : 0.0068 * (0.4 + 0.6 * (oxO2 / 100)))) * dt;
+
+      for (let i = electrons.length - 1; i >= 0; i--) {
+        const e = electrons[i];
+        if (!eBlocked) {
+          e.t += eStep;
+        }
+        const pos = getElectronPos(e.isFADH2, Math.min(1, e.t));
+        if (!eBlocked) {
+          e.trail.push({ x: pos.x, y: pos.y });
+          if (e.trail.length > 14) e.trail.shift();
+        }
+
+        if (e.trail.length > 1) {
+          ctx.save();
+          ctx.strokeStyle = e.isFADH2 ? 'rgba(34, 211, 238, 0.7)' : 'rgba(56, 189, 248, 0.7)';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          e.trail.forEach((pt, idx) => idx === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Exact Stoichiometry Pumping: 1 visual H+ = 2 H+
+        // Complex I: 2 visual (= 4 H+) [NADH only!]
+        // Complex III: 2 visual (= 4 H+) [Both]
+        // Complex IV: 1 visual (= 2 H+) + consumes 1 visual (= 2 H+) from Matrix to form H2O!
+        if (!e.isFADH2 && !e.p1 && e.t >= 0.06) {
+          e.p1 = true;
+          pumpProtonUp(c1X - 8, memBot);
+          pumpProtonUp(c1X + 8, memBot);
+        }
+        if (!e.p3 && e.t >= 0.65) {
+          e.p3 = true;
+          pumpProtonUp(c3X - 8, memBot);
+          pumpProtonUp(c3X + 8, memBot);
+        }
+        if (!e.p4 && e.t >= 0.98 && !eBlocked) {
+          e.p4 = true;
+          pumpProtonUp(c4X, memBot);
+          consumeMatrixProtonForWater(c4X, memBot); // Reflects matrix H+ consumption!
+          stats.o2 = Math.round((stats.o2 + 0.5) * 10) / 10;
+          stats.h2o += 1;
+          updateStatsUI();
+          addSpark(c4X, memBot + 26, '💧 ½O₂ + 2H⁺ + 2e⁻ → H₂O', '#38bdf8', 0.2, 1.0);
+          electrons.splice(i, 1);
+          continue;
+        }
+
+        drawBead(pos.x, pos.y, 7.2, e.isFADH2 ? '#06b6d4' : '#0284c7', '#fef08a', '#ffffff', '2e⁻');
+      }
+
+      // Check Equilibrium in Manual pH Lab Mode (Matrix drops to match fixed large-volume external buffer!)
+      if (oxMode === 'ph_lab') {
+        if (liveDiff < 0.15 && !phLabEquilibrated) {
+          livePhLabMatrix = manualPhIMS;
+          phLabEquilibrated = true;
+          pendingChartMarker = '평형정지';
+          setTicker(`⚖️ 평형 도달: 부피가 작은 바탕질도 외부 완충액과 같은 pH ${manualPhIMS.toFixed(1)}이 되어 ATP 합성이 종료되었습니다!`);
+          updateManualPHStatus();
+          updateOxGauges();
+          updateEnergyBar();
+        } else if (frameCount % 12 === 0) {
+          updateManualPHStatus();
+          updateOxGauges();
+          updateEnergyBar();
+        }
+      }
+
+      // Update & Draw H+ Protons
+      for (let i = protons.length - 1; i >= 0; i--) {
+        const p = protons[i];
+
+        if (p.zone === 'pumping') {
+          p.y -= 3.1 * dt;
+          if (p.y <= imsBot - 22) p.zone = 'ims';
+        } else if (p.zone === 'water_consume') {
+          // Pulled into Complex IV from matrix to form H2O!
+          p.x += (c4X - p.x) * 0.16 * dt;
+          p.y += (memBot + 6 - p.y) * 0.16 * dt;
+          if (Math.hypot(c4X - p.x, memBot + 6 - p.y) < 10) {
+            protons.splice(i, 1);
+            continue;
+          }
+        } else if (p.zone === 'atpase') {
+          p.x += (atpX - p.x) * 0.18 * dt;
+          p.y += 3.2 * dt;
+          rotorAngle += 0.16 * dt;
+          if (p.y >= rotorY + 24) {
+            p.zone = 'matrix';
+            // 1 visual H+ (= 2 H+) = 0.5 ATP -> 2 visual (= 4 H+) = 1.0 ATP!
+            // Thus NADH (5 visual) = 2.5 ATP, FADH2 (3 visual) = 1.5 ATP!
+            stats.atpOx = Math.round((stats.atpOx + 0.5) * 10) / 10;
+            updateStatsUI();
+            if (oxMode === 'ph_lab') {
+              // Matrix pH drops toward fixed external buffer pH as H+ enters!
+              livePhLabMatrix = Math.max(manualPhIMS, livePhLabMatrix - 0.12);
+              // Replenish external buffer proton visually to reflect huge constant external volume
+              if (protons.length < 76) {
+                protons.push({
+                  x: 35 + Math.random() * (W - 70),
+                  y: 55 + Math.random() * (imsBot - 75),
+                  vx: (Math.random() - 0.5) * 1.7,
+                  vy: (Math.random() - 0.5) * 1.4,
+                  zone: 'ims'
+                });
+              }
+            }
+            addSpark(atpX, rotorY + 28, '★ +0.5 ATP (4H⁺=1ATP)', '#facc15', (Math.random() - 0.5) * 1.5, 1.2);
+            addSpark(atpX, rotorY, '', '#fde047', 0, 0, 'ring');
+          }
+        } else if (p.zone === 'dnp_bound') {
+          // Position managed by its DNP carrier
+        } else if (p.zone === 'ims') {
+          p.x += p.vx * dt; p.y += p.vy * dt;
+          if (p.x < 18 || p.x > W - 18) p.vx *= -1;
+          if (p.y < 52 || p.y > imsBot - 14) p.vy *= -1;
+
+          if (oxMode === 'ph_lab') {
+            if (!phLabEquilibrated && liveDiff >= 0.15 && Math.abs(p.x - atpX) < 95 && Math.random() < 0.024 * liveDiff * dt) {
+              p.zone = 'atpase';
+            }
+          } else if ((oxMode === 'normal' || oxMode === 'rotenone') && oxO2 > 0) {
+            if (imsCount > 12 && Math.abs(p.x - atpX) < 90 && Math.random() < 0.036 * dt) {
+              p.zone = 'atpase';
+            }
+          }
+        } else if (p.zone === 'matrix') {
+          p.x += p.vx * dt; p.y += p.vy * dt;
+          if (p.x < 18 || p.x > W - 18) p.vx *= -1;
+          if (p.y < memBot + 16 || p.y > H - 52) p.vy *= -1;
+        }
+
+        drawBead(p.x, p.y, 6.8, '#f43f5e', '#fecdd3', '#ffffff', 'H⁺');
+      }
+
+      // Replenish matrix proton floor gently in non-pH-lab mode (representing matrix water ionization/NADH+H+ supply)
+      if (oxMode !== 'ph_lab' && matCount < 8 && protons.length < 70) {
+        protons.push({
+          x: 40 + Math.random() * (W - 80),
+          y: H - 62,
+          vx: (Math.random() - 0.5) * 1.2,
+          vy: (Math.random() - 0.5) * 1.0,
+          zone: 'matrix'
+        });
+      }
+
+      // Sample real-time O2 & ATP chart every 8 frames
+      if (frameCount % 8 === 0) sampleOxChart();
+    }
+
+    function pumpProtonUp(cx, memBot) {
+      const candidate = protons.find(p => p.zone === 'matrix');
+      if (candidate) {
+        candidate.x = cx + (Math.random() - 0.5) * 12;
+        candidate.y = memBot + 10;
+        candidate.zone = 'pumping';
+      } else if (protons.length < 70) {
+        protons.push({
+          x: cx, y: memBot + 10,
+          vx: (Math.random() - 0.5) * 1.6,
+          vy: (Math.random() - 0.5) * 1.4,
+          zone: 'pumping'
+        });
+      }
+    }
+
+    function consumeMatrixProtonForWater(c4X, memBot) {
+      const candidate = protons.find(p => p.zone === 'matrix');
+      if (candidate) {
+        candidate.zone = 'water_consume';
+      }
+    }
+
+    /* =========================================================================
+     * FLOATING SPARKS, ENERGY RINGS & PINNABLE INSPECTOR
+     * ========================================================================= */
+    function renderSparks(dt) {
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const s = sparks[i];
+        s.life -= dt;
+        const alpha = Math.max(0, s.life / s.maxLife);
+
+        if (s.kind === 'ring') {
+          const rad = (1 - alpha) * 42 + 10;
+          ctx.save();
+          ctx.globalAlpha = alpha * 0.8;
+          ctx.strokeStyle = s.color;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, rad, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          s.x += s.vx * dt; s.y += s.vy * dt;
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.font = '800 10px "Noto Sans KR", sans-serif';
+          const tw = ctx.measureText(s.text).width + 13;
+          ctx.fillStyle = 'rgba(2, 6, 23, 0.9)';
+          ctx.strokeStyle = s.color;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.roundRect(s.x - tw / 2, s.y - 10, tw, 20, 10);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = s.color;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(s.text, s.x, s.y + 0.5);
+          ctx.restore();
+        }
+
+        if (s.life <= 0) sparks.splice(i, 1);
+      }
+    }
+
+    function findHitAt(px, py) {
+      let hit = null, bestDist = Infinity;
+      for (let i = 0; i < hoverables.length; i++) {
+        const h = hoverables[i];
+        const d = Math.hypot(px - h.x, py - h.y);
+        if (d <= h.r && d < bestDist) {
+          bestDist = d; hit = h;
+        }
+      }
+      return hit;
+    }
+
+    function updateHoverInspector() {
+      const card = document.getElementById('inspector-card');
+      const closeBtn = document.getElementById('insp-close');
+      const active = pinnedInspector || findHitAt(mousePos.x, mousePos.y);
+
+      if (active) {
+        document.getElementById('insp-badge').textContent = active.badge;
+        document.getElementById('insp-carbon').textContent = active.carbon;
+        document.getElementById('insp-title').textContent = active.title;
+        document.getElementById('insp-desc').textContent = active.desc;
+        card.classList.remove('hidden');
+        if (pinnedInspector) closeBtn.classList.remove('hidden');
+        else closeBtn.classList.add('hidden');
+
+        ctx.save();
+        ctx.strokeStyle = pinnedInspector ? 'rgba(250, 204, 21, 0.85)' : 'rgba(56, 189, 248, 0.75)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.arc(active.x, active.y, active.r + 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        card.classList.add('hidden');
+      }
+    }
+
+    /* =========================================================================
+     * MAIN 60FPS ANIMATION LOOP & INPUT LISTENERS (SEPARATED CLICK BEHAVIOR!)
+     * ========================================================================= */
+    function loop() {
+      if (!paused) {
+        const dt = simSpeed;
+        simTime += 0.016 * dt;
+        frameCount++;
+        hoverables = [];
+
+        ctx.clearRect(0, 0, W, H);
+
+        if (currentStage === 'whole') renderWholeCell(dt);
+        else if (currentStage === 'glycolysis') renderGlycolysis(dt);
+        else if (currentStage === 'tca') renderTCA(dt);
+        else if (currentStage === 'oxphos') renderOxPhos(dt);
+
+        renderSparks(dt);
+        updateHoverInspector();
+      }
+      requestAnimationFrame(loop);
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mousePos.x = e.clientX - rect.left;
+      mousePos.y = e.clientY - rect.top;
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      mousePos.x = -999; mousePos.y = -999;
+      if (!pinnedInspector) document.getElementById('inspector-card').classList.add('hidden');
+    });
+
+    // Click on Object = Pin Inspector (Mobile-friendly!), Click on Empty Space = Spawn Molecule!
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      mousePos.x = cx; mousePos.y = cy;
+
+      const hit = findHitAt(cx, cy);
+      if (hit) {
+        pinnedInspector = hit;
+        updateHoverInspector();
+        addSpark(hit.x, hit.y, '', '#facc15', 0, 0, 'ring');
+      } else {
+        unpinInspector();
+        spawnMoleculeForStage(cx, cy);
+        addSpark(cx, cy, '', '#38bdf8', 0, 0, 'ring');
+      }
+    });
+
+    Object.assign(window, {
+      switchStage, togglePause, setSpeed, resetSimulation,
+      spawnMoleculeForStage, injectWholeSubstrate, setCellType, toggleShuttleType,
+      updateWholeEnv, toggleGlyNAD, toggleGlyO2, spawnTCAPyruvate, toggleTCAO2,
+      setTCASpotlight, injectOxCarrier, setOxMode, updateOxO2, updateManualPH,
+      resetManualPHBuffer, unpinInspector
+    });
+
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      updateStatsUI();
+      switchStage('whole');
+      loop();
+    });
+  </script>
+</body>
+</html>

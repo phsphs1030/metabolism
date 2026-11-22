@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>광합성 vs 세포호흡 전자전달계 명칭·원리 완벽 정복 시뮬레이션</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --panel: #111827;
+      --border: #334155;
+      --text: #f8fafc;
+      --sub: #94a3b8;
+      --mito: #f97316;
+      --chloro: #10b981;
+      --electron: #38bdf8;
+      --proton: #facc15;
+      --atp: #c084fc;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 16px;
+    }
+
+    .container { max-width: 1340px; margin: 0 auto; }
+
+    header {
+      text-align: center;
+      margin-bottom: 14px;
+      padding: 14px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      border-radius: 14px;
+      border: 1px solid #312e81;
+    }
+    header h1 { font-size: 1.45rem; margin-bottom: 4px; }
+    header p { color: #a5b4fc; font-size: 0.88rem; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      background: var(--panel);
+      padding: 11px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 7px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.18s;
+    }
+    button:hover { filter: brightness(1.15); }
+    button.sec { background: #334155; }
+    button.sec.active { background: #0284c7; box-shadow: 0 0 0 2px #7dd3fc; }
+    button.warn { background: #b91c1c; }
+    button.warn.active { background: #ef4444; box-shadow: 0 0 0 2px #fca5a5; }
+    button.mode { background: #0f766e; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .grid.single { grid-template-columns: 1fr; }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .badge {
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge.mito { background: rgba(249, 115, 22, 0.2); color: #fdba74; border: 1px solid var(--mito); }
+    .badge.chloro { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid var(--chloro); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      background: #090d16;
+      padding: 8px;
+      border-radius: 9px;
+      border: 1px solid #1e293b;
+      text-align: center;
+    }
+    .metric-box small { display: block; font-size: 0.72rem; color: var(--sub); }
+    .metric-box strong { font-size: 0.9rem; color: #f8fafc; }
+
+    canvas {
+      width: 100%;
+      height: 410px;
+      background: #060911;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      display: block;
+      cursor: pointer;
+    }
+
+    .inspector {
+      background: #1e293b;
+      border-radius: 9px;
+      padding: 12px;
+      font-size: 0.86rem;
+      border-left: 4px solid #38bdf8;
+      min-height: 82px;
+    }
+    .inspector-title { font-weight: 700; color: #7dd3fc; margin-bottom: 4px; }
+
+    .summary-table {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      overflow-x: auto;
+    }
+    .summary-table h2 { font-size: 1.05rem; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { border: 1px solid #334155; padding: 8px 11px; text-align: left; }
+    th { background: #0f172a; color: #cbd5e1; }
+
+    @media (max-width: 960px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧬 광합성과 세포호흡의 전자전달계 명칭·원리 완벽 시뮬레이션</h1>
+      <p>막 단백질·운반체 명칭 완벽 표기 · 단백질 클릭 시 시험 핵심 암기 포인트 출력</p>
+    </header>
+
+    <div class="toolbar">
+      <button id="playBtn">⏸ 일시정지</button>
+      <button id="viewBoth" class="sec active">동시 비교</button>
+      <button id="viewMito" class="sec">세포호흡만 크게</button>
+      <button id="viewChloro" class="sec">광합성만 크게</button>
+      <button id="uncouplerBtn" class="warn">🧪 짝풀림제(DNP) OFF</button>
+      <button id="resetBtn" class="sec">🔄 초기화</button>
+    </div>
+
+    <div class="grid" id="mainGrid">
+      <!-- 1. 세포호흡 카드 -->
+      <div class="card" id="mitoCard">
+        <div class="card-top">
+          <div>
+            <strong>1. 세포호흡 (산화적 인산화)</strong>
+            <span class="badge mito">미토콘드리아 내막</span>
+          </div>
+          <button id="mitoSubBtn" class="mode">기질: NADH (복합체 I)</button>
+        </div>
+
+        <div class="metrics">
+          <div class="metric-box"><small>H⁺ 농축 구획 (pH 낮음)</small><strong id="mPH" style="color:#fdba74;">막 사이 공간</strong></div>
+          <div class="metric-box"><small>최종 전자 수용체</small><strong style="color:#38bdf8;">산소 (O₂ → H₂O)</strong></div>
+          <div class="metric-box"><small>누적 ATP 생성</small><strong id="mATP" style="color:#c084fc;">0.0 ATP</strong></div>
+        </div>
+
+        <canvas id="mitoCanvas" width="630" height="410"></canvas>
+
+        <div class="inspector" id="mitoInspector">
+          <div class="inspector-title">💡 그림 속 단백질이나 운반체 명칭을 클릭해 보세요!</div>
+          <div id="mitoDesc">복합체 I, II, III, IV, 유비퀴논(Q), 사이토크롬 c(Cyt c), ATP 합성효소를 클릭하면 각각의 명칭과 시험 출제 포인트를 자세히 볼 수 있습니다.</div>
+        </div>
+      </div>
+
+      <!-- 2. 광합성 카드 -->
+      <div class="card" id="chloroCard">
+        <div class="card-top">
+          <div>
+            <strong>2. 광합성 명반응 (광인산화)</strong>
+            <span class="badge chloro">엽록체 틸라코이드 막</span>
+          </div>
+          <button id="chloroModeBtn" class="mode">경로: 비순환적 전자 흐름</button>
+        </div>
+
+        <div class="metrics">
+          <div class="metric-box"><small>H⁺ 농축 구획 (pH 낮음)</small><strong id="cPH" style="color:#6ee7b7;">틸라코이드 내부</strong></div>
+          <div class="metric-box"><small>최종 전자 수용체</small><strong id="cEnd" style="color:#38bdf8;">NADP⁺ → NADPH</strong></div>
+          <div class="metric-box"><small>누적 ATP 생성</small><strong id="cATP" style="color:#c084fc;">0.0 ATP</strong></div>
+        </div>
+
+        <canvas id="chloroCanvas" width="630" height="410"></canvas>
+
+        <div class="inspector" id="chloroInspector" style="border-left-color:#10b981;">
+          <div class="inspector-title" style="color:#6ee7b7;">💡 그림 속 광계나 운반체 명칭을 클릭해 보세요!</div>
+          <div id="chloroDesc">광계 II(P680), 플라스토퀴논(PQ), 사이토크롬 b₆f, 플라스토시아닌(PC), 광계 I(P700), 페레독신(Fd), NADP⁺ 환원효소, ATP 합성효소를 클릭해 보세요.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-table">
+      <h2>📝 시험 직전 1분 총정리 비교표</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>세포호흡 (산화적 인산화)</th>
+            <th>광합성 명반응 (광인산화)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>반응 장소</strong></td>
+            <td>미토콘드리아 <strong>내막</strong></td>
+            <td>엽록체 <strong>틸라코이드 막</strong></td>
+          </tr>
+          <tr>
+            <td><strong>구성 요소 명칭</strong></td>
+            <td>복합체 I, II, III, IV · 유비퀴논(Q) · 사이토크롬 c(Cyt c) · ATP 합성효소</td>
+            <td>광계 II(P680) · PQ · 사이토크롬 b₆f · PC · 광계 I(P700) · Fd · NADP⁺ 환원효소 · ATP 합성효소</td>
+          </tr>
+          <tr>
+            <td><strong>최초 전자 공여체</strong></td>
+            <td>NADH, FADH₂ (유기물 분해 산물)</td>
+            <td>물 (H₂O) — 광분해되어 O₂ 방출</td>
+          </tr>
+          <tr>
+            <td><strong>최종 전자 수용체</strong></td>
+            <td><strong>산소 (O₂)</strong> → 물(H₂O) 생성</td>
+            <td><strong>NADP⁺</strong> → NADPH 생성</td>
+          </tr>
+          <tr>
+            <td><strong>H⁺ 농축 공간 (pH 낮음)</strong></td>
+            <td><strong>막 사이 공간</strong> (기질 → 막 사이 공간 수송)</td>
+            <td><strong>틸라코이드 내부</strong> (스트로마 → 내부 수송 + 물의 광분해)</td>
+          </tr>
+          <tr>
+            <td><strong>화학 삼투 (ATP 합성)</strong></td>
+            <td>막 사이 공간 → <strong>기질</strong>로 H⁺ 확산</td>
+            <td>틸라코이드 내부 → <strong>스트로마</strong>로 H⁺ 확산</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const mCanvas = document.getElementById('mitoCanvas');
+    const cCanvas = document.getElementById('chloroCanvas');
+    const mCtx = mCanvas.getContext('2d');
+    const cCtx = cCanvas.getContext('2d');
+
+    let playing = true;
+    let uncoupled = false;
+    let useFADH2 = false;
+    let cyclic = false;
+    let t = 0;
+    let mitoATP = 0;
+    let chloroATP = 0;
+
+    let mitoZones = [];
+    let chloroZones = [];
+
+    document.getElementById('playBtn').onclick = (e) => {
+      playing = !playing;
+      e.target.textContent = playing ? '⏸ 일시정지' : '▶ 재생';
+    };
+
+    document.getElementById('uncouplerBtn').onclick = (e) => {
+      uncoupled = !uncoupled;
+      e.target.classList.toggle('active', uncoupled);
+      e.target.textContent = uncoupled ? '🧪 짝풀림제(DNP) ON' : '🧪 짝풀림제(DNP) OFF';
+      document.getElementById('mPH').textContent = uncoupled ? '기울기 붕괴 (ATP ✕)' : '막 사이 공간';
+      document.getElementById('cPH').textContent = uncoupled ? '기울기 붕괴 (ATP ✕)' : '틸라코이드 내부';
+    };
+
+    document.getElementById('mitoSubBtn').onclick = (e) => {
+      useFADH2 = !useFADH2;
+      e.target.textContent = useFADH2 ? '기질: FADH₂ (복합체 II)' : '기질: NADH (복합체 I)';
+    };
+
+    document.getElementById('chloroModeBtn').onclick = (e) => {
+      cyclic = !cyclic;
+      e.target.textContent = cyclic ? '경로: 순환적 전자 흐름' : '경로: 비순환적 전자 흐름';
+      document.getElementById('cEnd').textContent = cyclic ? '없음 (ATP만 합성)' : 'NADP⁺ → NADPH';
+    };
+
+    document.getElementById('resetBtn').onclick = () => {
+      mitoATP = 0; chloroATP = 0; t = 0;
+    };
+
+    // 화면 전환
+    const grid = document.getElementById('mainGrid');
+    const mCard = document.getElementById('mitoCard');
+    const cCard = document.getElementById('chloroCard');
+    function setTab(activeId) {
+      ['viewBoth', 'viewMito', 'viewChloro'].forEach(id => document.getElementById(id).classList.remove('active'));
+      document.getElementById(activeId).classList.add('active');
+    }
+    document.getElementById('viewBoth').onclick = () => { setTab('viewBoth'); grid.classList.remove('single'); mCard.style.display = 'flex'; cCard.style.display = 'flex'; };
+    document.getElementById('viewMito').onclick = () => { setTab('viewMito'); grid.classList.add('single'); mCard.style.display = 'flex'; cCard.style.display = 'none'; };
+    document.getElementById('viewChloro').onclick = () => { setTab('viewChloro'); grid.classList.add('single'); mCard.style.display = 'none'; cCard.style.display = 'flex'; };
+
+    // 클릭 이벤트 처리
+    function handleCanvasClick(e, canvas, zones, targetId, color) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+      for (const z of zones) {
+        if (x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h) {
+          document.getElementById(targetId).innerHTML =
+            `<div class="inspector-title" style="color:${color};">📌 ${z.name}</div><div>${z.desc}</div>`;
+          break;
+        }
+      }
+    }
+
+    mCanvas.addEventListener('click', (e) => handleCanvasClick(e, mCanvas, mitoZones, 'mitoInspector', '#fdba74'));
+    cCanvas.addEventListener('click', (e) => handleCanvasClick(e, cCanvas, chloroZones, 'chloroInspector', '#6ee7b7'));
+
+    // 공통 그리기 함수
+    function drawBilayer(ctx, topTitle, topSub, botTitle, botSub, topBg, botBg) {
+      ctx.clearRect(0, 0, 630, 410);
+      ctx.fillStyle = topBg; ctx.fillRect(0, 0, 630, 155);
+      ctx.fillStyle = botBg; ctx.fillRect(0, 245, 630, 165);
+      ctx.fillStyle = '#182234'; ctx.fillRect(0, 155, 630, 90);
+
+      for (let x = 10; x < 630; x += 14) {
+        if (uncoupled && x > 420 && x < 458) continue;
+        ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(x - 2, 162); ctx.lineTo(x - 2, 198);
+        ctx.moveTo(x + 2, 162); ctx.lineTo(x + 2, 198);
+        ctx.moveTo(x - 2, 202); ctx.lineTo(x - 2, 238);
+        ctx.moveTo(x + 2, 202); ctx.lineTo(x + 2, 238);
+        ctx.stroke();
+
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath(); ctx.arc(x, 158, 4.2, 0, Math.PI * 2); ctx.arc(x, 242, 4.2, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // 구획 명칭 라벨
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = '#f8fafc';
+      ctx.fillText(topTitle, 14, 22);
+      ctx.font = '11.5px sans-serif'; ctx.fillStyle = '#fde047';
+      ctx.fillText(topSub, 14, 39);
+
+      ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = '#f8fafc';
+      ctx.fillText(botTitle, 14, 378);
+      ctx.font = '11.5px sans-serif'; ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(botSub, 14, 395);
+
+      if (uncoupled) {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.28)';
+        ctx.fillRect(422, 150, 34, 100);
+        ctx.strokeStyle = '#ef4444'; ctx.strokeRect(422, 150, 34, 100);
+        ctx.fillStyle = '#fca5a5'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('짝풀림제', 439, 196);
+        ctx.fillText('H⁺누출', 439, 210);
+      }
+    }
+
+    function drawProteinBox(ctx, x, y, w, h, line1, line2, line3, color, dimmed = false) {
+      ctx.save();
+      if (dimmed) ctx.globalAlpha = 0.35;
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.roundRect(x, y, w, h, 9); ctx.fill();
+      ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1.2; ctx.stroke();
+
+      ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(line1, x + w / 2, y + h / 2 - (line3 ? 10 : 3));
+      if (line2) {
+        ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = '#fef08a';
+        ctx.fillText(line2, x + w / 2, y + h / 2 + 4);
+      }
+      if (line3) {
+        ctx.font = '9.5px sans-serif'; ctx.fillStyle = '#e2e8f0';
+        ctx.fillText(line3, x + w / 2, y + h / 2 + 18);
+      }
+      ctx.restore();
+    }
+
+    function drawCarrier(ctx, x, y, shortName, fullName) {
+      ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2);
+      ctx.fillStyle = '#475569'; ctx.fill();
+      ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(shortName, x, y + 3.5);
+
+      // 운반체 한글 풀네임 라벨
+      ctx.fillStyle = '#cbd5e1'; ctx.font = '9.5px sans-serif';
+      ctx.fillText(fullName, x, y - 19);
+    }
+
+    function drawIon(ctx, x, y, color, text) {
+      ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2);
+      ctx.fillStyle = color; ctx.fill();
+      ctx.fillStyle = '#060911'; ctx.font = 'bold 9.5px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(text, x, y + 3.5);
+    }
+
+    function drawATPSynthase(ctx, x, y, topHead, active, time) {
+      ctx.save();
+      if (active) { ctx.shadowColor = '#e879f9'; ctx.shadowBlur = 15; }
+      ctx.fillStyle = '#7e22ce';
+      ctx.beginPath(); ctx.roundRect(x + 18, y, 36, 96, 6); ctx.fill();
+
+      const hy = topHead ? y - 26 : y + 90;
+      const pulse = active ? Math.sin(time * 9) * 2.5 : 0;
+      ctx.fillStyle = '#9333ea';
+      ctx.beginPath(); ctx.ellipse(x + 36, hy + 16, 34 + pulse, 19 - pulse * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#f5d0fe'; ctx.lineWidth = 1.4; ctx.stroke();
+
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('ATP 합성효소', x + 36, hy + 14);
+      ctx.font = '9.5px sans-serif'; ctx.fillStyle = '#f3e8ff';
+      ctx.fillText('(화학 삼투)', x + 36, hy + 26);
+      ctx.restore();
+    }
+
+    // 1. 미토콘드리아 그리기
+    function renderMito(time) {
+      drawBilayer(
+        mCtx,
+        '막 사이 공간 (Intermembrane Space)',
+        uncoupled ? '⚠️ H⁺ 누출로 농도 기울기 소실!' : '▶ H⁺ 고농도 (pH 낮음) : H⁺가 축적되는 곳!',
+        '미토콘드리아 기질 (Matrix)',
+        '▶ H⁺ 저농도 (pH 높음) : TCA 회로 & 물(H₂O) 생성 장소',
+        'rgba(249, 115, 22, 0.13)',
+        'rgba(15, 23, 42, 0.95)'
+      );
+
+      mitoZones = [
+        { x: 24, y: 145, w: 62, h: 112, name: '단백질 복합체 I (NADH 탈수소효소)', desc: 'NADH가 산화(NADH → NAD⁺ + H⁺ + 2e⁻)될 때 전자를 받아 유비퀴논(Q)으로 전달하며, 기질의 H⁺를 막 사이 공간으로 능동수송합니다.' },
+        { x: 100, y: 196, w: 56, h: 61, name: '단백질 복합체 II (숙신산 탈수소효소)', desc: 'FADH₂로부터 전자를 받아 유비퀴논(Q)으로 전달합니다. 막을 관통하지 않아 H⁺를 능동수송하지 못하므로 NADH보다 ATP 생성량이 적습니다.' },
+        { x: 162, y: 175, w: 34, h: 45, name: '유비퀴논 (Q, Coenzyme Q)', desc: '막 내부를 자유롭게 이동하는 소수성 전자 운반체로, 복합체 I과 II에서 받은 전자를 복합체 III으로 운반합니다.' },
+        { x: 198, y: 145, w: 62, h: 112, name: '단백질 복합체 III (사이토크롬 bc₁ 복합체)', desc: '유비퀴논(Q)으로부터 전자를 받아 사이토크롬 c(Cyt c)로 전달하면서 기질의 H⁺를 막 사이 공간으로 능동수송합니다.' },
+        { x: 266, y: 135, w: 36, h: 45, name: '사이토크롬 c (Cyt c)', desc: '막 사이 공간 쪽 표면에 붙어 이동하는 수용성 단백질 운반체로, 복합체 III에서 복합체 IV로 전자를 1개씩 전달합니다.' },
+        { x: 304, y: 145, w: 64, h: 112, name: '단백질 복합체 IV (사이토크롬 c 산화효소)', desc: '에너지를 잃은 전자를 최종 전자 수용체인 산소(O₂)에 전달하여 물(½O₂ + 2H⁺ + 2e⁻ → H₂O)을 만들고 H⁺를 능동수송합니다.' },
+        { x: 492, y: 135, w: 76, h: 135, name: 'ATP 합성효소 (ATP Synthase)', desc: '막 사이 공간에 고농도로 쌓인 H⁺가 농도 기울기에 따라 기질로 확산(화학 삼투)할 때의 에너지로 ADP + Pi → ATP를 합성합니다.' }
+      ];
+
+      drawProteinBox(mCtx, 24, 145, 62, 112, '복합체 I', 'NADH산화', 'H⁺ 펌프', '#ea580c', useFADH2);
+      drawProteinBox(mCtx, 100, 196, 56, 61, '복합체 II', 'FADH₂', '펌프 ✕', '#c2410c', !useFADH2);
+      drawCarrier(mCtx, 178, 200, 'Q', '유비퀴논');
+      drawProteinBox(mCtx, 198, 145, 62, 112, '복합체 III', 'Cyt bc₁', 'H⁺ 펌프', '#ea580c', false);
+      drawCarrier(mCtx, 282, 160, 'Cyt c', '사이토크롬c');
+      drawProteinBox(mCtx, 304, 145, 64, 112, '복합체 IV', 'O₂ 환원', 'H⁺ 펌프', '#ea580c', false);
+
+      const atpActive = !uncoupled;
+      drawATPSynthase(mCtx, 492, 152, false, atpActive, time);
+
+      // 반응식 및 명칭 라벨
+      mCtx.textAlign = 'left'; mCtx.font = 'bold 11px sans-serif';
+      if (!useFADH2) {
+        mCtx.fillStyle = '#fde047';
+        mCtx.fillText('NADH → NAD⁺ + H⁺', 14, 282);
+      } else {
+        mCtx.fillStyle = '#fde047';
+        mCtx.fillText('FADH₂ → FAD + 2H⁺', 85, 282);
+      }
+
+      mCtx.fillStyle = '#38bdf8';
+      mCtx.fillText('최종 전자 수용체: ½O₂ + 2H⁺ → H₂O', 240, 282);
+
+      mCtx.fillStyle = atpActive ? '#e9d5ff' : '#64748b';
+      mCtx.fillText(uncoupled ? 'ATP 합성 중단' : 'ADP + Pi → ATP', 485, 305);
+
+      // 전자 이동
+      const eProg = (time * 0.36) % 1;
+      const startX = useFADH2 ? 128 : 55;
+      const ex = startX + eProg * (336 - startX);
+      const ey = 200 - Math.sin(eProg * Math.PI * 3) * 16;
+      drawIon(mCtx, ex, ey, '#38bdf8', 'e⁻');
+
+      // H+ 능동수송
+      const pumps = useFADH2 ? [229, 336] : [55, 229, 336];
+      pumps.forEach((px, i) => {
+        const pProg = (time * 0.55 + i * 0.3) % 1;
+        drawIon(mCtx, px, 265 - pProg * 195, '#facc15', 'H⁺');
+      });
+
+      // H+ 화학 삼투
+      if (uncoupled) {
+        const lProg = (time * 0.85) % 1;
+        drawIon(mCtx, 439, 70 + lProg * 195, '#facc15', 'H⁺');
+      } else {
+        const aProg = (time * 0.65) % 1;
+        drawIon(mCtx, 528, 75 + aProg * 195, '#facc15', 'H⁺');
+        if (playing) {
+          mitoATP += 0.008 * (useFADH2 ? 1.5 : 2.5);
+          document.getElementById('mATP').textContent = mitoATP.toFixed(1) + ' ATP';
+        }
+      }
+    }
+
+    // 2. 엽록체 그리기
+    function renderChloro(time) {
+      drawBilayer(
+        cCtx,
+        '스트로마 (Stroma — 캘빈 회로 장소)',
+        '▶ H⁺ 저농도 (pH 높음) : NADPH 및 ATP가 생성되어 방출되는 곳',
+        '틸라코이드 내부 공간 (Thylakoid Lumen)',
+        uncoupled ? '⚠️ H⁺ 누출로 농도 기울기 소실!' : '▶ H⁺ 고농도 (pH 낮음) : H⁺가 축적되는 곳! (세포호흡과 반대)',
+        'rgba(15, 23, 42, 0.95)',
+        'rgba(16, 185, 129, 0.15)'
+      );
+
+      chloroZones = [
+        { x: 24, y: 145, w: 62, h: 112, name: '광계 II (PS II, 반응 중심 색소 P680)', desc: '빛에너지를 흡수해 고에너지 전자를 방출하며, 잃어버린 전자는 물의 광분해(H₂O → ½O₂ + 2H⁺ + 2e⁻)로 보충합니다.' },
+        { x: 96, y: 175, w: 36, h: 45, name: '플라스토퀴논 (PQ)', desc: '광계 II로부터 전자를 받아 사이토크롬 b₆f 복합체로 전달하는 지용성 전자 운반체입니다.' },
+        { x: 138, y: 145, w: 64, h: 112, name: '사이토크롬 b₆f 복합체 (Cyt b₆f)', desc: '플라스토퀴논(PQ)에서 플라스토시아닌(PC)으로 전자를 전달하면서 스트로마의 H⁺를 틸라코이드 내부로 능동수송합니다.' },
+        { x: 210, y: 210, w: 36, h: 45, name: '플라스토시아닌 (PC)', desc: '구리를 포함한 수용성 단백질 운반체로, 사이토크롬 b₆f 복합체에서 광계 I으로 전자를 운반합니다.' },
+        { x: 252, y: 145, w: 62, h: 112, name: '광계 I (PS I, 반응 중심 색소 P700)', desc: '빛에너지를 흡수해 전자를 다시 고에너지 상태로 들뜨게 하여 페레독신(Fd)으로 전달합니다.' },
+        { x: 322, y: 130, w: 36, h: 45, name: '페레독신 (Fd)', desc: '철-황 단백질 전자 운반체로, 광계 I에서 나온 전자를 NADP⁺ 환원효소로 전달합니다.' },
+        { x: 360, y: 120, w: 60, h: 56, name: 'NADP⁺ 환원효소 (FNR)', desc: '광합성 명반응의 최종 전자 수용체인 NADP⁺에 전자와 스트로마의 H⁺를 결합시켜 NADPH를 합성합니다.' },
+        { x: 492, y: 135, w: 76, h: 135, name: '엽록체 ATP 합성효소 (ATP Synthase)', desc: '틸라코이드 내부에 고농도로 쌓인 H⁺가 스트로마로 확산(화학 삼투)할 때의 에너지로 ATP를 합성합니다.' }
+      ];
+
+      drawProteinBox(cCtx, 24, 145, 62, 112, '광계 II', 'P680', '빛 흡수', '#059669', cyclic);
+      drawCarrier(cCtx, 112, 200, 'PQ', '플라스토퀴논');
+      drawProteinBox(cCtx, 138, 145, 64, 112, 'Cyt b₆f', '사이토크롬', 'H⁺ 펌프', '#0d9488', false);
+      drawCarrier(cCtx, 226, 232, 'PC', '플라스토시아닌');
+      drawProteinBox(cCtx, 252, 145, 62, 112, '광계 I', 'P700', '빛 흡수', '#059669', false);
+      drawCarrier(cCtx, 338, 155, 'Fd', '페레독신');
+      drawProteinBox(cCtx, 360, 120, 60, 56, 'NADP⁺', '환원효소', '', '#0284c7', cyclic);
+
+      const atpActive = !uncoupled;
+      drawATPSynthase(cCtx, 492, 152, true, atpActive, time);
+
+      // 빛 화살표
+      cCtx.strokeStyle = '#fde047'; cCtx.lineWidth = 2;
+      cCtx.beginPath();
+      if (!cyclic) { cCtx.moveTo(20, 82); cCtx.lineTo(48, 140); }
+      cCtx.moveTo(248, 82); cCtx.lineTo(276, 140);
+      cCtx.stroke();
+      cCtx.fillStyle = '#fde047'; cCtx.font = 'bold 11px sans-serif'; cCtx.textAlign = 'left';
+      if (!cyclic) cCtx.fillText('☀ 빛에너지', 10, 76);
+      cCtx.fillText('☀ 빛에너지', 235, 76);
+
+      // 반응식 라벨
+      cCtx.textAlign = 'left'; cCtx.font = 'bold 11px sans-serif';
+      if (!cyclic) {
+        cCtx.fillStyle = '#6ee7b7';
+        cCtx.fillText('물의 광분해: H₂O → ½O₂ + 2H⁺', 14, 282);
+        cCtx.fillStyle = '#38bdf8';
+        cCtx.fillText('최종 수용체: NADP⁺ + H⁺ → NADPH', 280, 102);
+      } else {
+        cCtx.fillStyle = '#fde047';
+        cCtx.fillText('↻ 순환적 전자 흐름 (광계 I → Fd → PQ → Cyt b₆f → PC → 광계 I)', 90, 282);
+      }
+
+      cCtx.fillStyle = atpActive ? '#e9d5ff' : '#64748b';
+      cCtx.fillText(uncoupled ? 'ATP 합성 중단' : 'ADP + Pi → ATP', 485, 102);
+
+      // 전자 이동
+      const eProg = (time * 0.36) % 1;
+      if (!cyclic) {
+        const ex = 55 + eProg * 335;
+        const ey = 190 + Math.sin(eProg * Math.PI * 3) * 20;
+        drawIon(cCtx, ex, ey, '#38bdf8', 'e⁻');
+      } else {
+        const angle = eProg * Math.PI * 2;
+        const ex = 225 + Math.cos(angle) * 110;
+        const ey = 195 + Math.sin(angle) * 40;
+        drawIon(cCtx, ex, ey, '#38bdf8', 'e⁻');
+      }
+
+      // H+ 능동수송 (스트로마 -> 틸라코이드 내부)
+      const pProg = (time * 0.6) % 1;
+      drawIon(cCtx, 170, 75 + pProg * 195, '#facc15', 'H⁺');
+
+      // H+ 화학 삼투
+      if (uncoupled) {
+        const lProg = (time * 0.85) % 1;
+        drawIon(cCtx, 439, 265 - lProg * 195, '#facc15', 'H⁺');
+      } else {
+        const aProg = (time * 0.65) % 1;
+        drawIon(cCtx, 528, 265 - aProg * 195, '#facc15', 'H⁺');
+        if (playing) {
+          chloroATP += 0.008 * (cyclic ? 1.5 : 2.0);
+          document.getElementById('cATP').textContent = chloroATP.toFixed(1) + ' ATP';
+        }
+      }
+    }
+
+    function loop() {
+      if (playing) t += 0.015;
+      renderMito(t);
+      renderChloro(t);
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>

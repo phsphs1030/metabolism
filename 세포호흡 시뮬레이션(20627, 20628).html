@@ -1,0 +1,1576 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>세포호흡 전자(e⁻) 탈착 &amp; NADH 환원 시뮬레이터</title>
+  <style>
+    html {
+      height: 100%;
+      background: 50% 50% no-repeat
+        url('data:image/svg+xml,<svg viewBox="-20 -5 60 40" width="140" xmlns="http://www.w3.org/2000/svg" opacity="0.2"><path d="M1 8l11-7 11 7v8l-11 7-11-7zm0 0l11 8 11-8m0 8L12 8 1 16M12 1v7m0 8v7" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/><text x="-12" y="32" font-size="5" font-family="monospace" fill="currentColor">Built on CodePen</text></svg>');
+    }
+    :root{--bg:#020617;--card:#0f172a;--bd:#334155;--tx:#e2e8f0;--mut:#94a3b8;--ac:#f97316}
+    [data-theme=light]{--bg:#f1f5f9;--card:#fff;--bd:#cbd5e1;--tx:#1e293b;--mut:#64748b;--ac:#ea580c}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Pretendard,"Malgun Gothic",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--tx);font-size:14px;line-height:1.5}
+    h1{font-size:19px;margin:0}h2,h3{margin:0}
+    .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px}
+    button,select{font:inherit;font-size:12px;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:7px 11px;cursor:pointer}
+    button:hover,select:hover{border-color:var(--ac)}
+    button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+    .pri,.on{background:var(--ac);color:#111;border-color:var(--ac);font-weight:700}
+    .wrap{max-width:1200px;margin:0 auto;padding:12px;display:flex;flex-direction:column;gap:12px}
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .sp{justify-content:space-between}
+    .grow{flex:1;min-width:220px}
+    .grid{display:grid;grid-template-columns:7fr 5fr;gap:12px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    #cvw{position:relative;height:520px;background:#020617;border-radius:12px;overflow:hidden}
+    canvas{width:100%;height:100%;display:block}
+    #toast{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#0f172af0;color:#fdba74;border:1px solid #f97316;border-radius:99px;padding:7px 14px;font-weight:700;font-size:12px;opacity:0;transition:opacity .3s;max-width:92%;text-align:center;pointer-events:none}
+    #warn,#slow{position:absolute;left:10px;bottom:10px;max-width:88%;background:#4c0519e6;color:#fda4af;border:1px solid #f43f5e;border-radius:10px;padding:6px 10px;font-size:11px;font-weight:700}
+    #slow{left:auto;right:10px;top:10px;bottom:auto;background:#78350f99;color:#fcd34d;border-color:#f59e0b}
+    .eq{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:8px 10px;font-family:monospace;color:var(--ac);margin:8px 0;font-size:12px;overflow-x:auto}
+    .tag{font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;border:1px solid var(--ac);color:var(--ac)}
+    .key{background:#f59e0b1f;border:1px solid #f59e0b66;border-radius:10px;padding:9px 11px;font-size:12px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;margin-top:8px}
+    .stats div{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:6px 2px}
+    .stats b{display:block;font-size:16px;font-family:monospace}
+    .stats small{font-size:10px;color:var(--mut)}
+    .leg span{font-size:11px;margin-right:8px}
+    .leg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:3px}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th,td{padding:7px;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
+    .mut{color:var(--mut)}.hide{display:none!important}
+    .opt{display:block;width:100%;text-align:left;margin:6px 0;font-size:13px}
+    .opt:disabled{cursor:default;opacity:.85}
+    .ok{border-color:#10b981!important;background:#10b98133}.no{border-color:#f43f5e!important;background:#f43f5e33}
+    input[type=range]{width:100%;accent-color:var(--ac)}
+    .zone{transition:opacity .3s,filter .3s;cursor:pointer}.zone.dim{opacity:.3}.zone.hl{filter:drop-shadow(0 0 7px #f97316)}#map text{font-family:inherit}
+    @media(prefers-reduced-motion:reduce){#toast{transition:none}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="card row sp">
+      <div>
+        <h1>세포호흡 전자(e⁻) 탈착 &amp; NADH 환원 시뮬레이터</h1>
+        <div class="mut" style="font-size:12px">탈수소 반응 · 전자 이동 · NADH/FADH₂ 환원 · 산화적 인산화</div>
+      </div>
+      <div class="row" role="tablist">
+        <button id="tab-carbon" role="tab" onclick="setViewMode('carbon')">1. 탄소 골격 &amp; NADH 생성</button>
+        <button id="tab-etc" role="tab" onclick="setViewMode('etc')">2. 전자전달계 &amp; NADH 산화</button>
+        <button id="tab-quiz" role="tab" onclick="setViewMode('quiz')">개념 확인 퀴즈</button>
+        <button onclick="toggleTheme()" id="themeBtn" aria-label="다크/라이트 모드 전환">☀ 라이트</button>
+      </div>
+    </header>
+
+    <section id="controls" class="card row sp">
+      <div class="row">
+        <button onclick="prevStep()">◀ 이전</button>
+        <button id="btnPlay" class="pri" onclick="toggleAutoPlay()">▶ 자동 재생</button>
+        <button onclick="nextStep()">다음 ▶</button>
+        <button onclick="resetSteps()" aria-label="처음부터">↺</button>
+      </div>
+      <div class="grow">
+        <div class="row sp" style="font-size:12px;font-weight:700">
+          <span id="stepBadge" style="color:var(--ac)"></span><span id="stepCount" class="mut"></span>
+        </div>
+        <input type="range" id="slider" min="0" max="11" value="0" aria-label="단계 선택" oninput="setStep(+this.value)">
+        <div class="row sp mut" style="font-size:10px"><span>해당</span><span>피루브산 산화</span><span>TCA 회로</span><span>산화적 인산화</span></div>
+      </div>
+      <div class="row">
+        <select id="speedSel" onchange="onSpeed(this.value)" aria-label="재생 속도">
+          <option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option>
+        </select>
+        <button id="btnSlow" onclick="toggleSlow()">🔍 NADH 정밀 관찰 (0.2x)</button>
+        <select id="inhSel" onchange="onInhibitor(this.value)" aria-label="억제제 선택">
+          <option value="none">억제제 없음 (정상)</option>
+          <option value="etc">전자전달 억제제 (CN⁻)</option>
+          <option value="atp">ATP 합성효소 억제제 (올리고마이신)</option>
+          <option value="uncoupler">짝풀림제 (DNP)</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="grid" id="main">
+      <div class="card" id="vizBox">
+        <div class="row sp" style="margin-bottom:8px">
+          <h2 id="cvTitle" style="font-size:14px"></h2>
+          <div class="leg" id="legend"></div>
+        </div>
+        <div id="cvw">
+          <canvas id="cv" role="img" aria-label="세포호흡 단계별 애니메이션 캔버스. 클릭하면 전자 탈착 효과가 나타납니다."></canvas>
+          <div id="toast"></div>
+          <div id="warn" class="hide"></div>
+          <div id="slow" class="hide">NADH 전자 탈착 0.2x 슬로우 모션</div>
+        </div>
+      </div>
+
+      <div id="infoBox" class="row" style="flex-direction:column;align-items:stretch">
+        <div class="card" id="mapBox">
+          <h3 style="font-size:13px;margin-bottom:6px">세포호흡이 일어나는 장소 <span class="mut" style="font-weight:400;font-size:11px">(클릭하면 해당 단계로 이동)</span></h3>
+          <svg id="map" viewBox="0 0 400 210" width="100%" role="img" aria-label="세포 속 마이토콘드리아 구조와 세포호흡이 일어나는 장소">
+            <rect width="400" height="210" rx="10" fill="#0b1220"/>
+            <g id="z-cyto" class="zone" onclick="setStep(2)">
+              <rect x="6" y="6" width="388" height="198" rx="42" fill="#12304a" stroke="#38bdf8" stroke-width="2.5"/>
+              <circle cx="55" cy="45" r="20" fill="#312e81" stroke="#818cf8" stroke-width="2"/>
+              <text x="55" y="49" font-size="11" text-anchor="middle" fill="#c7d2fe">핵</text>
+              <text x="22" y="82" font-size="10" fill="#e0f2fe">포도당 (C₆)</text>
+              <text x="22" y="96" font-size="10" fill="#e0f2fe">↓ 해당 과정</text>
+              <text x="22" y="110" font-size="10" fill="#e0f2fe">피루브산 (C₃) ×2</text>
+              <text x="22" y="196" font-size="11" font-weight="700" fill="#7dd3fc">세포질 · 해당 과정</text>
+            </g>
+            <path d="M116 120 H144 M138 115 L146 120 L138 125" fill="none" stroke="#fde68a" stroke-width="2"/>
+            <text x="96" y="136" font-size="8" fill="#fde68a">O₂ 있을 때</text>
+            <g id="z-ims" class="zone" onclick="setStep(9)"><ellipse cx="265" cy="108" rx="120" ry="70" fill="#4c1d3a" stroke="#fb7185" stroke-width="3"/></g>
+            <g id="z-matrix" class="zone" onclick="setStep(5)">
+              <ellipse cx="265" cy="108" rx="104" ry="54" fill="#0f2a44"/>
+              <text x="265" y="105" font-size="11" font-weight="700" text-anchor="middle" fill="#7dd3fc">바탕질</text>
+              <text x="265" y="119" font-size="8.5" text-anchor="middle" fill="#e0f2fe">피루브산 산화 · TCA 회로</text>
+            </g>
+            <g id="z-inner" class="zone" onclick="setStep(9)">
+              <ellipse cx="265" cy="108" rx="104" ry="54" fill="none" stroke="#fbbf24" stroke-width="3"/>
+              <path d="M205 68V94M235 58V86M265 55V83M295 58V86M325 68V94M220 156V130M250 161V133M280 161V133M310 156V130" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" fill="none"/>
+            </g>
+            <g pointer-events="none"><rect x="262" y="154" width="6" height="12" fill="#f59e0b"/><circle cx="265" cy="150" r="6" fill="#f59e0b" stroke="#fff" stroke-width=".8"/><text x="265" y="143" font-size="6" text-anchor="middle" fill="#fde68a">ATP합성효소</text></g>
+            <g id="mol" pointer-events="none"></g>
+            <g font-size="10" fill="#cbd5e1">
+              <text x="352" y="30">외막</text><path d="M350 34L333 54" stroke="#94a3b8"/>
+              <text x="330" y="198">막사이공간</text><path d="M350 186L338 156" stroke="#94a3b8"/>
+              <text x="150" y="200">내막 · 크리스타</text><path d="M190 190L222 158" stroke="#94a3b8"/>
+            </g>
+          </svg>
+          <div class="leg row" style="margin-top:6px;font-size:11px;gap:10px">
+            <span><i style="background:#38bdf8"></i>세포질: 해당 과정</span>
+            <span><i style="background:#0ea5e9"></i>바탕질: 피루브산 산화·TCA 회로</span>
+            <span><i style="background:#fbbf24"></i>내막: 산화적 인산화</span>
+          </div>
+          <div id="mapNow" style="font-size:12px;font-weight:700;color:var(--ac);margin-top:4px"></div>
+        </div>
+        <div class="card">
+          <div class="row sp" style="margin-bottom:6px"><span id="phase" class="tag"></span><span id="loc" class="mut" style="font-size:12px"></span></div>
+          <h3 id="sName" style="font-size:17px"></h3>
+          <div id="eq" class="eq"></div>
+          <p id="desc" style="font-size:13px;margin:6px 0 10px"></p>
+          <div class="key"><b>📌 핵심 포인트</b><div id="keyp" style="margin-top:3px"></div></div>
+        </div>
+        <div class="card">
+          <h3 style="font-size:13px">고에너지 전자 운반체 · 산물 현황 (포도당 1분자 기준)</h3>
+          <div class="stats">
+            <div><small>NADH</small><b id="sN" style="color:#f97316"></b><small>×2.5 ATP 환산</small></div>
+            <div><small>FADH₂</small><b id="sF" style="color:#ec4899"></b><small>×1.5 ATP 환산</small></div>
+            <div><small>CO₂ 방출</small><b id="sC" style="color:#ef4444"></b><small>탄소 완전산화</small></div>
+            <div><small>누적 ATP</small><b id="sA" style="color:#10b981"></b><small>기질 순 4 + 산화 28</small></div>
+          </div>
+          <div class="eq" style="margin-bottom:0">탈수소 반응: 기질(H₂) + NAD⁺ → 기질(산화) + NADH + H⁺</div>
+        </div>
+      </div>
+
+      <div id="quizBox" class="card hide" style="grid-column:1/-1">
+        <div class="row sp" style="margin-bottom:8px"><h2 style="font-size:16px">세포호흡 셀프 퀴즈</h2><span id="qScore" class="tag"></span></div>
+        <div id="qNum" class="mut" style="font-size:12px"></div>
+        <p id="qText" style="font-weight:700;margin:6px 0"></p>
+        <div id="qOpts"></div>
+        <div class="row sp" style="margin-top:8px">
+          <div id="qFb" style="font-size:13px;font-weight:700;flex:1"></div>
+          <button id="qNext" class="pri" onclick="nextQ()">다음 문제 ▶</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3 style="font-size:14px;margin-bottom:6px">단계별 NADH / FADH₂ 수지표 (포도당 1분자)</h3>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr class="mut"><th>단계</th><th>장소</th><th>NADH</th><th>FADH₂</th><th>CO₂</th><th>기질수준 ATP(순)</th><th>환산 ATP(참고)*</th></tr></thead>
+          <tbody>
+            <tr><td>1. 해당 과정</td><td>세포질</td><td>2</td><td>0</td><td>0</td><td>2 (4생성−2소모)</td><td>2×2.5 = 5</td></tr>
+            <tr><td>2. 피루브산 산화</td><td>바탕질</td><td>2</td><td>0</td><td>2</td><td>0</td><td>2×2.5 = 5</td></tr>
+            <tr><td>3. TCA 회로</td><td>바탕질</td><td>6</td><td>2</td><td>4</td><td>2</td><td>6×2.5 + 2×1.5 = 18</td></tr>
+            <tr><td>4. 산화적 인산화</td><td>내막</td><td colspan="4">10 NAD⁺, 2 FAD 재생 / O₂ → H₂O</td><td>실제 합성 28</td></tr>
+            <tr style="font-weight:700;color:var(--ac)"><td>합계</td><td>-</td><td>10</td><td>2</td><td>6</td><td>4</td><td>5+5+18 = 28 → 총 32</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="mut" style="font-size:11px;margin:6px 0 0">* 환산 ATP는 각 단계에서 만들어진 NADH·FADH₂가 나중에 전자전달계에서 내는 ATP의 양입니다(실제 합성은 내막에서 일어남). 포도당 1분자당 최대 32 ATP이며, 세포 종류에 따라 ATP 합성률이 다르고 H⁺이 ATP 합성 외 생명활동에 쓰이기도 해 실제 합성량은 세포마다 차이가 있습니다. 에너지 효율 = (32×7.3 kcal/mol)/(686 kcal/mol)×100 ≒ 34%이고 나머지 66%는 열로 방출됩니다.</p>
+    </section>
+  </div>
+  <script>
+/* ===== 1. 데이터 ===== */
+const STEPS=[
+{id:1,mode:'carbon',phase:'해당 과정 - 에너지 투입기',loc:'세포질',name:'포도당 활성화 (ATP 2분자 소모)',
+ f:'C₆H₁₂O₆ + 2ATP → 과당 2인산(C₆) + 2ADP',
+ desc:'6탄소 포도당이 ATP 2분자로부터 인산기를 받아 반응성이 높은 과당 2인산(C₆)이 됩니다.',
+ key:'해당 과정 초반에 ATP 2분자가 소비됩니다(에너지 투입기).',t:'ATP 2분자 소모! 포도당 활성화',co2:0,nadh:0,fadh:0,sub:-2,ox:0},
+{id:2,mode:'carbon',phase:'해당 과정 - 이분할',loc:'세포질',name:'과당 2인산 이분할 (C₆ → 2×C₃)',
+ f:'과당 2인산(C₆) → 2 × 3탄소 인산화물(C₃-P)',
+ desc:'6탄소 화합물이 2분자의 3탄소 화합물로 갈라집니다.',
+ key:'C₆ → 2×C₃. 이 단계에서는 CO₂가 방출되지 않습니다.',t:'탄소 골격 이분할! (C₆ → 2×C₃)',co2:0,nadh:0,fadh:0,sub:-2,ox:0},
+{id:3,mode:'carbon',phase:'해당 과정 - ⚡ 탈수소 & NADH 생성',loc:'세포질',name:'피루브산 생성 (2 NADH, 순 2 ATP)',
+ f:'2C₃-P + 2NAD⁺ + 4ADP → 2피루브산(C₃) + 2NADH + 4ATP',
+ desc:'탈수소효소가 C₃ 기질에서 H⁺과 고에너지 전자(2e⁻)를 떼어 NAD⁺를 NADH로 환원시킵니다. 기질수준 인산화로 ATP 4분자가 생기며, 투입한 2분자를 빼면 순 2 ATP입니다.',
+ key:'탈수소효소: 기질 산화 + NAD⁺ 환원. (실제 NADH는 PGAL→1,3-BPG 단계에서 생기며 여기서는 단순화했습니다.)',
+ t:'⚡ 전자 탈착! C₃에서 2e⁻+H⁺ 분리 → NAD⁺가 NADH로 환원',co2:0,nadh:2,fadh:0,sub:2,ox:0,carrier:'NAD+',count:2},
+{id:4,mode:'carbon',phase:'피루브산 산화 - ⚡ 탈탄산 & NADH',loc:'마이토콘드리아 바탕질',name:'피루브산 산화 (2 CO₂, 2 NADH)',
+ f:'2피루브산(C₃) + 2CoA + 2NAD⁺ → 2아세틸 CoA(C₂) + 2CO₂ + 2NADH',
+ desc:'산소가 있을 때 피루브산이 바탕질로 들어와 CO₂를 내보내고(탈탄산) 전자를 NAD⁺에 넘기며 아세틸 CoA(C₂)가 됩니다.',
+ key:'피루브산 1분자당 CO₂ 1, NADH 1 (포도당 1분자당 각 2).',t:'⚡ 피루브산 산화 → CO₂ 2 방출 & NADH 2 생성',co2:2,nadh:4,fadh:0,sub:2,ox:0,carrier:'NAD+',count:2,decarb:2},
+{id:5,mode:'carbon',phase:'TCA 회로 - 시트르산 합성',loc:'마이토콘드리아 바탕질',name:'시트르산 합성 (C₂ + C₄ → C₆)',
+ f:'아세틸 CoA(C₂) + 옥살아세트산(C₄) → 시트르산(C₆) + CoA (회로 2회전)',
+ desc:'아세틸 CoA의 2탄소가 옥살아세트산(C₄)과 결합해 6탄소 시트르산이 됩니다.',
+ key:'산화·환원이 일어나지 않아 NADH, CO₂ 변화가 없습니다.',t:'C₂ + C₄ → C₆ (시트르산) 결합',co2:2,nadh:4,fadh:0,sub:2,ox:0},
+{id:6,mode:'carbon',phase:'TCA 회로 - ⚡ C₆→C₅ & NADH',loc:'마이토콘드리아 바탕질',name:'시트르산 산화 → C₅ (2 CO₂, 2 NADH)',
+ f:'시트르산(C₆) + NAD⁺ → C₅ 화합물 + CO₂ + NADH',
+ desc:'시트르산이 산화·탈탄산되어 C₅가 되고 NADH가 생성됩니다(포도당당 ×2).',
+ key:'아이소시트르산 등 중간 단계는 교육과정 수준에서 생략했습니다.',t:'⚡ C₆→C₅: CO₂ 방출 & NADH 생성',co2:4,nadh:6,fadh:0,sub:2,ox:0,carrier:'NAD+',count:2,decarb:2},
+{id:7,mode:'carbon',phase:'TCA 회로 - ⚡ C₅→C₄ & ATP',loc:'마이토콘드리아 바탕질',name:'C₅ → C₄ (2 CO₂, 2 NADH, 2 ATP)',
+ f:'C₅ + NAD⁺ + ADP → C₄ + CO₂ + NADH + ATP',
+ desc:'C₅가 탈탄산되어 C₄가 되고 NADH가 생성되며, 기질수준 인산화로 ATP가 합성됩니다(포도당당 ×2).',
+ key:'TCA 회로에서 기질수준 인산화로 ATP가 합성되는 단계입니다(학습지 (다)). 여러 소단계를 묶어 표현했습니다.',
+ t:'⚡ C₅→C₄: CO₂ 방출, NADH 생성, 기질수준 ATP 합성',co2:6,nadh:8,fadh:0,sub:4,ox:0,carrier:'NAD+',count:2,decarb:2},
+{id:8,mode:'carbon',phase:'TCA 회로 - ⚡ C₄ 산화 & FADH₂',loc:'마이토콘드리아 바탕질',name:'C₄ 산화 (2 FADH₂)',
+ f:'C₄ 화합물 + FAD → C₄ 화합물 + FADH₂',
+ desc:'C₄ 화합물이 산화되며 전자가 FAD로 전달되어 FADH₂가 생성됩니다(포도당당 2분자).',
+ key:'FADH₂가 만들어지는 유일한 단계입니다. C₄ 화합물은 단계마다 서로 다른 물질이지만 같은 도형으로 단순화했고, 학습지 ⑤(H₂O 첨가) 단계는 생략했습니다.',t:'⚡ C₄ 산화 → FAD가 FADH₂로 환원',co2:6,nadh:8,fadh:2,sub:4,ox:0,carrier:'FAD',count:2},
+{id:9,mode:'carbon',phase:'TCA 회로 - ⚡ 옥살아세트산 재생',loc:'마이토콘드리아 바탕질',name:'옥살아세트산 재생 (마지막 2 NADH)',
+ f:'C₄ 화합물 + NAD⁺ → 옥살아세트산(C₄) + NADH',
+ desc:'C₄ 화합물이 산화되어 옥살아세트산이 재생되고 마지막 NADH가 생성됩니다. 해당·피루브산 산화·TCA를 합쳐 NADH 10분자가 모였습니다.',
+ key:'재생된 옥살아세트산은 새 아세틸 CoA와 결합해 회로를 계속 돌립니다.',t:'⚡ 옥살아세트산 재생 → 마지막 NADH 생성 (총 10)',co2:6,nadh:10,fadh:2,sub:4,ox:0,carrier:'NAD+',count:2},
+{id:10,mode:'etc',phase:'산화적 인산화 - NADH 산화(전자 방출)',loc:'마이토콘드리아 내막',name:'NADH 산화 & H⁺ 펌핑',
+ f:'10NADH + 2FADH₂ → 10NAD⁺ + 2FAD (전자 24개 방출) / 6O₂ + 24e⁻ + 24H⁺ → 12H₂O',
+ desc:'NADH는 복합체 I, FADH₂는 복합체 II에 전자를 내놓고 NAD⁺·FAD로 재생됩니다. 전자는 Q → 복합체 III → 시토크롬 c → 복합체 IV를 거쳐 O₂에 전달되어 H₂O가 되고, 이 에너지로 H⁺이 막사이공간으로 펌핑됩니다.',
+ key:'일부 전자운반체가 H⁺을 바탕질→막사이공간으로 능동수송해 H⁺ 농도 기울기를 만듭니다(이 단계에서는 ATP 미합성). 산소가 없으면 전자 흐름이 끊겨 ATP가 합성되지 않고 피루브산 산화·TCA 회로도 저해됩니다. [학습지 외 보충: 펌핑은 복합체 I·III·IV, II는 비펌핑 / Q·Cyt c 표시]',
+ t:'NADH → NAD⁺ 재생, e⁻ 흐름(I→Q→III→c→IV→O₂)과 H⁺ 펌핑',co2:6,nadh:10,fadh:2,sub:4,ox:0},
+{id:11,mode:'etc',phase:'산화적 인산화 - 화학삼투',loc:'마이토콘드리아 내막 (ATP 합성효소)',name:'화학삼투 & ATP 합성 (28 ATP)',
+ f:'H⁺ 농도 기울기 → ATP 합성효소 → ADP + Pi → ATP',
+ desc:'막사이공간의 H⁺이 농도 기울기를 따라 ATP 합성효소를 통해 바탕질로 확산되며 ATP를 합성합니다.',
+ key:'NADH 1분자 ≈ 2.5 ATP, FADH₂ 1분자 ≈ 1.5 ATP → 10×2.5 + 2×1.5 = 28 ATP',t:'화학삼투! H⁺ 확산으로 ATP 합성효소 회전 → 28 ATP',co2:6,nadh:10,fadh:2,sub:4,ox:28},
+{id:12,mode:'etc',phase:'세포호흡 완료',loc:'세포질 & 마이토콘드리아',name:'포도당 완전 산화 (총 약 32 ATP)',
+ f:'C₆H₁₂O₆ + 6O₂ + 6H₂O → 6CO₂ + 12H₂O + 에너지(ATP + 열)',
+ desc:'포도당 1분자가 완전히 산화되어 CO₂ 6분자가 방출되고 ATP는 기질수준 4 + 산화적 28 = 32분자가 만들어졌습니다.',
+ key:'포도당 1분자당 최대 32 ATP. 효율 = (32×7.3 kcal/mol)/(686 kcal/mol)×100 ≒ 34%이며 나머지 66%는 열로 방출됩니다. 세포마다 ATP 합성률이 다르고 H⁺이 다른 생명활동에 쓰이기도 해 실제 합성량은 차이가 있습니다.',
+ t:'세포호흡 완료! (총 약 32 ATP)',co2:6,nadh:10,fadh:2,sub:4,ox:28}
+];
+
+const QS=[ // [문제, 정답, 오답1, 오답2, 오답3, 해설]
+["탈수소효소가 NAD⁺를 NADH로 환원시킬 때 기질에서 떼어 내는 것은?","수소 이온(H⁺)과 고에너지 전자 2개(2e⁻)","CO₂ 2분자","인산기 2개와 O₂","ATP 1분자","탈수소효소는 기질에서 H⁺과 2e⁻를 떼어 내(기질 산화) NAD⁺를 NADH로 환원시킵니다."],
+["포도당 1분자가 해당 과정~TCA 회로를 거칠 때 생성되는 NADH와 FADH₂는?","10 NADH, 2 FADH₂","6 NADH, 2 FADH₂","2 NADH, 4 FADH₂","12 NADH, 0 FADH₂","해당 2 + 피루브산 산화 2 + TCA 6 = NADH 10, FADH₂는 TCA에서만 2분자 생성됩니다."],
+["전자전달계에서 NADH 1분자와 FADH₂ 1분자가 만드는 ATP는 각각 약 몇 개인가?","NADH 2.5, FADH₂ 1.5","NADH 1.5, FADH₂ 2.5","둘 다 3","NADH 38, FADH₂ 2","NADH는 복합체 I부터, FADH₂는 복합체 II부터 전자를 내놓아 H⁺ 펌핑 횟수가 달라 ATP 양이 다릅니다."],
+["TCA 회로에서 FADH₂가 생성되는 단계는?","C₄ 화합물이 산화되는 단계","시트르산(C₆)이 C₅로 되는 단계","아세틸 CoA가 옥살아세트산과 결합하는 단계","포도당이 활성화되는 단계","FADH₂는 TCA 회로 후반부 C₄ 화합물 산화 단계에서만 생성됩니다."],
+["전자전달계에서 O₂의 역할은?","최종 전자 수용체로 전자를 받아 H₂O를 형성한다","포도당을 직접 분해한다","ATP 합성효소의 회전을 억제한다","H⁺을 직접 펌핑한다","O₂가 전자를 받아 H₂O가 되어야 전자 흐름이 유지됩니다."],
+["청산가리(CN⁻)가 복합체 IV를 차단하면 나타나는 결과로 옳은 것은?","전자 흐름과 H⁺ 펌핑이 멈춰 산화적 ATP 합성이 중단된다","H⁺이 막으로 새어 열이 발생한다","해당 과정만 정지한다","ATP 합성효소가 더 빨리 돈다","전자가 O₂로 전달되지 못하면 NADH가 재산화되지 못해 H⁺ 기울기와 ATP 합성이 중단됩니다."],
+["짝풀림제(DNP)를 처리하면 나타나는 현상은?","H⁺이 막을 통해 새어 나가 ATP 합성이 줄고 열이 발생한다","전자 전달이 완전히 차단된다","NADH 생성이 늘어난다","ATP 합성효소가 파괴된다","H⁺ 기울기가 ATP 합성에 쓰이지 않고 소실되어 에너지가 열로 방출됩니다."],
+["다음 중 H⁺을 막사이공간으로 펌핑하지 않는 전자전달계 복합체는?","복합체 II","복합체 I","복합체 III","복합체 IV","복합체 II(FADH₂의 전자 수용)는 H⁺을 펌핑하지 않습니다."]
+];
+
+/* ===== 2. 상태 ===== */
+let cur=0,viewMode='carbon',inh='none',speed=1,slow=false,playing=false,timer=null,toastT=null,running=false;
+let cv,ctx,W=0,H=0,dpr=1,rotor=0,eTimer=0;
+let carbons=[],sparks=[],nodes=[],co2s=[],ions=[],flashes=[],fx=[],elecs=[];
+const $=id=>document.getElementById(id);
+const spd=()=>slow?0.2*speed:speed;
+const eF=()=>({none:1,etc:1,atp:.3,uncoupler:1.8})[inh];
+const rr=(x,y,w,h,r)=>{ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h)};
+
+/* ===== 3. 초기화 (맨 아래에서 실행) ===== */
+function init(){
+  cv=$('cv');ctx=cv.getContext('2d');
+  new ResizeObserver(resize).observe($('cvw'));
+  cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect();manualSpark(e.clientX-r.left,e.clientY-r.top)});
+  document.addEventListener('keydown',e=>{
+    if(/BUTTON|SELECT|INPUT/.test(e.target.tagName)||viewMode==='quiz')return;
+    if(e.key==='ArrowRight')nextStep();else if(e.key==='ArrowLeft')prevStep();
+    else if(e.key===' '){e.preventDefault();toggleAutoPlay()}
+  });
+  setViewMode('carbon');setStep(0);requestAnimationFrame(molLoop);
+}
+
+function resize(){
+  const r=$('cvw').getBoundingClientRect();
+  if(!r.width)return;
+  dpr=window.devicePixelRatio||1;W=r.width;H=r.height;
+  cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  initIons();placeCarbons();initNodes();
+}
+function initIons(){
+  ions=[];
+  for(let i=0;i<35;i++)ions.push({x:Math.random()*W,y:20+Math.random()*(H*.3),vx:(Math.random()-.5)*.8,vy:(Math.random()-.5)*.8,r:'ims'});
+  for(let i=0;i<15;i++)ions.push({x:Math.random()*W,y:H*.7+Math.random()*(H*.25),vx:(Math.random()-.5)*.8,vy:(Math.random()-.5)*.8,r:'matrix'});
+}
+function addIon(o){
+  if(ions.length>140){const k=ions.findIndex(i=>i.r==='ims'||i.r==='matrix');if(k>=0)ions.splice(k,1)}
+  ions.push(o);
+}
+
+/* ===== 4. 컨트롤 ===== */
+function setStep(i){
+  cur=Math.max(0,Math.min(STEPS.length-1,i));
+  const s=STEPS[cur];
+  $('slider').value=cur;
+  if(viewMode!=='quiz'&&s.mode!==viewMode)setViewMode(s.mode);
+  sparks=[];flashes=[];co2s=[];elecs=[];fx=[];
+  updateUI();
+  showToast(s.t,3200);
+  if(s.carrier)burst(s);
+  if(s.decarb)spawnCO2(s.decarb);
+}
+const nextStep=()=>{cur<STEPS.length-1?setStep(cur+1):stopAuto()};
+const prevStep=()=>{if(cur>0)setStep(cur-1)};
+function resetSteps(){stopAuto();setStep(0)}
+function toggleAutoPlay(){playing?stopAuto():startAuto()}
+function startAuto(){
+  stopAuto();
+  playing=true;$('btnPlay').textContent='⏸ 일시정지';
+  if(cur>=STEPS.length-1)setStep(0);
+  timer=setInterval(()=>{cur<STEPS.length-1?setStep(cur+1):stopAuto()},(slow?6500:4000)/speed);
+}
+function stopAuto(){
+  playing=false;clearInterval(timer);timer=null;$('btnPlay').textContent='▶ 자동 재생';
+}
+function onSpeed(v){speed=+v;if(playing)startAuto()}
+function toggleSlow(){
+  slow=!slow;
+  $('btnSlow').className=slow?'on':'';
+  $('btnSlow').textContent=slow?'🔍 NADH 정밀 관찰 (켜짐)':'🔍 NADH 정밀 관찰 (0.2x)';
+  $('slow').classList.toggle('hide',!slow);
+  if(playing)startAuto();
+}
+function onInhibitor(v){
+  inh=v;
+  const m={etc:'전자전달 억제제(청산가리 등): 전자 흐름 차단 → H⁺ 능동수송·기울기 형성 불가, ATP 합성 없음 (NADH·FADH₂ 산화 불가)',
+    atp:'ATP 합성효소 억제제(올리고마이신): H⁺ 확산 차단 → ATP 합성 없음, 전자 이동 감소 → O₂ 소비 감소',
+    uncoupler:'짝풀림제(DNP): H⁺이 인지질로 누수 → ATP 합성 감소, 전자 이동 지속 → O₂ 소비 증가, 열 발생'};
+  $('warn').classList.toggle('hide',v==='none');
+  $('warn').textContent=m[v]||'';
+  updateUI();
+}
+function setViewMode(m){
+  viewMode=m;
+  ['carbon','etc','quiz'].forEach(k=>$('tab-'+k).className=k===m?'on':'');
+  const q=m==='quiz';
+  if(q)stopAuto();
+  $('vizBox').classList.toggle('hide',q);$('infoBox').classList.toggle('hide',q);
+  $('controls').classList.toggle('hide',q);$('quizBox').classList.toggle('hide',!q);
+  if(q){startQuiz(QS,true)}
+  else{
+    // 탭을 직접 눌렀을 때 해당 모드의 대표 단계로 이동
+    if(STEPS[cur].mode!==m)setStep(m==='etc'?9:0);
+    updateHeader();resize();
+    if(!running){running=true;requestAnimationFrame(loop)}
+  }
+}
+function toggleTheme(){
+  const d=document.documentElement,toLight=d.dataset.theme!=='light';
+  d.dataset.theme=toLight?'light':'dark';$('themeBtn').textContent=toLight?'🌙 다크':'☀ 라이트';
+}
+function showToast(msg,ms){
+  const t=$('toast');t.textContent=msg;t.style.opacity=1;
+  clearTimeout(toastT);toastT=setTimeout(()=>t.style.opacity=0,ms);
+}
+
+/* ===== 5. UI 갱신 ===== */
+function updateHeader(){
+  const c=viewMode==='carbon';
+  $('cvTitle').textContent=c?'탄소 이분할 & 전자(e⁻) 탈착 → NADH 생성':'마이토콘드리아 내막 전자전달계 & NADH 산화';
+  const L=(col,t)=>`<span><i style="background:${col}"></i>${t}</span>`;
+  $('legend').innerHTML=c?L('#38bdf8','탄소(C)')+L('#fbbf24','전자(2e⁻)+H⁺')+L('#f97316','NADH')+L('#ef4444','CO₂')
+    :L('#38bdf8','H⁺')+L('#fbbf24','전자(e⁻)')+L('#10b981','ATP');
+}
+function updateUI(){
+  const s=STEPS[cur];
+  $('stepBadge').textContent=`${s.id}단계: ${s.name}`;
+  $('stepCount').textContent=`Step ${s.id} / ${STEPS.length}`;
+  $('phase').textContent=s.phase;$('loc').textContent='장소: '+s.loc;
+  $('sName').textContent=s.name;$('eq').textContent=s.f;
+  $('desc').textContent=s.desc;$('keyp').textContent=s.key;
+  updateMap(s);$('sN').textContent=`${s.nadh} / 10`;$('sF').textContent=`${s.fadh} / 2`;$('sC').textContent=`${s.co2} / 6`;
+  const k={none:1,etc:0,atp:0,uncoupler:.3}[inh];
+  $('sA').textContent=inh==='uncoupler'&&s.ox?`${Math.max(0,s.sub)} + 산화적↓ / 32`:`${Math.max(0,s.sub)+Math.round(s.ox*k)} / 32`;
+  placeCarbons();initNodes();
+}
+
+function updateMap(s){
+  const on=s.id<=3?['cyto']:s.id<=9?['matrix']:s.id<=11?['inner']:['cyto','ims','matrix','inner'];
+  ['cyto','ims','matrix','inner'].forEach(k=>{
+    const e=$('z-'+k),a=on.includes(k);
+    e.classList.toggle('hl',a&&on.length<4);e.classList.toggle('dim',!a);
+  });
+  $('mapNow').textContent='현재 단계 장소: '+s.loc;buildMol(s);
+}
+
+const MC={C:'#38bdf8',N:'#f97316',F:'#ec4899',O:'#ef4444',A:'#10b981',H:'#38bdf8',E:'#fbbf24',W:'#bae6fd',X:'#93c5fd'};
+let MOLS=[],molT=0,molLast=0;
+function molFlows(s){
+  const id=s.id,F=[],f=(pts,lab,col,n,dur,r)=>F.push({pts,lab,col,n,dur:dur||3,r:r||6});
+  const loop=[[311,108],[307,117],[298,121],[289,117],[285,108],[289,99],[298,95],[307,99],[311,108]];
+  const toIn=[[250,112],[232,140],[225,153]],co2=[[298,95],[325,65],[345,20]],g1=[[24,168],[100,168]];
+  const etc=()=>{
+    const d=inh==='atp'?9:inh==='uncoupler'?2:4;
+    if(inh!=='etc'){
+      f([[212,76],[240,60],[265,56],[292,60],[318,76]],'e⁻',MC.E,3,d,3.5);
+      f([[240,74],[240,50]],'',MC.H,3,d*.6,2.5);f([[290,74],[290,50]],'',MC.H,3,d*.6,2.5);
+      f([[394,108],[334,104]],'O₂',MC.X,2,d,5);f([[334,104],[308,114]],'H₂O',MC.W,2,d,5);
+      f([[258,78],[285,100]],'NAD⁺',MC.H,2,4,5);
+    }
+    f([[290,100],[262,80]],'NADH',MC.N,2,4,6);
+  };
+  const chem=()=>{
+    if(inh!=='atp'&&inh!=='etc')f([[265,172],[265,152]],'',MC.H,4,2,2.5);
+    if(inh==='none')f([[265,146],[270,126],[302,128]],'ATP',MC.A,2,3,5);
+    if(inh==='uncoupler'){f([[330,168],[330,142]],'',MC.H,3,2,2.5);f([[330,142],[346,128]],'열',MC.O,2,2,5);f([[265,146],[270,126],[302,128]],'ATP',MC.A,1,6,5)}
+  };
+  if(id===1){f(g1,'C₆',MC.C,1,3,7);f([[60,148],[60,166]],'ATP',MC.A,2,2,5)}
+  else if(id===2){f(g1,'C₆',MC.C,1,3,7);f([[100,168],[126,152]],'C₃',MC.C,1,3,6);f([[100,168],[126,184]],'C₃',MC.C,1,3,6)}
+  else if(id===3){f([[100,168],[126,152]],'C₃',MC.C,1,3,6);f([[100,168],[126,184]],'C₃',MC.C,1,3,6);f([[100,150],[150,186],[205,176],[226,156]],'NADH',MC.N,2,5,6);f([[70,150],[70,128]],'ATP',MC.A,2,2.5,5)}
+  else if(id===4){f([[110,160],[150,125],[215,108]],'C₃',MC.C,2,4,6);f([[245,100],[300,70],[345,20]],'CO₂',MC.O,2,4,5);f(toIn,'NADH',MC.N,2,4,6)}
+  else if(id<=9){
+    f(loop,{5:'C₆',6:'C₅'}[id]||'C₄',MC.C,2,3,5);
+    if(id===5)f([[215,112],[285,108]],'C₂',MC.C,2,3,5);
+    if(id===6||id===7)f(co2,'CO₂',MC.O,2,4,5);
+    if(id!==5&&id!==8)f(toIn,'NADH',MC.N,2,4,6);
+    if(id===7)f([[305,122],[330,136]],'ATP',MC.A,1,2.5,5);
+    if(id===8)f([[285,118],[250,140],[226,153]],'FADH₂',MC.F,2,4,6);
+  }
+  else if(id<=11){etc();if(id===11)chem()}
+  else{etc();chem();f(co2,'CO₂',MC.O,2,4,5)}
+  return F;
+}
+function buildMol(s){
+  const g=$('mol');g.innerHTML='';MOLS=[];
+  molFlows(s).forEach(f=>{
+    const L=[0];for(let k=1;k<f.pts.length;k++)L.push(L[k-1]+Math.hypot(f.pts[k][0]-f.pts[k-1][0],f.pts[k][1]-f.pts[k-1][1]));
+    for(let i=0;i<f.n;i++){
+      const e=document.createElementNS('http://www.w3.org/2000/svg','g');
+      e.innerHTML=`<circle r="${f.r}" fill="${f.col}" stroke="#fff" stroke-width=".8"/>`+(f.lab?`<text y="${-f.r-2}" font-size="7" font-weight="700" text-anchor="middle" fill="#fff">${f.lab}</text>`:'');
+      g.appendChild(e);MOLS.push({e,f,i,cum:L,L:L[L.length-1]});
+    }
+  });
+}
+function posOn(m,u){
+  const d=u*m.L;let k=1;
+  while(k<m.cum.length-1&&m.cum[k]<d)k++;
+  const a=m.f.pts[k-1],b=m.f.pts[k],l=(m.cum[k]-m.cum[k-1])||1,t=(d-m.cum[k-1])/l;
+  return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+}
+function molLoop(ts){
+  const dt=Math.min(.05,(ts-molLast)/1000||0);molLast=ts;
+  if(viewMode!=='quiz'&&!matchMedia('(prefers-reduced-motion: reduce)').matches)molT+=dt*spd();
+  MOLS.forEach(m=>{
+    const u=((molT/m.f.dur)+m.i/m.f.n)%1,[x,y]=posOn(m,u);
+    m.e.setAttribute('transform',`translate(${x} ${y})`);
+    m.e.setAttribute('opacity',Math.min(1,u/.1,(1-u)/.1));
+  });
+  requestAnimationFrame(molLoop);
+}
+
+/* ===== 6. 탄소·전자 탈착 ===== */
+function carbonCount(id){return id<=3?6:id===4?4:id===5?12:id===6?10:id<=9?8:0}
+function placeCarbons(){
+  if(!W)return;
+  const s=STEPS[cur],n=carbonCount(s.id);
+  while(carbons.length<n)carbons.push({x:W*.5+(Math.random()-.5)*50,y:H*.3,tx:W*.5,ty:H*.3,hasP:false,label:'C'});
+  carbons.length=Math.min(carbons.length,n);
+  if(s.id===1){
+    const x0=W*.45-85;
+    carbons.forEach((c,i)=>{c.tx=x0+i*34;c.ty=H*.28;c.hasP=i===0||i===5;c.label='C'});
+  }else if(s.id<=3){
+    for(let i=0;i<3;i++){
+      Object.assign(carbons[i],{tx:W*.25-34+i*34,ty:H*.3,hasP:s.id===2&&i===2,label:'C'});
+      Object.assign(carbons[i+3],{tx:W*.62-34+i*34,ty:H*.34,hasP:s.id===2&&i===0,label:'C'});
+    }
+  }else if(s.id===4){
+    [[.28,-17],[.28,17],[.6,-17],[.6,17]].forEach((p,i)=>Object.assign(carbons[i],{tx:W*p[0]+p[1],ty:H*.72,hasP:false,label:'C'}));
+  }else{
+    const per=n/2;carbons.forEach((c,i)=>{const a=(i%per)/per*Math.PI*2-Math.PI/2,cx=i<per?.25:.55;c.tx=W*cx+Math.cos(a)*45;c.ty=H*.72+Math.sin(a)*45;c.hasP=false;c.label='C'+(i%per+1)});
+  }
+}
+function initNodes(){
+  nodes=[];const s=STEPS[cur];
+  if(!W||!s.carrier)return;
+  const y=s.id<=3?H*.2:H*.88;
+  for(let i=0;i<2;i++)nodes.push({x:W*.82,y:y+(i?24:-24),state:s.carrier==='FAD'?'FAD':'NAD⁺',glow:0});
+}
+function burst(s){
+  carbons.forEach(c=>flashes.push({x:c.x,y:c.y,r:c.r||14,a:1}));
+  for(let i=0;i<(s.count||2);i++){
+    const c=carbons[i%carbons.length],n=nodes[i%nodes.length];
+    if(!c||!n)continue;
+    sparks.push({sx:c.x,sy:c.y,n,p:-i*0.35,arc:i%2?60:-60,car:s.carrier});
+  }
+}
+function manualSpark(x,y){
+  flashes.push({x,y,r:20,a:1});
+  const n=nodes[0];
+  if(n)sparks.push({sx:x,sy:y,n,p:0,arc:-40,car:STEPS[cur].carrier});
+}
+function spawnCO2(k){
+  for(let i=0;i<k;i++)co2s.push({x:W*.4+(Math.random()-.5)*120,y:H*.65,vy:-1.2-Math.random()*.8,r:13,a:1,w:Math.random()*6});
+}
+
+/* ===== 7. 렌더링 ===== */
+function loop(){
+  if(viewMode==='quiz'){running=false;return}
+  if(W){ctx.clearRect(0,0,W,H);viewMode==='carbon'?drawCarbon():drawETC()}
+  requestAnimationFrame(loop);
+}
+function txt(t,x,y,col,font,al){ctx.fillStyle=col;ctx.font=font||'bold 11px sans-serif';ctx.textAlign=al||'center';ctx.textBaseline='middle';ctx.fillText(t,x,y)}
+
+function drawCarbon(){
+  const sp=spd(),s=STEPS[cur];
+  ctx.fillStyle='rgba(56,189,248,.07)';ctx.fillRect(0,0,W,H/2);
+  ctx.fillStyle='rgba(99,102,241,.1)';ctx.fillRect(0,H/2,W,H/2);
+  ctx.setLineDash([6,6]);ctx.strokeStyle='rgba(56,189,248,.4)';ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();ctx.setLineDash([]);
+  txt('세포질 (해당 과정)',10,16,'#38bdf8','bold 11px sans-serif','left');
+  txt('마이토콘드리아 바탕질 (피루브산 산화 · TCA 회로)',10,H-14,'#818cf8','bold 11px sans-serif','left');
+  if(s.id>=5&&s.id<=9)txt('TCA 회로 ×2회 (포도당 1분자 → 아세틸 CoA 2분자)',W*.4,H*.52+10,'#a5b4fc','bold 10px sans-serif');
+
+  carbons.forEach(c=>{c.x+=(c.tx-c.x)*.08*sp;c.y+=(c.ty-c.y)*.08*sp});
+  ctx.strokeStyle='rgba(56,189,248,.5)';ctx.lineWidth=4;
+  for(let i=0;i<carbons.length-1;i++){
+    const a=carbons[i],b=carbons[i+1];
+    if(Math.hypot(a.x-b.x,a.y-b.y)<70){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+  }
+  for(let i=flashes.length-1;i>=0;i--){
+    const f=flashes[i];f.r+=1.5*sp;f.a-=.04*sp;
+    if(f.a<=0){flashes.splice(i,1);continue}
+    ctx.fillStyle=`rgba(251,191,36,${f.a})`;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,7);ctx.fill();
+  }
+  carbons.forEach(c=>{
+    ctx.save();ctx.shadowColor='rgba(56,189,248,.6)';ctx.shadowBlur=10;
+    ctx.fillStyle='#38bdf8';ctx.strokeStyle='#fff';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(c.x,c.y,14,0,7);ctx.fill();ctx.stroke();ctx.restore();
+    txt(c.label,c.x,c.y,'#fff','bold 10px sans-serif');
+    if(c.hasP){ctx.fillStyle='#f59e0b';ctx.beginPath();ctx.arc(c.x+11,c.y-11,8,0,7);ctx.fill();txt('P',c.x+11,c.y-11,'#000','bold 9px sans-serif')}
+  });
+  if(s.carrier)txt(s.carrier==='FAD'?'FAD → FADH₂':'NAD⁺ → NADH',W*.82,nodes[0]?nodes[0].y-42:20,'#fdba74','bold 11px sans-serif');
+  nodes.forEach(n=>{
+    const red=n.state!=='NAD⁺'&&n.state!=='FAD';
+    ctx.save();
+    if(n.glow>0){ctx.shadowColor='rgba(249,115,22,.9)';ctx.shadowBlur=20;n.glow-=.03}
+    ctx.fillStyle=red?'#f97316':'#38bdf8';ctx.strokeStyle='#fff';ctx.lineWidth=2;
+    rr(n.x-32,n.y-16,64,32,10);ctx.fill();ctx.stroke();ctx.restore();
+    txt(n.state,n.x,n.y,'#fff','bold 12px sans-serif');
+  });
+  for(let i=sparks.length-1;i>=0;i--){
+    const e=sparks[i];e.p+=.022*sp;
+    if(e.p<0)continue;
+    if(e.p>=1){e.n.glow=1;e.n.state=e.car==='FAD'?'FADH₂':'NADH';sparks.splice(i,1);continue}
+    const x=e.sx+(e.n.x-e.sx)*e.p,y=e.sy+(e.n.y-e.sy)*e.p+Math.sin(e.p*Math.PI)*e.arc;
+    ctx.save();ctx.shadowColor='rgba(251,191,36,.9)';ctx.shadowBlur=12;ctx.fillStyle='#fbbf24';
+    ctx.beginPath();ctx.arc(x-4,y,4.5,0,7);ctx.fill();ctx.beginPath();ctx.arc(x+4,y,4.5,0,7);ctx.fill();
+    ctx.fillStyle='#38bdf8';ctx.beginPath();ctx.arc(x,y-7,3.5,0,7);ctx.fill();ctx.restore();
+    txt('2e⁻ + H⁺',x+10,y-10,'#fff','bold 10px sans-serif','left');
+  }
+  for(let i=co2s.length-1;i>=0;i--){
+    const b=co2s[i];b.y+=b.vy*sp;b.w+=.05;b.x+=Math.sin(b.w)*.5;b.a-=.008*sp;
+    if(b.a<=0||b.y<30){co2s.splice(i,1);continue}
+    ctx.fillStyle=`rgba(239,68,68,${b.a})`;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,7);ctx.fill();
+    txt('CO₂',b.x,b.y,`rgba(255,255,255,${b.a})`,'bold 10px sans-serif');
+  }
+}
+
+/* --- 전자전달계 --- */
+const NADH_PATH=[[.07,.82],[.165,.5],[.355,.5],[.445,.5],[.52,.27],[.6,.5],[.68,.82]];
+const FAD_PATH=[[.24,.82],[.305,.55],[.355,.5],[.445,.5],[.52,.27],[.6,.5],[.68,.82]];
+function protein(x,y,w,h,col,t,sub){
+  ctx.fillStyle=col;rr(x,y,w,h,8);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=1.5;ctx.stroke();
+  txt(t,x+w/2,y+h/2-5,'#fff','bold 11px sans-serif');txt(sub,x+w/2,y+h/2+9,'rgba(255,255,255,.75)','9px sans-serif');
+}
+function drawETC(){
+  const sp=spd(),s=STEPS[cur],tY=H*.35,bY=H*.65,mh=bY-tY;
+  ctx.fillStyle='rgba(244,63,94,.1)';ctx.fillRect(0,0,W,tY);
+  ctx.fillStyle='rgba(100,116,139,.25)';ctx.fillRect(0,tY,W,mh);
+  ctx.fillStyle='rgba(56,189,248,.08)';ctx.fillRect(0,bY,W,H-bY);
+  txt('막사이공간 (H⁺ 높음)',10,14,'#fda4af','bold 10px sans-serif','left');
+  txt('바탕질 (H⁺ 낮음)',10,H-14,'#7dd3fc','bold 10px sans-serif','left');
+  // 인지질 이중층
+  const zones=[[.12,.21],[.27,.34],[.40,.49],[.55,.65],[.75,.88]];
+  ctx.fillStyle='#64748b';ctx.strokeStyle='#475569';ctx.lineWidth=1;
+  for(let x=10;x<W;x+=14){
+    if(zones.some(z=>x>W*z[0]-4&&x<W*z[1]+4))continue;
+    ctx.beginPath();ctx.arc(x,tY+4,4,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(x,tY+8);ctx.lineTo(x,tY+22);ctx.stroke();
+    ctx.beginPath();ctx.arc(x,bY-4,4,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(x,bY-8);ctx.lineTo(x,bY-22);ctx.stroke();
+  }
+  if(inh==='uncoupler'){ctx.strokeStyle='#10b981';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(W*.7,tY);ctx.lineTo(W*.7,bY);ctx.stroke();txt('H⁺ 누수',W*.7,bY+14,'#34d399','bold 10px sans-serif')}
+  protein(W*.12,tY-10,W*.09,mh+20,'#6366f1','복합체 I','NADH 산화');
+  protein(W*.27,tY+15,W*.07,mh-15,'#3b82f6','복합체 II','FADH₂');
+  protein(W*.40,tY-10,W*.09,mh+20,'#8b5cf6','복합체 III','');
+  protein(W*.55,tY-10,W*.10,mh+20,'#ec4899','복합체 IV','→ O₂');
+  // 이동성 전자 운반체
+  ctx.fillStyle='#eab308';ctx.beginPath();ctx.arc(W*.355,H*.5,9,0,7);ctx.fill();txt('Q',W*.355,H*.5,'#000','bold 10px sans-serif');
+  ctx.beginPath();ctx.arc(W*.52,H*.27,12,0,7);ctx.fill();txt('c',W*.52,H*.27,'#000','bold 11px sans-serif');
+  txt('Cyt c',W*.52,H*.27-20,'#fde047','bold 10px sans-serif');
+  // ATP 합성효소
+  const ax=W*.75,aw=W*.1;
+  ctx.fillStyle='#f59e0b';rr(ax+aw*.25,tY-15,aw*.5,mh*.9,6);ctx.fill();
+  const hx=ax+aw/2,hy=bY+28;
+  if(cur>=10&&inh!=='atp')rotor+=.05*sp;
+  ctx.save();ctx.translate(hx,hy);ctx.rotate(rotor);ctx.fillStyle='#d97706';
+  for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(Math.cos(i*2.094)*aw*.22,Math.sin(i*2.094)*aw*.22,aw*.2,0,7);ctx.fill()}
+  ctx.restore();
+  txt('ATP 합성효소',hx,tY-26,'#fff','bold 11px sans-serif');
+  if(inh==='etc')blocked(W*.6,H*.5,'전자 차단');
+  if(inh==='atp')blocked(hx,tY+mh/2,'ATP 차단');
+
+  // 전자 흐름 (단계 10 이상)
+  if(s.id>=10){
+    [NADH_PATH,FAD_PATH].forEach(p=>{ctx.setLineDash([3,5]);ctx.strokeStyle='rgba(251,191,36,.25)';ctx.lineWidth=1.5;ctx.beginPath();p.forEach((q,i)=>i?ctx.lineTo(W*q[0],H*q[1]):ctx.moveTo(W*q[0],H*q[1]));ctx.stroke()});
+    ctx.setLineDash([]);
+    txt(inh==='etc'?'NADH 축적(산화 불가)':'NADH → NAD⁺',W*.07,H*.82+18,'#fdba74','bold 10px sans-serif');
+    txt(inh==='etc'?'FADH₂ 축적(산화 불가)':'FADH₂ → FAD',W*.24,H*.82+18,'#f9a8d4','bold 10px sans-serif');
+    txt('½O₂ + 2H⁺ + 2e⁻ → H₂O',W*.68,H*.82+18,'#7dd3fc','bold 10px sans-serif');
+    eTimer+=sp*eF();
+    if(eTimer>=30){eTimer=0;elecs.push({path:Math.random()<.8?NADH_PATH:FAD_PATH,t:0})}
+    for(let i=elecs.length-1;i>=0;i--){
+      const e=elecs[i];e.t+=.025*sp*eF();
+      if(inh==='etc'&&e.t>=5){fx.push({x:W*.6,y:H*.5,vy:0,a:1,t:'✖',c:'239,68,68'});elecs.splice(i,1);continue}
+      if(e.t>=e.path.length-1){const q=e.path[e.path.length-1];fx.push({x:W*q[0],y:H*q[1],vy:-.4,a:1,t:'H₂O',c:'125,211,252'});elecs.splice(i,1);continue}
+      const k=Math.floor(e.t),f=e.t-k,a=e.path[k],b=e.path[k+1];
+      const x=W*(a[0]+(b[0]-a[0])*f),y=H*(a[1]+(b[1]-a[1])*f);
+      ctx.save();ctx.shadowColor='rgba(251,191,36,.9)';ctx.shadowBlur=10;ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();ctx.restore();
+      txt('e⁻',x+9,y-8,'#fde68a','bold 9px sans-serif','left');
+    }
+  }
+  // H⁺ 펌핑(I, III, IV만) / 화학삼투 / 누수
+  const r=Math.random();
+  if(s.id>=10&&inh!=='etc'&&r<.25*sp*(inh==='atp'?.3:1)){const px=[.165,.445,.6][Math.floor(Math.random()*3)];addIon({x:W*px,y:bY,vx:0,vy:-2.5*sp,r:'pumping'})}
+  if(s.id>=11&&inh!=='atp'&&Math.random()<.3*sp*(inh==='uncoupler'?.4:1)){addIon({x:W*.8,y:tY,vx:0,vy:2.5*sp,r:'down'});fx.push({x:W*.8+(Math.random()-.5)*20,y:H*.85,vy:-1,a:1,t:'✨ ATP',c:'16,185,129'})}
+  if(inh==='uncoupler'&&Math.random()<.35*sp){addIon({x:W*.7,y:tY,vx:0,vy:3*sp,r:'down'});fx.push({x:W*.7+(Math.random()-.5)*20,y:H*.5,vy:0,a:1,t:'🔥 열',c:'239,68,68'})}
+  drawIons();
+  for(let i=fx.length-1;i>=0;i--){const f=fx[i];f.y+=f.vy*sp;f.a-=.015*sp;if(f.a<=0){fx.splice(i,1);continue}txt(f.t,f.x,f.y,`rgba(${f.c},${f.a})`,'bold 11px sans-serif')}
+  txt('e⁻ 흐름: NADH → I → Q → III → Cyt c → IV → O₂',W-10,H-14,'#fde68a','10px sans-serif','right');
+  if(s.id>=10)txt('단위 시간당 O₂ 소비: '+({none:'정상',etc:'0 (전자 흐름 차단)',atp:'감소 (전자 이동 감소)',uncoupler:'증가 (전자 이동 지속)'})[inh],W-10,H-32,'#7dd3fc','bold 11px sans-serif','right');
+}
+function blocked(cx,cy,l){
+  ctx.fillStyle='rgba(244,63,94,.92)';ctx.beginPath();ctx.arc(cx,cy,16,0,7);ctx.fill();
+  ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx-8,cy-8);ctx.lineTo(cx+8,cy+8);ctx.moveTo(cx+8,cy-8);ctx.lineTo(cx-8,cy+8);ctx.stroke();
+  txt(l,cx,cy+28,'#fb7185','bold 10px sans-serif');
+}
+function drawIons(){
+  for(const i of ions){
+    i.x+=i.vx;i.y+=i.vy;
+    if(i.r==='ims'){if(i.x<10||i.x>W-10)i.vx*=-1;if(i.y<28||i.y>H*.33)i.vy*=-1}
+    else if(i.r==='matrix'){if(i.x<10||i.x>W-10)i.vx*=-1;if(i.y<H*.67||i.y>H-30)i.vy*=-1}
+    else if(i.r==='pumping'&&i.y<=H*.25){i.r='ims';i.vx=(Math.random()-.5)*.8;i.vy=(Math.random()-.5)*.8}
+    else if(i.r==='down'&&i.y>=H*.75){i.r='matrix';i.vx=(Math.random()-.5)*.8;i.vy=(Math.random()-.5)*.8}
+    ctx.fillStyle='#38bdf8';ctx.beginPath();ctx.arc(i.x,i.y,3.5,0,7);ctx.fill();
+    txt('+',i.x,i.y,'#fff','8px sans-serif');
+  }
+}
+
+/* ===== 8. 퀴즈 ===== */
+let qSet=[],qi=0,qScore=0,qFirst=true,qWrong=[],qAns=false;
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function startQuiz(list,first){
+  qSet=shuffle(list);qi=0;qWrong=[];qFirst=first;
+  if(first)qScore=0;
+  $('qNext').classList.remove('hide');$('qNext').textContent='다음 문제 ▶';$('qNext').onclick=nextQ;
+  renderQ();
+}
+function renderQ(){
+  const q=qSet[qi];qAns=false;
+  $('qNum').textContent=`${qFirst?'':'[오답 다시 풀기] '}문제 ${qi+1} / ${qSet.length}`;
+  $('qText').textContent=q[0];$('qFb').textContent='';$('qFb').style.color='';
+  $('qScore').textContent=`점수: ${qScore} / ${QS.length}`;
+  const box=$('qOpts');box.innerHTML='';
+  shuffle([q[1],q[2],q[3],q[4]]).forEach((o,i)=>{
+    const b=document.createElement('button');b.className='opt';b.textContent=`${i+1}. ${o}`;
+    b.onclick=()=>answer(b,o===q[1],q);box.appendChild(b);
+  });
+}
+function answer(btn,ok,q){
+  if(qAns)return;qAns=true;
+  [...$('qOpts').children].forEach(b=>{b.disabled=true;if(b.textContent.slice(3)===q[1])b.classList.add('ok')});
+  if(ok){if(qFirst)qScore++;$('qFb').style.color='#10b981';$('qFb').textContent='정답입니다! '+q[5]}
+  else{btn.classList.add('no');qWrong.push(q);$('qFb').style.color='#f43f5e';$('qFb').textContent='오답입니다. 해설: '+q[5]}
+  $('qScore').textContent=`점수: ${qScore} / ${QS.length}`;
+}
+function nextQ(){
+  if(!qAns){$('qFb').style.color='';$('qFb').textContent='먼저 답을 선택하세요.';return}
+  if(qi<qSet.length-1){qi++;renderQ();return}
+  $('qText').textContent=qFirst?`퀴즈 완료! 최종 점수: ${qScore} / ${QS.length}`:'오답 복습 완료!';
+  $('qOpts').innerHTML='';$('qFb').textContent=qWrong.length?`틀린 문제 ${qWrong.length}개가 있습니다.`:'모두 맞혔습니다. 수고하셨습니다!';
+  $('qNum').textContent='';
+  const nb=$('qNext');
+  if(qWrong.length){const w=qWrong.slice();nb.textContent='틀린 문제 다시 풀기';nb.onclick=()=>startQuiz(w,false)}
+  else{nb.textContent='처음부터 다시';nb.onclick=()=>startQuiz(QS,true)}
+}
+
+/* ===== 시작 (반드시 맨 아래) ===== */
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+  </script>
+</body>
+</html>
+Astra는 이런 작업에 최적화되어 있습니다
+Pro로 업그레이드해 Astra의 한층 뛰어난 판단력과 깊이 있는 맥락 이해, 더욱 완성도 높은 결과를 더 많이 경험하세요.
+
+
+
+

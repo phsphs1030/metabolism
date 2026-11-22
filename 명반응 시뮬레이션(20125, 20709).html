@@ -1,0 +1,522 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>광합성 명반응 시뮬레이션</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:#07131d;
+  color:#eaf4f5;
+  font-family:Arial,"Noto Sans KR",sans-serif;
+}
+.app{
+  width:100%;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:20px 12px;
+}
+.header{text-align:center;margin-bottom:14px}
+.header h1{font-size:25px;color:#d5f5df;margin:0 0 8px}
+.header p{font-size:12px;letter-spacing:3px;color:#7999aa;margin:0}
+.stage{
+  width:min(1200px,100%);
+  overflow:hidden;
+  border:1px solid #263e4d;
+  border-radius:20px;
+  background:radial-gradient(ellipse at center,#183440,#09151e 78%);
+  box-shadow:0 20px 60px #0005;
+}
+svg{
+  display:block;
+  width:100%;
+  height:auto;
+}
+.controls{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:9px;
+  padding:15px;
+}
+button{
+  background:#19303d;
+  color:#e9f2f4;
+  border:1px solid #3d5969;
+  padding:10px 17px;
+  border-radius:10px;
+  font-size:14px;
+  cursor:pointer;
+}
+button.active{
+  background:#287d61;
+  border-color:#76ddb1;
+}
+.info{
+  width:min(1000px,95%);
+  margin-top:12px;
+  padding:16px 20px;
+  border:1px solid #2e4959;
+  border-radius:14px;
+  background:#0d1e29;
+}
+#stepTitle{color:#b9f1d0;font-size:17px;font-weight:bold}
+#stepText{color:#c8d9e1;font-size:14px;line-height:1.8;margin:8px 0 0}
+.legend{
+  display:flex;flex-wrap:wrap;gap:15px;
+  margin-top:14px;font-size:12px;color:#a9c1ce
+}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.eDot{background:#55e5ff;box-shadow:0 0 9px #55e5ff}
+.hDot{background:#ff7189;box-shadow:0 0 9px #ff7189}
+.lDot{background:#ffe36a;box-shadow:0 0 9px #ffe36a}
+.aDot{background:#ffb94e;box-shadow:0 0 9px #ffb94e}
+
+@media(max-width:600px){
+  .app{padding:10px 5px}
+  .header h1{font-size:19px}
+  .info{padding:12px}
+  #stepTitle{font-size:15px}
+  #stepText{font-size:12px}
+  button{font-size:12px;padding:9px 12px}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<div class="header">
+<h1>광합성 명반응</h1>
+<p>LIGHT-DEPENDENT REACTIONS</p>
+</div>
+
+<div class="stage">
+<svg id="diagram" viewBox="0 0 1200 760" xmlns="http://www.w3.org/2000/svg">
+
+<defs>
+  <linearGradient id="membrane" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#f1d38b"/>
+    <stop offset="25%" stop-color="#cba361"/>
+    <stop offset="50%" stop-color="#927048"/>
+    <stop offset="75%" stop-color="#cba361"/>
+    <stop offset="100%" stop-color="#efd18b"/>
+  </linearGradient>
+
+  <linearGradient id="proteinGreen" x1="0" y1="0" x2="1" y2="1">
+    <stop stop-color="#69e2a1"/>
+    <stop offset="1" stop-color="#168252"/>
+  </linearGradient>
+
+  <linearGradient id="proteinBlue" x1="0" y1="0" x2="1" y2="1">
+    <stop stop-color="#a6eaff"/>
+    <stop offset="1" stop-color="#3387c2"/>
+  </linearGradient>
+
+  <linearGradient id="proteinOrange" x1="0" y1="0" x2="1" y2="1">
+    <stop stop-color="#ffdc88"/>
+    <stop offset="1" stop-color="#c47728"/>
+  </linearGradient>
+
+  <linearGradient id="proteinPurple" x1="0" y1="0" x2="1" y2="1">
+    <stop stop-color="#dfb4ff"/>
+    <stop offset="1" stop-color="#8854c4"/>
+  </linearGradient>
+
+  <filter id="glow">
+    <feGaussianBlur stdDeviation="4" result="blur"/>
+    <feMerge>
+      <feMergeNode in="blur"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+
+  <filter id="shadow">
+    <feGaussianBlur stdDeviation="8"/>
+  </filter>
+
+  <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+    <path d="M0 0 L10 5 L0 10 Z" fill="#50dfff"/>
+  </marker>
+
+  <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+    <path d="M0 0 L10 5 L0 10 Z" fill="#ff738c"/>
+  </marker>
+
+  <marker id="arrowGold" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+    <path d="M0 0 L10 5 L0 10 Z" fill="#ffc45e"/>
+  </marker>
+</defs>
+
+<!-- 스트로마 배경 -->
+<rect x="0" y="0" width="1200" height="760" fill="#0c1c28"/>
+<rect x="20" y="25" width="1160" height="355" rx="25" fill="#142c38" opacity=".65"/>
+
+<!-- 틸라코이드 내부 -->
+<rect x="20" y="490" width="1160" height="240" rx="22" fill="#102e40"/>
+<rect x="20" y="490" width="1160" height="240" rx="22" fill="none" stroke="#28536c" stroke-width="2"/>
+
+<!-- 공간 명칭 -->
+<text x="600" y="85" text-anchor="middle" font-size="30" font-weight="bold" fill="#d4eadb">CHLOROPLAST STROMA</text>
+<text x="600" y="700" text-anchor="middle" font-size="28" font-weight="bold" fill="#a6d5e4">THYLAKOID LUMEN</text>
+
+<!-- 틸라코이드 막 -->
+<rect x="45" y="390" width="1110" height="105" rx="12" fill="url(#membrane)" opacity=".95"/>
+
+<!-- 막의 인지질 -->
+<g opacity=".95">
+  {#each Array.from({length:54}) as unused,i}
+  <circle cx={55+i*20.5} cy="400" r="8" fill="#ffdf87" stroke="#9b713e" stroke-width="1"/>
+  <circle cx={55+i*20.5} cy="485" r="8" fill="#ffdf87" stroke="#9b713e" stroke-width="1"/>
+  <line x1={55+i*20.5} y1="408" x2={55+i*20.5} y2="477" stroke="#795a3a" stroke-width="5" opacity=".7"/>
+  {/each}
+</g>
+
+<!-- ================= PSII ================= -->
+<g id="psii">
+  <ellipse cx="175" cy="447" rx="72" ry="108" fill="#000" opacity=".18" filter="url(#shadow)"/>
+  <path d="M126 340 Q112 370 122 418 L110 463 Q135 492 160 483 Q185 514 210 485 L229 458 Q232 426 225 394 Q238 350 209 327 Q174 309 145 328Z"
+        fill="url(#proteinGreen)" stroke="#9bf3bd" stroke-width="2"/>
+  <path d="M145 353 Q165 335 190 356 Q210 370 197 392 Q214 420 188 442 Q162 462 145 436 Q124 417 142 391 Q125 373 145 353Z"
+        fill="#2a9b67" stroke="#b0f8ce" stroke-width="1.5"/>
+  <ellipse cx="174" cy="420" rx="20" ry="20" fill="#5be8cf" stroke="#c8fff0" stroke-width="3"/>
+  <text x="175" y="452" text-anchor="middle" fill="#e9fff4" font-size="22" font-weight="bold">PSII</text>
+  <text x="175" y="365" text-anchor="middle" fill="#e5ffe8" font-size="13">P680</text>
+</g>
+
+<!-- PQ -->
+<g id="pq">
+  <ellipse cx="315" cy="420" rx="55" ry="46" fill="#c57bd8" stroke="#f2c6ff" stroke-width="3"/>
+  <ellipse cx="315" cy="420" rx="38" ry="30" fill="#9c57b9"/>
+  <text x="315" y="416" text-anchor="middle" font-size="18" fill="white" font-weight="bold">PQ</text>
+  <text x="315" y="437" text-anchor="middle" font-size="13" fill="#f9e7ff">PQH₂</text>
+</g>
+
+<!-- Cyt b6f -->
+<g id="b6f">
+  <ellipse cx="465" cy="443" rx="70" ry="115" fill="#000" opacity=".2" filter="url(#shadow)"/>
+  <path d="M433 343 Q399 357 402 397 L398 455 Q411 489 440 483 L470 492 Q497 476 493 440 L499 392 Q496 356 471 339Z"
+        fill="url(#proteinBlue)" stroke="#c5edff" stroke-width="2"/>
+  <path d="M432 360 Q457 346 475 367 Q481 390 462 409 Q480 428 465 459 Q448 476 430 457 Q412 433 426 416 Q409 395 432 360Z"
+        fill="#508fc0" stroke="#a6e8ff" stroke-width="2"/>
+  <text x="450" y="436" text-anchor="middle" font-size="23" font-weight="bold" fill="#fff">b₆f</text>
+  <text x="450" y="461" text-anchor="middle" font-size="13" fill="#e0f6ff">CYTOCHROME</text>
+</g>
+
+<!-- PC -->
+<g id="pc">
+  <ellipse cx="600" cy="468" rx="43" ry="30" fill="#69c8db" stroke="#d7faff" stroke-width="3"/>
+  <ellipse cx="600" cy="468" rx="25" ry="17" fill="#3596ae"/>
+  <text x="600" y="473" text-anchor="middle" font-size="18" fill="white" font-weight="bold">PC</text>
+</g>
+
+<!-- PSI -->
+<g id="psi">
+  <ellipse cx="720" cy="447" rx="68" ry="110" fill="#000" opacity=".18" filter="url(#shadow)"/>
+  <path d="M686 340 Q658 361 667 398 L657 453 Q670 489 698 485 L731 495 Q756 472 753 436 L760 393 Q754 357 727 339Z"
+        fill="url(#proteinGreen)" stroke="#9bf3bd" stroke-width="2"/>
+  <path d="M687 363 Q711 343 733 365 Q749 388 732 410 Q748 431 731 456 Q710 477 691 454 Q672 432 687 414 Q670 392 687 363Z"
+        fill="#238e61" stroke="#a7f7ca" stroke-width="2"/>
+  <ellipse cx="715" cy="423" rx="20" ry="20" fill="#5be8cf" stroke="#c8fff0" stroke-width="3"/>
+  <text x="716" y="455" text-anchor="middle" font-size="22" font-weight="bold" fill="#fff">PSI</text>
+  <text x="716" y="365" text-anchor="middle" font-size="13" fill="#e5ffe8">P700</text>
+</g>
+
+<!-- Fd -->
+<g id="fd">
+  <ellipse cx="835" cy="385" rx="32" ry="26" fill="#b7d95b" stroke="#f2ffad" stroke-width="2"/>
+  <ellipse cx="835" cy="385" rx="18" ry="15" fill="#7f9d36"/>
+  <text x="835" y="390" text-anchor="middle" font-size="17" fill="white" font-weight="bold">Fd</text>
+  <text x="835" y="420" text-anchor="middle" font-size="13" fill="#dff2c0">Ferredoxin</text>
+</g>
+
+<!-- FNR, 스트로마 쪽 -->
+<g id="fnr">
+  <ellipse cx="927" cy="330" rx="57" ry="50" fill="url(#proteinPurple)" stroke="#e8caff" stroke-width="2"/>
+  <ellipse cx="927" cy="330" rx="32" ry="25" fill="#9165c7" stroke="#d8b7ff" stroke-width="2"/>
+  <text x="927" y="335" text-anchor="middle" font-size="22" font-weight="bold" fill="#fff">FNR</text>
+  <text x="927" y="282" text-anchor="middle" font-size="14" fill="#ead8ff">NADP⁺ REDUCTASE</text>
+</g>
+
+<!-- NADP / NADPH -->
+<g id="nadp">
+  <circle cx="855" cy="175" r="28" fill="#148d92" stroke="#91e9e7" stroke-width="2"/>
+  <text x="855" y="180" text-anchor="middle" font-size="13" fill="white" font-weight="bold">NADP⁺</text>
+
+  <circle cx="1010" cy="175" r="32" fill="#2ba777" stroke="#9affc8" stroke-width="2"/>
+  <text x="1010" y="180" text-anchor="middle" font-size="13" fill="white" font-weight="bold">NADPH</text>
+
+  <path d="M882 190 Q920 240 983 195" fill="none" stroke="#3ad3a3" stroke-width="6" stroke-linecap="round" marker-end="url(#arrowBlue)"/>
+  <text x="938" y="224" text-anchor="middle" fill="#aaf4d2" font-size="14">환원</text>
+</g>
+
+<!-- ATP 합성효소: 막을 관통하는 구조 -->
+<g id="atpase">
+  <ellipse cx="1080" cy="445" rx="68" ry="118" fill="#000" opacity=".25" filter="url(#shadow)"/>
+
+  <!-- 막 내 통로 -->
+  <path d="M1043 408 Q1030 429 1036 469 L1036 525 Q1051 550 1078 542 L1110 549 Q1131 532 1126 495 L1128 445 Q1120 412 1097 403Z"
+        fill="url(#proteinOrange)" stroke="#ffe2a2" stroke-width="3"/>
+
+  <!-- F1 머리 -->
+  <ellipse cx="1080" cy="350" rx="72" ry="52" fill="url(#proteinOrange)" stroke="#ffe6ad" stroke-width="3"/>
+  <ellipse cx="1080" cy="350" rx="42" ry="32" fill="#e5a444" stroke="#fff0bf" stroke-width="2"/>
+
+  <!-- 회전축 -->
+  <rect x="1070" y="365" width="20" height="175" rx="10" fill="#fff0c0" stroke="#bd7c34" stroke-width="2"/>
+
+  <!-- 회전 -->
+  <g id="rotor">
+    <ellipse cx="1080" cy="350" rx="27" ry="17" fill="#ffefbd" stroke="#b97b30" stroke-width="2"/>
+    <path d="M1080 350 L1105 325" stroke="#fff4c8" stroke-width="8" stroke-linecap="round"/>
+    <path d="M1080 350 L1055 375" stroke="#fff4c8" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <text x="1080" y="580" text-anchor="middle" font-size="17" font-weight="bold" fill="#ffe7b0">ATP SYNTHASE</text>
+</g>
+
+<!-- 빛 -->
+<g id="light">
+  <path d="M100 195 L140 245 L125 252 L157 300 L115 270 L130 260Z" fill="#ffe36c" filter="url(#glow)"/>
+  <text x="105" y="185" font-size="20" fill="#ffdf75" font-weight="bold">LIGHT</text>
+
+  <path d="M660 195 L700 245 L685 252 L717 300 L675 270 L690 260Z" fill="#ffe36c" filter="url(#glow)"/>
+  <text x="665" y="185" font-size="20" fill="#ffdf75" font-weight="bold">LIGHT</text>
+</g>
+
+<!-- 물 분해 -->
+<g id="water">
+  <circle cx="130" cy="590" r="33" fill="#258ec5" stroke="#a8e6ff" stroke-width="3"/>
+  <text x="130" y="596" text-anchor="middle" font-size="21" font-weight="bold" fill="white">H₂O</text>
+  <text x="130" y="645" text-anchor="middle" font-size="15" fill="#c0edff">물 분해</text>
+
+  <circle cx="220" cy="600" r="25" fill="#7fc7d8" stroke="#d6faff" stroke-width="2"/>
+  <text x="220" y="606" text-anchor="middle" font-size="18" fill="#fff">O₂</text>
+  <text x="220" y="646" text-anchor="middle" font-size="14" fill="#c0edff">산소 방출</text>
+</g>
+
+<!-- ATP 생성 -->
+<g id="atp">
+  <circle cx="1030" cy="115" r="28" fill="#e6a740" stroke="#ffdf8c" stroke-width="3"/>
+  <text x="1030" y="121" text-anchor="middle" font-size="17" font-weight="bold" fill="#fff">ADP</text>
+
+  <circle cx="1125" cy="115" r="25" fill="#d18d34" stroke="#ffdc8c" stroke-width="3"/>
+  <text x="1125" y="121" text-anchor="middle" font-size="17" font-weight="bold" fill="#fff">ATP</text>
+
+  <text x="1077" y="160" text-anchor="middle" font-size="15" fill="#ffdd94">ATP 생성</text>
+  <path d="M1058 143 Q1077 155 1102 140" stroke="#ffc55c" stroke-width="5" fill="none" marker-end="url(#arrowGold)"/>
+</g>
+
+<!-- 전자 전달 경로 -->
+<path d="M175 420 C230 405 270 410 315 420 S400 430 450 420 S540 445 600 468 S665 445 720 420 S800 400 835 385 S900 350 927 330"
+      fill="none" stroke="#50dfff" stroke-width="3" opacity=".30" stroke-dasharray="9 9" marker-end="url(#arrowBlue)"/>
+
+<!-- H+ 이동 경로: lumen 내부에서 ATP synthase -->
+<path d="M160 530 C270 550 400 565 560 570 S870 570 1020 550 Q1060 530 1080 490 L1080 420"
+      fill="none" stroke="#ff7189" stroke-width="3" opacity=".45" stroke-dasharray="6 7" marker-end="url(#arrowRed)"/>
+
+<!-- H+ 이동: PQ와 b6f를 통한 lumen 축적 -->
+<path d="M315 400 Q370 470 445 515 Q490 550 540 560"
+      fill="none" stroke="#ff7189" stroke-width="2" opacity=".35" stroke-dasharray="6 8"/>
+
+<!-- 전자 입자: PSII -> PQ -> b6f -> PC -> PSI -> Fd -> FNR -->
+<g>
+  <circle r="8" fill="#55e7ff" filter="url(#glow)">
+    <animateMotion dur="5s" repeatCount="indefinite" path="M175 420 C230 405 270 410 315 420 S400 430 450 420 S540 445 600 468 S665 445 720 420 S800 400 835 385 S900 350 927 330"/>
+  </circle>
+  <circle r="6" fill="#a4f5ff">
+    <animateMotion dur="5s" begin="-1.66s" repeatCount="indefinite" path="M175 420 C230 405 270 410 315 420 S400 430 450 420 S540 445 600 468 S665 445 720 420 S800 400 835 385 S900 350 927 330"/>
+  </circle>
+  <circle r="5" fill="#55e7ff">
+    <animateMotion dur="5s" begin="-3.33s" repeatCount="indefinite" path="M175 420 C230 405 270 410 315 420 S400 430 450 420 S540 445 600 468 S665 445 720 420 S800 400 835 385 S900 350 927 330"/>
+  </circle>
+</g>
+
+<!-- H+ 입자: lumen에서 ATP synthase로 이동 -->
+<g fill="#ff7189" filter="url(#glow)">
+  <circle r="9">
+    <animateMotion dur="4s" repeatCount="indefinite" path="M160 530 C270 550 400 565 560 570 S870 570 1020 550 Q1060 530 1080 490 L1080 420"/>
+  </circle>
+  <circle r="7">
+    <animateMotion dur="4s" begin="-1.3s" repeatCount="indefinite" path="M160 530 C270 550 400 565 560 570 S870 570 1020 550 Q1060 530 1080 490 L1080 420"/>
+  </circle>
+  <circle r="8">
+    <animateMotion dur="4s" begin="-2.6s" repeatCount="indefinite" path="M160 530 C270 550 400 565 560 570 S870 570 1020 550 Q1060 530 1080 490 L1080 420"/>
+  </circle>
+</g>
+
+<!-- ATP 합성효소 통과 후 스트로마 방향 H+ -->
+<g fill="#ff7189" filter="url(#glow)">
+  <circle r="8">
+    <animateMotion dur="2.5s" repeatCount="indefinite" path="M1080 420 L1080 340 L1080 275"/>
+  </circle>
+  <circle r="7">
+    <animateMotion dur="2.5s" begin="-1.2s" repeatCount="indefinite" path="M1080 420 L1080 340 L1080 275"/>
+  </circle>
+</g>
+
+<!-- FNR 반응 전자 -->
+<g fill="#55e7ff" filter="url(#glow)">
+  <circle r="7">
+    <animateMotion dur="2s" repeatCount="indefinite" path="M835 385 Q870 360 927 330"/>
+  </circle>
+</g>
+
+<!-- 빛 입자 -->
+<g fill="#ffe36b" filter="url(#glow)">
+  <circle r="5">
+    <animateMotion dur="1.8s" repeatCount="indefinite" path="M120 220 L150 330"/>
+  </circle>
+  <circle r="5">
+    <animateMotion dur="1.8s" begin="-.9s" repeatCount="indefinite" path="M680 220 L710 330"/>
+  </circle>
+</g>
+
+<!-- 하단 기능 설명 -->
+<text x="300" y="630" font-size="17" fill="#ffb6c4">H⁺ 축적</text>
+<text x="850" y="630" font-size="17" fill="#ffb6c4">양성자 기울기</text>
+<text x="1080" y="250" text-anchor="middle" font-size="14" fill="#ffdf9c">H⁺ 유입</text>
+
+</svg>
+</div>
+
+<div class="controls">
+<button id="pauseBtn" onclick="togglePause()">Ⅱ 정지</button>
+<button onclick="showMode('all',this)" class="active">전체 과정</button>
+<button onclick="showMode('electron',this)">전자 이동</button>
+<button onclick="showMode('proton',this)">H⁺ 이동</button>
+<button onclick="showMode('light',this)">빛 흡수</button>
+<button onclick="resetSim()">초기화</button>
+</div>
+
+<div class="info">
+<div id="stepTitle">광계 II — 빛 흡수</div>
+<p id="stepText">광계 II가 빛을 흡수하고 물의 광분해를 통해 전자를 보충받습니다. 전자는 전달계를 따라 이동하기 시작합니다.</div>
+
+<div class="legend">
+<span><i class="dot eDot"></i>전자</span>
+<span><i class="dot hDot"></i>수소 이온 H⁺</span>
+<span><i class="dot lDot"></i>빛</span>
+<span><i class="dot aDot"></i>ATP 생성</span>
+</div>
+</div>
+
+<script>
+const stepTitle=document.getElementById("stepTitle");
+const stepText=document.getElementById("stepText");
+const pauseBtn=document.getElementById("pauseBtn");
+
+let paused=false;
+let mode="all";
+let time=0;
+let raf;
+
+const stages=[
+{
+title:"① 광계 II — 빛 흡수와 물의 광분해",
+text:"광계 II의 P680이 빛에너지를 흡수하여 전자를 높은 에너지 상태로 올립니다. 물 분해 과정에서 전자가 보충되고 H⁺가 틸라코이드 내부에 방출되며 산소가 생성됩니다."
+},
+{
+title:"② 플라스토퀴논(PQ) — 전자와 H⁺ 운반",
+text:"플라스토퀴논은 광계 II에서 전달받은 전자를 운반합니다. 스트로마에서 H⁺를 받아 PQH₂가 된 뒤 시토크롬 b6f 복합체로 이동하여 전자와 H⁺를 전달합니다."
+},
+{
+title:"③ 시토크롬 b6f — 전자 전달과 양성자 축적",
+text:"전자전달 과정에서 틸라코이드 내부로 H⁺가 축적되는 데 기여합니다. 이렇게 만들어지는 H⁺ 농도 차이는 ATP 합성의 에너지원이 됩니다."
+},
+{
+title:"④ 플라스토시아닌(PC) — 광계 I으로 전달",
+text:"플라스토시아닌은 시토크롬 b6f에서 전자를 받아 광계 I의 P700으로 전달합니다. 전자전달은 막 주변의 운반 단백질 사이에서 이어집니다."
+},
+{
+title:"⑤ 광계 I — 전자의 재활성화",
+text:"광계 I은 빛을 흡수하여 전달받은 전자를 다시 높은 에너지 상태로 올립니다. 활성화된 전자는 페레독신(Fd)으로 전달됩니다."
+},
+{
+title:"⑥ Fd와 FNR — NADPH 생성",
+text:"페레독신이 전자를 FNR에 전달합니다. FNR은 전자와 H⁺를 이용하여 NADP⁺를 NADPH로 환원합니다. NADPH는 이후 탄소 고정 반응에 사용됩니다."
+},
+{
+title:"⑦ ATP 합성효소 — ATP 생성",
+text:"틸라코이드 내부에 축적된 H⁺가 ATP 합성효소를 통해 스트로마 쪽으로 이동합니다. 이 흐름의 에너지로 ADP와 무기 인산이 결합해 ATP가 만들어집니다."
+}
+];
+
+function updateText(){
+  const idx=Math.floor(time/4)%stages.length;
+  stepTitle.textContent=stages[idx].title;
+  stepText.textContent=stages[idx].text;
+}
+
+function animate(){
+  if(!paused){
+    time+=0.016;
+    updateText();
+  }
+  raf=requestAnimationFrame(animate);
+}
+
+function togglePause(){
+  paused=!paused;
+  pauseBtn.textContent=paused?"▶ 재생":"Ⅱ 정지";
+}
+
+function showMode(m,b){
+  mode=m;
+  document.querySelectorAll(".controls button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+
+  const electron=document.querySelectorAll('[fill="#55e7ff"],[fill="#a4f5ff"]');
+  const proton=document.querySelectorAll('[fill="#ff7189"]');
+  const light=document.querySelectorAll('[fill="#ffe36b"]');
+
+  if(m==="all"){
+    electron.forEach(x=>x.style.opacity="1");
+    proton.forEach(x=>x.style.opacity="1");
+    light.forEach(x=>x.style.opacity="1");
+  }else if(m==="electron"){
+    electron.forEach(x=>x.style.opacity="1");
+    proton.forEach(x=>x.style.opacity=".10");
+    light.forEach(x=>x.style.opacity=".10");
+  }else if(m==="proton"){
+    electron.forEach(x=>x.style.opacity=".10");
+    proton.forEach(x=>x.style.opacity="1");
+    light.forEach(x=>x.style.opacity=".10");
+  }else if(m==="light"){
+    electron.forEach(x=>x.style.opacity=".10");
+    proton.forEach(x=>x.style.opacity=".10");
+    light.forEach(x=>x.style.opacity="1");
+  }
+}
+
+function resetSim(){
+  paused=false;
+  time=0;
+  mode="all";
+  pauseBtn.textContent="Ⅱ 정지";
+  updateText();
+  document.querySelectorAll(".controls button").forEach(x=>x.classList.remove("active"));
+  document.querySelector(".controls button:nth-child(2)").classList.add("active");
+  showModeReset();
+}
+function showModeReset(){
+  const electron=document.querySelectorAll('[fill="#55e7ff"],[fill="#a4f5ff"]');
+  const proton=document.querySelectorAll('[fill="#ff7189"]');
+  const light=document.querySelectorAll('[fill="#ffe36b"]');
+  electron.forEach(x=>x.style.opacity="1");
+  proton.forEach(x=>x.style.opacity="1");
+  light.forEach(x=>x.style.opacity="1");
+}
+
+animate();
+</script>
+
+</body>
+</html>

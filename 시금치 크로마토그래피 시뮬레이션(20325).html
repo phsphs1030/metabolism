@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>직접 체험! 크로마토그래피 광합성 색소 분리 실험</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #10b981;
+      --blue: #38bdf8;
+      --warn: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header h1 {
+      font-size: 1.45rem;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    /* 단계 표시 바 */
+    .stepper {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .step-item {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 10px 8px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+      transition: 0.2s;
+    }
+
+    .step-item.active {
+      border-color: var(--accent);
+      background: rgba(16, 185, 129, 0.15);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .step-item.done {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .stage-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .guide-banner {
+      background: #0f172a;
+      border-left: 4px solid var(--accent);
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      text-align: left;
+      font-size: 0.92rem;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 520px;
+      height: 420px;
+      background: #0b1120;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      touch-action: none;
+      cursor: pointer;
+      display: block;
+      margin: 0 auto 12px auto;
+    }
+
+    .progress-wrap {
+      background: #0f172a;
+      border-radius: 999px;
+      height: 14px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #38bdf8);
+      transition: width 0.15s;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 11px 18px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 700;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-next {
+      background: var(--accent);
+      color: #0f172a;
+    }
+
+    .btn-next:disabled {
+      background: #334155;
+      color: #64748b;
+      cursor: not-allowed;
+    }
+
+    .btn-reset {
+      background: #475569;
+      color: #fff;
+    }
+
+    .side-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 0.88rem;
+    }
+
+    .side-panel h3 {
+      color: var(--blue);
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    .status-list {
+      list-style: none;
+      margin-bottom: 14px;
+    }
+
+    .status-list li {
+      padding: 8px 10px;
+      background: #0f172a;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 0.82rem;
+    }
+
+    th, td {
+      padding: 7px 6px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+
+    th {
+      background: #0f172a;
+      color: var(--accent);
+    }
+
+    .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+
+    @media (max-width: 780px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+      .stepper {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🌿 크로마토그래피 광합성 색소 분리 가상 실험</h1>
+      <p>화면의 실험 도구를 직접 터치하고 문질러 시금치 잎에서 광합성 색소를 분리해 보세요!</p>
+    </header>
+
+    <div class="stepper">
+      <div class="step-item active" id="st1">1단계: 시금치 빻기</div>
+      <div class="step-item" id="st2">2단계: 원점에 점찍기</div>
+      <div class="step-item" id="st3">3단계: 전개액에 넣기</div>
+      <div class="step-item" id="st4">4단계: 전개율(R<sub>f</sub>) 확인</div>
+    </div>
+
+    <div class="workspace">
+      <div class="stage-box">
+        <div class="guide-banner" id="guideText">
+          <strong>[1단계]</strong> 막자사발 안의 시금치 잎을 손가락(또는 마우스)으로 <strong>문질러 빻아</strong> 초록색 추출액을 만드세요!
+        </div>
+
+        <canvas id="expCanvas" width="520" height="420"></canvas>
+
+        <div class="progress-wrap">
+          <div class="progress-fill" id="progressBar"></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-next" id="btnNext" disabled onclick="nextStep()">다음 단계로 이동 ▶</button>
+          <button class="btn-reset" onclick="resetAll()">🔄 처음부터 다시하기</button>
+        </div>
+      </div>
+
+      <div class="side-panel">
+        <h3>📋 실험 진행 상태</h3>
+        <ul class="status-list">
+          <li><span>시금치 분쇄도:</span> <strong id="valGrind">0%</strong></li>
+          <li><span>원점 점찍기 횟수:</span> <strong id="valDots">0 / 8회</strong></li>
+          <li><span>점 크기 상태:</span> <strong id="valSpotState">대기 중</strong></li>
+          <li><span>용매 전선 이동 거리:</span> <strong id="valSolvent">0.0 cm</strong></li>
+        </ul>
+
+        <h3>📐 색소 분리 및 전개율(R<sub>f</sub>)</h3>
+        <p style="font-size: 0.78rem; color: var(--muted); margin-bottom: 6px;">
+          R<sub>f</sub> = (원점에서 색소까지 거리) ÷ (용매 전선까지 거리)
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>위치</th>
+              <th>색소</th>
+              <th>거리</th>
+              <th>R<sub>f</sub></th>
+            </tr>
+          </thead>
+          <tbody id="rfTable">
+            <tr><td colspan="4" style="color: var(--muted);">3단계 전개 후 결과가 표시됩니다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('expCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let step = 1; // 1: 빻기, 2: 점찍기, 3: 전개하기, 4: 결과확인
+    let isPointerDown = false;
+    let pointerPos = { x: 260, y: 180 };
+
+    // 1단계 변수
+    let grindProgress = 0; // 0 ~ 100
+    const leaves = [];
+
+    // 2단계 변수
+    let dotCount = 0;
+    let spotRadius = 0;
+    let lastDotTime = 0;
+    let spotWarning = '';
+
+    // 3단계 변수
+    let plateInserted = false;
+    let lidClosed = false;
+    let developProgress = 0; // 0 ~ 1
+    const maxCm = 8.0;
+
+    const pigments = [
+      { code: 'A', name: '카로틴', color: '#f97316', rf: 0.92 },
+      { code: 'B', name: '잔토필', color: '#facc15', rf: 0.72 },
+      { code: 'C', name: '엽록소 a', color: '#059669', rf: 0.45 },
+      { code: 'D', name: '엽록소 b', color: '#84cc16', rf: 0.30 }
+    ];
+
+    function initLeaves() {
+      leaves.length = 0;
+      for (let i = 0; i < 24; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 55;
+        leaves.push({
+          x: 260 + Math.cos(angle) * dist,
+          y: 255 + Math.sin(angle) * dist * 0.6,
+          size: 14 + Math.random() * 10,
+          rot: Math.random() * Math.PI
+        });
+      }
+    }
+
+    function updateStepper() {
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('st' + i);
+        el.classList.remove('active', 'done');
+        if (i < step) el.classList.add('done');
+        if (i === step) el.classList.add('active');
+      }
+    }
+
+    function nextStep() {
+      if (step === 1 && grindProgress >= 100) {
+        step = 2;
+        document.getElementById('guideText').innerHTML =
+          '<strong>[2단계]</strong> TLC 판의 <strong>원점(출발선 중앙 빨간 점)</strong>을 직접 터치해 색소 추출액을 찍으세요! (5~10회 권장, 너무 한꺼번에 많이 찍으면 퍼집니다)';
+        document.getElementById('btnNext').disabled = true;
+        document.getElementById('progressBar').style.width = '0%';
+      } else if (step === 2 && dotCount >= 5) {
+        step = 3;
+        document.getElementById('guideText').innerHTML =
+          '<strong>[3단계]</strong> 화면의 <strong>TLC 판을 터치</strong>해 전개액이 담긴 원심관에 세워 넣고 뚜껑을 닫으세요!';
+        document.getElementById('btnNext').disabled = true;
+        document.getElementById('progressBar').style.width = '0%';
+      } else if (step === 3 && developProgress >= 1) {
+        step = 4;
+        document.getElementById('guideText').innerHTML =
+          '<strong>[4단계 완료!]</strong> 색소가 휘발되기 전 위치를 표시했습니다. 오른쪽 표에서 <strong>A, B, C, D 색소와 전개율(R<sub>f</sub>)</strong>을 확인하세요!';
+        document.getElementById('btnNext').disabled = true;
+      }
+      updateStepper();
+      draw();
+    }
+
+    function resetAll() {
+      step = 1;
+      grindProgress = 0;
+      dotCount = 0;
+      spotRadius = 0;
+      spotWarning = '';
+      plateInserted = false;
+      lidClosed = false;
+      developProgress = 0;
+
+      document.getElementById('guideText').innerHTML =
+        '<strong>[1단계]</strong> 막자사발 안의 시금치 잎을 손가락(또는 마우스)으로 <strong>문질러 빻아</strong> 초록색 추출액을 만드세요!';
+      document.getElementById('btnNext').disabled = true;
+      document.getElementById('progressBar').style.width = '0%';
+      document.getElementById('valGrind').textContent = '0%';
+      document.getElementById('valDots').textContent = '0 / 8회';
+      document.getElementById('valSpotState').textContent = '대기 중';
+      document.getElementById('valSolvent').textContent = '0.0 cm';
+      document.getElementById('rfTable').innerHTML =
+        '<tr><td colspan="4" style="color: var(--muted);">3단계 전개 후 결과가 표시됩니다.</td></tr>';
+
+      initLeaves();
+      updateStepper();
+      draw();
+    }
+
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: ((clientX - rect.left) / rect.width) * canvas.width,
+        y: ((clientY - rect.top) / rect.height) * canvas.height
+      };
+    }
+
+    function handleStart(e) {
+      e.preventDefault();
+      isPointerDown = true;
+      const pos = getCanvasCoords(e);
+      pointerPos = pos;
+
+      if (step === 2) {
+        // 원점 위치 (260, 320) 근처 터치 판정
+        const dist = Math.hypot(pos.x - 260, pos.y - 320);
+        if (dist < 55) {
+          const now = Date.now();
+          const tooFast = now - lastDotTime < 220;
+          lastDotTime = now;
+
+          dotCount++;
+          spotRadius = Math.min(18, 4 + dotCount * 1.1 + (tooFast ? 2.5 : 0));
+
+          document.getElementById('valDots').textContent = dotCount + ' / 8회';
+          document.getElementById('progressBar').style.width = Math.min(100, (dotCount / 8) * 100) + '%';
+
+          if (dotCount > 11 || spotRadius > 14) {
+            spotWarning = '⚠️ 점이 너무 크게 퍼졌습니다! (유의사항 참고)';
+            document.getElementById('valSpotState').textContent = '퍼짐 주의';
+            document.getElementById('valSpotState').style.color = '#f59e0b';
+          } else if (dotCount >= 5) {
+            spotWarning = '✅ 적당한 진하기로 잘 찍혔습니다!';
+            document.getElementById('valSpotState').textContent = '적정 농도';
+            document.getElementById('valSpotState').style.color = '#10b981';
+            document.getElementById('btnNext').disabled = false;
+          } else {
+            spotWarning = '조금 더 반복해서 찍어주세요 (최소 5회)';
+            document.getElementById('valSpotState').textContent = '연함';
+            document.getElementById('valSpotState').style.color = '#38bdf8';
+          }
+          draw();
+        }
+      } else if (step === 3) {
+        if (!plateInserted) {
+          plateInserted = true;
+          lidClosed = true;
+          document.getElementById('guideText').innerHTML =
+            '<strong>[전개 진행 중]</strong> 원점이 전개액에 잠기지 않게 세워져 모세관 현상으로 색소가 분리되고 있습니다...';
+        }
+      }
+    }
+
+    function handleMove(e) {
+      if (!isPointerDown) return;
+      e.preventDefault();
+      const pos = getCanvasCoords(e);
+
+      if (step === 1) {
+        const distToBowl = Math.hypot(pos.x - 260, pos.y - 250);
+        const moveDist = Math.hypot(pos.x - pointerPos.x, pos.y - pointerPos.y);
+        if (distToBowl < 110 && moveDist > 2) {
+          grindProgress = Math.min(100, grindProgress + moveDist * 0.14);
+          document.getElementById('valGrind').textContent = Math.round(grindProgress) + '%';
+          document.getElementById('progressBar').style.width = grindProgress + '%';
+
+          // 잎 크기 줄이기
+          leaves.forEach(lf => {
+            lf.size = Math.max(2, lf.size - 0.08);
+          });
+
+          if (grindProgress >= 100) {
+            document.getElementById('btnNext').disabled = false;
+            document.getElementById('guideText').innerHTML =
+              '<strong>[1단계 완료!]</strong> 시금치 잎이 곱게 갈려 진한 광합성 색소 추출액이 만들어졌습니다. <strong>다음 단계</strong>를 누르세요!';
+          }
+        }
+      }
+      pointerPos = pos;
+      draw();
+    }
+
+    function handleEnd() {
+      isPointerDown = false;
+      draw();
+    }
+
+    canvas.addEventListener('mousedown', handleStart);
+    canvas.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+
+    canvas.addEventListener('touchstart', handleStart, { passive: false });
+    canvas.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+
+    function drawStep1() {
+      // 막자사발 뒷면
+      ctx.fillStyle = '#475569';
+      ctx.beginPath();
+      ctx.ellipse(260, 225, 115, 28, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 추출액 (분쇄도에 따라 진해짐)
+      if (grindProgress > 5) {
+        ctx.fillStyle = `rgba(21, 128, 61, ${Math.min(0.95, grindProgress / 100)})`;
+        ctx.beginPath();
+        ctx.ellipse(260, 248, 88, 22, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 시금치 잎 조각들
+      leaves.forEach(lf => {
+        ctx.save();
+        ctx.translate(lf.x, lf.y);
+        ctx.rotate(lf.rot);
+        ctx.fillStyle = grindProgress > 75 ? '#166534' : '#22c55e';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, lf.size, lf.size * 0.55, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // 막자사발 앞몸체
+      ctx.fillStyle = '#cbd5e1';
+      ctx.beginPath();
+      ctx.arc(260, 230, 115, 0, Math.PI, false);
+      ctx.fill();
+
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(260, 225, 115, 28, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 막자 (터치 위치 따라 이동)
+      const px = isPointerDown ? pointerPos.x : 295;
+      const py = isPointerDown ? pointerPos.y : 185;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(-0.45);
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.roundRect(-14, -95, 28, 115, 14);
+      ctx.fill();
+      ctx.strokeStyle = '#94a3b8';
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('막자사발 안을 문질러 시금치 잎 + 색소 추출액을 빻으세요', 260, 385);
+    }
+
+    function drawStep2() {
+      // TLC 판 확대 뷰
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(190, 45, 140, 330);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(190, 45, 140, 330);
+
+      // 연필 출발선 (1~2cm 위)
+      ctx.strokeStyle = '#64748b';
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(190, 320);
+      ctx.lineTo(330, 320);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 원점 가이드 링
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(260, 320, 16, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 찍힌 색소 점
+      if (dotCount > 0) {
+        ctx.fillStyle = `rgba(21, 128, 61, ${Math.min(1, 0.35 + dotCount * 0.1)})`;
+        ctx.beginPath();
+        ctx.arc(260, 320, spotRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 이쑤시개(모세관) 아이콘
+      const tx = isPointerDown ? pointerPos.x : 345;
+      const ty = isPointerDown ? pointerPos.y : 275;
+      ctx.strokeStyle = '#fde047';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(tx + 75, ty - 65);
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('← 원점 (터치해서 점찍기)', 340, 324);
+
+      if (spotWarning) {
+        ctx.fillStyle = '#fde68a';
+        ctx.textAlign = 'center';
+        ctx.fillText(spotWarning, 260, 402);
+      }
+    }
+
+    function drawStep3And4() {
+      // 원심관(코니컬 튜브)
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(175, 40, 170, 355, [10, 10, 45, 45]);
+      ctx.stroke();
+
+      // 전개액 (원점보다 아래에 위치)
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.28)';
+      ctx.beginPath();
+      ctx.roundRect(177, 345, 166, 48, [0, 0, 42, 42]);
+      ctx.fill();
+
+      ctx.fillStyle = '#93c5fd';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('전개액 (석유에테르 + 아세톤)', 260, 376);
+
+      if (!plateInserted) {
+        // 대기 중인 TLC 판 (터치 유도)
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(380, 90, 85, 260);
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.arc(422, 310, Math.max(6, spotRadius * 0.7), 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fde047';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText('👆 TLC 판을 터치해', 422, 65);
+        ctx.fillText('원심관에 넣으세요!', 422, 82);
+        return;
+      }
+
+      // 뚜껑 닫힘
+      if (lidClosed) {
+        ctx.fillStyle = '#2563eb';
+        ctx.fillRect(168, 26, 184, 18);
+      }
+
+      // 원심관 내부 TLC 판
+      const originY = 325;
+      const topLimitY = 75;
+      const maxPix = originY - topLimitY;
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(215, 55, 90, 305);
+
+      // 원점 선
+      ctx.strokeStyle = '#475569';
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(215, originY);
+      ctx.lineTo(305, originY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('원점 →', 168, originY + 4);
+
+      // 용매 전선
+      const solventY = originY - developProgress * maxPix;
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.25)';
+      ctx.fillRect(215, solventY, 90, originY - solventY);
+
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(215, solventY);
+      ctx.lineTo(305, solventY);
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.textAlign = 'left';
+      ctx.fillText('← 용매 전선', 352, solventY + 4);
+
+      // 분리되는 색소 밴드
+      const bandThickness = spotRadius > 14 ? 14 : 9;
+      pigments.forEach(p => {
+        const y = originY - developProgress * maxPix * p.rf;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.roundRect(230, y - bandThickness / 2, 60, bandThickness, 4);
+        ctx.fill();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.code, 260, y + 3.5);
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (step === 1) drawStep1();
+      else if (step === 2) drawStep2();
+      else drawStep3And4();
+    }
+
+    function updateTable() {
+      const currentCm = developProgress * maxCm;
+      document.getElementById('valSolvent').textContent = currentCm.toFixed(1) + ' cm';
+      document.getElementById('progressBar').style.width = Math.round(developProgress * 100) + '%';
+
+      const tbody = document.getElementById('rfTable');
+      tbody.innerHTML = pigments
+        .map(p => {
+          const dist = (currentCm * p.rf).toFixed(2);
+          return `
+            <tr>
+              <td><strong>${p.code}</strong></td>
+              <td style="text-align:left;"><span class="dot" style="background:${p.color};"></span>${p.name}</td>
+              <td>${dist} cm</td>
+              <td><strong style="color:var(--accent);">${p.rf.toFixed(2)}</strong></td>
+            </tr>
+          `;
+        })
+        .join('');
+    }
+
+    function loop() {
+      if (step === 3 && plateInserted && developProgress < 1) {
+        developProgress += 0.0045;
+        if (developProgress >= 1) {
+          developProgress = 1;
+          document.getElementById('btnNext').disabled = false;
+          document.getElementById('guideText').innerHTML =
+            '<strong>[전개 완료!]</strong> 용매 전선이 상단까지 올라왔습니다. <strong>다음 단계</strong>를 눌러 최종 결과를 정리하세요!';
+        }
+        updateTable();
+        draw();
+      }
+      requestAnimationFrame(loop);
+    }
+
+    resetAll();
+    loop();
+  </script>
+</body>
+</html>

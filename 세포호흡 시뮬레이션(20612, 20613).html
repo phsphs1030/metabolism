@@ -1,0 +1,1327 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>세포호흡 전체 단계 시뮬레이션</title>
+  <style>
+    :root {
+      --bg: #0c1424;
+      --panel: #151f33;
+      --green: #32ce80;
+      --text: #f0f4fa;
+      --sub: #9aa9bf;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 20px 12px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+    }
+
+    .app { max-width: 850px; margin: auto; }
+    header { text-align: center; padding: 20px 5px; }
+    .tag { color: var(--green); font-size: 12px; letter-spacing: 2px; }
+    h1 { font-size: clamp(23px, 5vw, 34px); color: var(--green); margin: 17px 0; }
+    header p { color: var(--sub); line-height: 1.7; }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 12px 0;
+    }
+
+    button {
+      border: 1px solid #34415a;
+      border-radius: 25px;
+      padding: 12px 16px;
+      color: var(--text);
+      background: #1b263b;
+      white-space: nowrap;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button.selected {
+      background: var(--green);
+      color: #10251b;
+      border-color: var(--green);
+    }
+
+    .visual {
+      background: #122b27;
+      border: 2px solid #286c51;
+      border-radius: 22px;
+      padding: 20px 12px;
+      overflow: hidden;
+    }
+
+    .stage-info {
+      background: #192d2b;
+      border: 1px solid #385b4d;
+      border-radius: 14px;
+      padding: 15px;
+      margin: 0 5px 10px;
+    }
+
+    #number { font-size: 12px; color: var(--green); font-weight: bold; }
+    .stage-info h2 { font-size: 20px; margin: 10px 0; }
+    .stage-info p { color: var(--sub); font-size: 13px; }
+    svg { width: 100%; height: auto; display: block; }
+    .svg-label { fill: #d8eee3; font-size: 15px; font-weight: bold; }
+    .molecule { fill: #f9d64c; stroke: #fff0a0; stroke-width: 2; }
+    .electron { fill: #46b9ff; }
+    .proton { fill: #ff827b; }
+    .atp { fill: #32ce80; stroke: #a4ffd0; stroke-width: 2; }
+    .mol-label { fill: white; font-size: 14px; font-weight: bold; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+      color: #d5e3df;
+      font-size: 12px;
+      padding: 10px;
+    }
+
+    .description,
+    .energy {
+      background: var(--panel);
+      border: 1px solid #2b3b52;
+      border-radius: 17px;
+      padding: 20px;
+      margin-top: 16px;
+      line-height: 1.8;
+    }
+
+    .progress {
+      height: 7px;
+      background: #2a3548;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #bar {
+      height: 100%;
+      width: 20%;
+      background: var(--green);
+      transition: width .4s;
+    }
+
+    .description h2 { font-size: 20px; }
+    .description p { color: #c1cddd; line-height: 1.9; }
+
+    .result {
+      background: #20352f;
+      border-radius: 12px;
+      padding: 13px;
+      margin-top: 18px;
+    }
+
+    .result h3 { color: var(--green); font-size: 15px; }
+
+    .energy-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #304057;
+      padding: 10px 0;
+      color: #c7d3e3;
+    }
+
+    .energy-row b { color: var(--green); }
+
+    .total {
+      text-align: center;
+      padding: 18px;
+      color: var(--green);
+      font-size: 23px;
+      font-weight: bold;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin: 20px 0;
+    }
+
+    .reset { background: #38445c; }
+
+    footer {
+      text-align: center;
+      color: #74849b;
+      font-size: 12px;
+      padding: 20px;
+    }
+
+    .particle { animation: float 1.5s ease-in-out infinite alternate; }
+
+    @keyframes float {
+      from { opacity: .45; transform: translateY(0); }
+      to { opacity: 1; transform: translateY(-8px); }
+    }
+
+    @media (max-width: 500px) {
+      body { padding: 10px; }
+      .visual { padding: 12px 5px; }
+      .description { padding: 15px; }
+      .stage-info h2 { font-size: 18px; }
+      button { padding: 11px 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <span class="tag">BIOLOGY · CELLULAR RESPIRATION</span>
+      <h1>🧬 세포호흡 전체 단계 시뮬레이션</h1>
+      <p>포도당의 화학 에너지가 ATP로 전환되는 과정을 관찰해 보세요.</p>
+    </header>
+
+    <nav class="tabs">
+      <button class="selected" onclick="showStep(1)">① 해당과정</button>
+      <button onclick="showStep(2)">② 피루브산 산화</button>
+      <button onclick="showStep(3)">③ TCA 회로</button>
+      <button onclick="showStep(4)">④ 전자전달계</button>
+      <button onclick="showStep(5)">⑤ ATP 합성</button>
+    </nav>
+
+    <section class="visual">
+      <div class="stage-info">
+        <span id="number">STEP 01 / 05</span>
+        <h2 id="stageTitle">포도당이 세포질에 있어요</h2>
+        <p id="place">장소 : 세포질</p>
+      </div>
+
+      <svg viewBox="0 0 700 410" id="cell">
+        <defs>
+          <linearGradient id="mito" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stop-color="#f8c99b"/>
+            <stop offset="100%" stop-color="#b66b48"/>
+          </linearGradient>
+        </defs>
+
+        <text x="20" y="35" class="svg-label">세포질</text>
+
+        <path d="M180 205 C180 85 280 65 430 80
+          C570 85 630 145 615 250
+          C600 355 490 370 350 355
+          C220 350 170 290 180 205Z"
+          fill="#163d35" stroke="#4bb88a" stroke-width="10"/>
+
+        <path d="M200 205 C200 110 295 95 425 100
+          C550 105 600 155 595 245
+          C585 325 485 340 355 335
+          C245 330 195 280 200 205Z"
+          fill="#204b40" stroke="#70cfa5" stroke-width="5"/>
+
+        <path d="M245 105 Q255 190 280 110
+          M315 98 Q330 195 350 100
+          M390 98 Q405 195 425 100
+          M470 110 Q485 190 510 125
+          M220 265 Q250 205 270 320
+          M315 330 Q330 245 350 330
+          M405 337 Q420 250 440 337
+          M500 315 Q520 235 545 285"
+          fill="none" stroke="#70cfa5" stroke-width="9"
+          stroke-linecap="round"/>
+
+        <text x="385" y="225" class="svg-label">미토콘드리아 기질</text>
+        <text x="465" y="65" class="svg-label">외막</text>
+        <text x="205" y="375" class="svg-label">내막</text>
+        <g id="dynamic"></g>
+      </svg>
+
+      <div class="legend">
+        <span>🟡 에너지 물질</span>
+        <span>🔵 전자</span>
+        <span>🔴 H⁺</span>
+        <span>🟢 ATP</span>
+      </div>
+    </section>
+
+    <section class="description">
+      <div class="progress">
+        <div id="bar"></div>
+      </div>
+      <h2 id="explainTitle">무엇이 일어날까요?</h2>
+      <p id="explanation"></p>
+
+      <div class="result">
+        <h3>📌 물질 변화 및 생성 결과</h3>
+        <p id="products"></p>
+      </div>
+    </section>
+
+    <section class="energy">
+      <h3>⚡ ATP 생성 현황</h3>
+      <div class="energy-row">
+        <span>해당과정</span><b>2 ATP</b>
+      </div>
+      <div class="energy-row">
+        <span>TCA 회로</span><b>2 ATP</b>
+      </div>
+      <div class="energy-row">
+        <span>산화적 인산화</span><b>약 26~28 ATP</b>
+      </div>
+      <div class="total">총 ATP 약 30~32개</div>
+    </section>
+
+    <div class="controls">
+      <button onclick="previousStep()" id="prev">← 이전 단계</button>
+      <button onclick="resetSimulation()" class="reset">처음부터</button>
+      <button onclick="nextStep()" id="next">다음 단계 →</button>
+    </div>
+
+    <footer>세포호흡 학습 시뮬레이션 · 포도당 1분자 기준</footer>
+  </div>
+
+  <script>
+    const stages = [
+      {
+        title: "포도당이 세포질에 있어요",
+        place: "장소 : 세포질",
+        explain: "포도당 1분자가 세포호흡을 시작합니다. 포도당은 탄소 6개로 이루어져 있으며 세포질에서 해당과정이 진행됩니다.",
+        products: "포도당 1분자 · 탄소 6개",
+        type: "glucose"
+      },
+      {
+        title: "1. 해당과정",
+        place: "장소 : 세포질",
+        explain: "포도당 1분자가 피루브산 2분자로 분해됩니다. ATP 2개를 사용하고 4개를 생성하므로 ATP 2개가 순생성됩니다. NADH도 2개 생성됩니다.",
+        products: "피루브산 2개 · ATP 순생성 2개 · NADH 2개",
+        type: "glycolysis"
+      },
+      {
+        title: "2. 피루브산 산화",
+        place: "장소 : 미토콘드리아 기질",
+        explain: "피루브산 2분자가 미토콘드리아 기질로 들어갑니다. 각각 CO₂를 방출하고 NADH를 생성하며 조효소 A와 결합해 아세틸 CoA가 됩니다.",
+        products: "아세틸 CoA 2개 · NADH 2개 · CO₂ 2개",
+        type: "pyruvate"
+      },
+      {
+        title: "3. TCA 회로",
+        place: "장소 : 미토콘드리아 기질",
+        explain: "아세틸 CoA가 옥살아세트산과 결합하여 시트르산을 형성합니다. 여러 반응을 거치며 CO₂가 방출되고 NADH와 FADH₂가 생성됩니다. 옥살아세트산은 재생됩니다.",
+        products: "ATP 2개 · NADH 6개 · FADH₂ 2개 · CO₂ 4개",
+        type: "tca"
+      },
+      {
+        title: "4. 전자전달계",
+        place: "장소 : 미토콘드리아 내막",
+        explain: "NADH와 FADH₂가 전자를 전자전달계에 전달합니다. 전자의 이동에서 방출되는 에너지를 이용해 H⁺가 기질에서 막 사이 공간으로 이동합니다.",
+        products: "전자 이동 · H⁺ 농도 기울기 형성",
+        type: "etc"
+      },
+      {
+        title: "5. 화학삼투와 ATP 합성",
+        place: "장소 : 미토콘드리아 내막",
+        explain: "막 사이 공간에 축적된 H⁺가 ATP 합성효소를 통해 기질로 이동합니다. 이때 발생하는 에너지로 ADP와 무기 인산이 결합하여 ATP가 만들어집니다.",
+        products: "ATP 약 26~28개 생성",
+        type: "atp"
+      }
+    ];
+
+    let current = 0;
+    const $ = id => document.getElementById(id);
+
+    function draw(type) {
+      let html = "";
+
+      if (type === "glucose") {
+        html = `
+          <circle cx="90" cy="145" r="17" class="molecule"/>
+          <text x="90" y="180" text-anchor="middle" class="mol-label">포도당</text>
+          <circle cx="135" cy="145" r="7" class="particle molecule"/>
+        `;
+      }
+
+      if (type === "glycolysis") {
+        html = `
+          <circle cx="85" cy="145" r="16" class="molecule"/>
+          <path d="M115 145 L165 145" stroke="#f9d64c" stroke-width="3"/>
+          <text x="140" y="130" class="mol-label">↓</text>
+          <circle cx="185" cy="130" r="12" class="molecule"/>
+          <circle cx="185" cy="165" r="12" class="molecule"/>
+          <text x="230" y="150" class="mol-label">피루브산 2개</text>
+        `;
+      }
+
+      if (type === "pyruvate") {
+        html = `
+          <circle cx="270" cy="170" r="15" class="molecule"/>
+          <circle cx="300" cy="170" r="15" class="molecule"/>
+          <path d="M325 170 L380 170" stroke="#f9d64c" stroke-width="3"/>
+          <text x="345" y="150" class="mol-label">↓</text>
+          <text x="390" y="175" class="mol-label">아세틸 CoA</text>
+          <circle cx="280" cy="215" r="10" class="electron"/>
+          <text x="300" y="220" class="mol-label">NADH</text>
+        `;
+      }
+
+      if (type === "tca") {
+        html = `
+          <circle cx="370" cy="205" r="65" fill="none"
+            stroke="#f9d64c" stroke-width="5" stroke-dasharray="8 7"/>
+          <circle cx="370" cy="140" r="9" class="molecule"/>
+          <circle cx="430" cy="205" r="9" class="molecule"/>
+          <circle cx="370" cy="270" r="9" class="molecule"/>
+          <circle cx="305" cy="205" r="9" class="molecule"/>
+          <text x="370" y="200" text-anchor="middle" class="mol-label">TCA</text>
+          <text x="370" y="220" text-anchor="middle" class="mol-label">회로</text>
+        `;
+      }
+
+      if (type === "etc") {
+        html = `
+          <g>
+            <rect x="225" y="290" width="20" height="40" rx="7" fill="#46b9ff"/>
+            <rect x="290" y="290" width="20" height="40" rx="7" fill="#46b9ff"/>
+            <rect x="355" y="290" width="20" height="40" rx="7" fill="#46b9ff"/>
+            <rect x="420" y="290" width="20" height="40" rx="7" fill="#46b9ff"/>
+            <text x="325" y="365" text-anchor="middle" class="mol-label">전자 전달계</text>
+          </g>
+          <g class="particle">
+            <circle cx="260" cy="160" r="10" class="proton"/>
+            <circle cx="290" cy="140" r="10" class="proton"/>
+            <circle cx="320" cy="165" r="10" class="proton"/>
+            <circle cx="350" cy="140" r="10" class="proton"/>
+            <text x="310" y="115" class="mol-label">H⁺ 축적</text>
+          </g>
+        `;
+      }
+
+      if (type === "atp") {
+        html = `
+          <g class="particle">
+            <circle cx="470" cy="130" r="11" class="proton"/>
+            <circle cx="500" cy="150" r="11" class="proton"/>
+            <circle cx="530" cy="130" r="11" class="proton"/>
+          </g>
+          <rect x="455" y="285" width="24" height="38" rx="9" fill="#32ce80"/>
+          <circle cx="467" cy="278" r="15" fill="#32ce80"/>
+          <text x="490" y="280" class="mol-label">ATP 합성효소</text>
+          <circle cx="520" cy="220" r="18" class="atp"/>
+          <text x="520" y="225" text-anchor="middle" fill="#10251b" font-weight="bold" font-size="12">ATP</text>
+        `;
+      }
+
+      $("dynamic").innerHTML = html;
+    }
+
+    function showStep(index) {
+      current = index;
+      const stage = stages[current];
+      const stepNumber = Math.max(1, current);
+      const stepCount = stages.length - 1;
+      const formatNumber = number => String(number).padStart(2, "0");
+
+      $("number").textContent = `STEP ${formatNumber(stepNumber)} / ${formatNumber(stepCount)}`;
+      $("stageTitle").textContent = stage.title;
+      $("place").textContent = stage.place;
+      $("explainTitle").textContent = "무엇이 일어날까요?";
+      $("explanation").textContent = stage.explain;
+      $("products").textContent = stage.products;
+      $("bar").style.width = `${stepNumber / stepCount * 100}%`;
+
+      document.querySelectorAll(".tabs button").forEach((button, i) => {
+        button.classList.toggle("selected", i === stepNumber - 1);
+      });
+
+      $("prev").disabled = current === 0;
+      $("next").disabled = current === stages.length - 1;
+      draw(stage.type);
+    }
+
+    function nextStep() {
+      if (current < stages.length - 1) showStep(current + 1);
+    }
+
+    function previousStep() {
+      if (current > 0) showStep(current - 1);
+    }
+
+    function resetSimulation() {
+      showStep(0);
+    }
+
+    showStep(0);
+  </script>
+</body>
+</html>
+
+
+
+

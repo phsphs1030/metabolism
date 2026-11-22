@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>세포호흡 시뮬레이션</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fafaf8;--sf:#fff;--ink:#1c2523;--mu:#5d6967;--ln:#dfe4e2;--cy:#b45309;--cyb:#fdf3e4;--mt:#0f766e;--mtb:#e2f3f0;--ims:#e6eefa;--cb:#4b5755;--fm:#6d4aa8;
+box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141918;--sf:#1c2321;--ink:#e8eeec;--mu:#9aa8a5;--ln:#2e3936;--cy:#f0a64a;--cyb:#2b2214;--mt:#4fc9bc;--mtb:#12302c;--ims:#172433;--cb:#9bb0ac;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141918;--sf:#1c2321;--ink:#e8eeec;--mu:#9aa8a5;--ln:#2e3936;--cy:#f0a64a;--cyb:#2b2214;--mt:#4fc9bc;--mtb:#12302c;--ims:#172433;--cb:#9bb0ac;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.65 "Noto Sans KR",system-ui,sans-serif;word-break:keep-all}
+main{max-width:1120px;margin:0 auto;padding:24px 20px 56px}
+h1{font-size:32px;margin:0 0 4px}.sub{color:var(--mu);margin:0 0 16px}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px}
+.tabs button{font:inherit;font-size:16px;font-weight:500;white-space:nowrap;padding:8px 16px;border:1px solid var(--ln);border-radius:99px;background:var(--sf);color:var(--mu);cursor:pointer}
+.tabs button[aria-current="true"]{background:var(--mt);border-color:var(--mt);color:var(--bg);font-weight:700}
+button:focus-visible{outline:3px solid var(--mt);outline-offset:2px}
+.fl{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px;font-size:15px}.fl span{padding:4px 12px;border-radius:8px;border:1px solid var(--ln);background:var(--sf);color:var(--mu)}.fl span.dn{color:var(--ink);border-color:var(--mt)}.fl span.on{background:var(--mt);color:var(--bg);border-color:var(--mt);font-weight:700}.fl i{font-style:normal;color:var(--mu);font-size:12px}
+.grid{display:grid;grid-template-columns:1fr 230px;gap:16px;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:14px 18px}
+svg{width:100%;height:auto;display:block}
+svg text{font-family:inherit}
+.cy{fill:var(--cyb);stroke:var(--ln);stroke-width:2}.mt{fill:var(--mtb);stroke:var(--mt);stroke-width:3}.ims{fill:var(--ims)}.mx{fill:var(--mtb)}.pl{fill:var(--bg);stroke:var(--ln);stroke-width:2}
+.lb{font-size:15px;fill:var(--mu)}.bt{font-size:17px;font-weight:700;fill:var(--ink)}.ar{font-size:30px;fill:var(--mt)}
+.bx{fill:var(--sf);stroke:var(--mt);stroke-width:2.5}.ring{fill:none;stroke:var(--mt);stroke-width:3;stroke-dasharray:7 7;opacity:.6}
+.mb{fill:var(--mt);opacity:.3}.cx{fill:var(--mt)}.cxt{fill:#fff;font-size:20px;font-weight:700}
+.cb{fill:var(--cb)}.pp{fill:#e8b83c;stroke:#9a7314;stroke-width:1.5}.pt{font-size:14px;font-weight:700;fill:#3b2a00}
+.tk{stroke:rgba(0,0,0,.25);stroke-width:1}.tt{font-size:15px;font-weight:700;fill:#1c2523}
+.atp{fill:#f5c542}.adp{fill:#cfd6d4}.nadh{fill:#f4a261}.nad{fill:#cfd6d4}.fad{fill:#ee8b6b}.co2{fill:#d9dedd}.h2o{fill:#8ecae6}.h{fill:#b9d7f5}.o2{fill:#a8dadc}.tg{fill:#e5e0f5}
+.dot{fill:#f5c542;stroke:#9a7314;stroke-width:2}
+g.e{transition:transform .9s ease,opacity .7s ease}
+@media(prefers-reduced-motion:reduce){g.e{transition:none}}
+.cap h2{font-size:21px;margin:0 0 2px}.pl2{font-size:15px;font-weight:700;color:var(--cy)}.pl2.m{color:var(--mt)}
+.cap p{margin:6px 0 0;font-size:19px}
+.nav{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.nav button{font:inherit;font-weight:700;padding:8px 20px;border-radius:10px;border:1px solid var(--mt);background:var(--mt);color:var(--bg);cursor:pointer}
+.nav button.g{background:none;color:var(--mt)}.nav button:disabled{opacity:.35;cursor:default}
+.nav span{margin-left:auto;color:var(--mu);font-size:16px}
+.tl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.tl div{border:1px solid var(--ln);border-radius:10px;padding:4px 10px;background:var(--bg)}
+.tl b{font-size:26px;display:block;line-height:1.25}.tl small{color:var(--mu);font-size:14px}
+.ab{height:12px;border-radius:6px;background:var(--ln);overflow:hidden}.ab i{display:block;height:100%;background:var(--mt);width:0;transition:width .6s}
+small.n{color:var(--mu);font-size:14px;line-height:1.5;display:block;margin-top:8px}
+</style>
+</head>
+<body>
+<main>
+<h1>세포호흡 시뮬레이션</h1>
+<p class="sub">포도당 1분자가 분해되는 과정을 처음부터 끝까지 따라가 보자. 단계 버튼을 누르거나 자동 재생을 켜면 된다.</p>
+<div class="tabs" id="tabs"></div>
+<div class="fl" id="fl" aria-label="탄소의 이동 흐름"></div>
+<div class="grid">
+<div>
+<div class="card"><svg id="sv" viewBox="0 0 800 400" role="img" aria-label="세포호흡 단계별 시뮬레이션"><g id="bg"></g><g id="fg"></g></svg></div>
+<div class="card cap" style="margin-top:12px"><h2 id="t"></h2><div class="pl2" id="w"></div><p id="d"></p>
+<div class="nav"><button class="g" id="pv">이전</button><button id="nx">다음</button><button class="g" id="pl">자동 재생</button><span id="pg"></span></div></div>
+</div>
+<div class="card"><b>지금까지 생성된 양</b>
+<div class="tl"><div><b id="vA">0</b><small>ATP (순)</small></div><div><b id="vN">0</b><small>NADH</small></div><div><b id="vF">0</b><small>FADH₂</small></div><div><b id="vC">0</b><small>CO₂</small></div></div>
+<small style="color:var(--mu);font-size:14px">ATP 합성량 (최대 32)</small><div class="ab"><i id="bar"></i></div>
+<small class="n">수치는 포도당 1분자(피루브산 2분자) 기준이다. 화면의 그림은 이해를 돕기 위해 분자 1개를 대표로 보여 준다.</small></div>
+</div>
+</main>
+<script>
+var $=function(i){return document.getElementById(i)};
+function C(n){for(var s='',i=0;i<n;i++)s+='<circle cx="'+i*28+'" r="13" class="cb"/>';return s}
+function Pp(){return '<circle r="12" class="pp"/><text y="5" text-anchor="middle" class="pt">P</text>'}
+function T(l,c){var w=22+l.length*11;return '<rect x="'+-w/2+'" y="-14" width="'+w+'" height="28" rx="14" class="tk '+c+'"/><text y="6" text-anchor="middle" class="tt">'+l+'</text>'}
+function L(t,a){return '<text text-anchor="'+(a||'middle')+'" class="lb">'+t+'</text>'}
+function D(t){return '<circle r="17" class="dot"/><text y="5" text-anchor="middle" class="tt">'+t+'</text>'}
+function B(a,b,c){return '<rect width="230" height="110" rx="14" class="bx"/><text x="115" y="34" text-anchor="middle" class="bt">'+a+'</text><text x="115" y="64" text-anchor="middle" class="lb">'+b+'</text><text x="115" y="90" text-anchor="middle" class="lb">'+c+'</text>'}
+function R(x,y,w,h,r,c){return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="'+r+'" class="'+c+'"/>'}
+function X(x,y,t,a){return '<text x="'+x+'" y="'+y+'" class="lb"'+(a?' text-anchor="'+a+'"':'')+'>'+t+'</text>'}
+function E(id,h,x,y){return {id:id,h:h,s:[x,y,0]}}
+function S(c,m,v){return {c:c,m:m||{},v:v||{}}}
+var CY=R(4,4,792,392,24,'cy')+X(22,34,'세포질');
+var MI=CY+R(130,20,660,360,70,'mt')+X(160,52,'마이토콘드리아 바탕질');
+var SC=[
+{n:'개요',p:'세포호흡의 세 단계',bg:CY+R(270,20,520,360,70,'mt')+X(300,52,'마이토콘드리아'),
+e:[E('chip',T('포도당 (C₆H₆O₆)'.replace('C₆H₆','C₆H₁₂'),'tg'),137,95),E('b1',B('1. 해당 과정','세포질 · 산소 불필요','피루브산 · NADH · ATP'),18,150),E('a1','<text class="ar" text-anchor="middle">▶</text>',266,218),E('b2',B('2. 피루브산 산화·TCA','마이토콘드리아 바탕질','CO₂ · NADH · FADH₂ · ATP'),285,150),E('a2','<text class="ar" text-anchor="middle">▶</text>',533,218),E('b3',B('3. 산화적 인산화','마이토콘드리아 내막','ATP 대량 합성 · H₂O'),552,150)],
+s:[S('세포호흡은 포도당 같은 유기물을 분해해 생명 활동에 필요한 에너지(ATP)를 얻는 과정이다. 포도당은 산화되어 CO₂가 되고 산소는 환원되어 물이 된다. 방출된 에너지의 일부는 ATP에 저장되고 나머지는 열로 나간다.',{chip:1}),
+S('1단계 해당 과정: 세포질에서 포도당(C₆)이 피루브산(C₃) 2분자로 분해된다. 산소가 필요 없다.',{b1:1}),
+S('2단계: 피루브산이 마이토콘드리아 바탕질로 들어가 CO₂로 완전히 분해되며, 에너지가 NADH와 FADH₂에 옮겨 담긴다.',{a1:1,b2:1}),
+S('3단계 산화적 인산화: NADH와 FADH₂의 에너지로 내막에서 ATP를 대량 합성하고, 산소는 마지막에 물이 된다. 이제 단계별로 자세히 따라가 보자.',{a2:1,b3:1})]},
+{n:'해당 과정',p:'장소: 세포질 (산소 불필요)',bg:CY,
+e:[E('glc',C(6),140,190),E('lgl',L('포도당 (C₆)'),210,250),E('lfr',L('과당 2인산 (C₆)'),210,250),E('P1',Pp(),280,222),E('P2',Pp(),140,222),
+E('atp1',T('ATP','atp'),360,110),E('adp1',T('ADP','adp'),285,150),E('atp2',T('ATP','atp'),60,110),E('adp2',T('ADP','adp'),145,150),
+E('hA',C(3),140,190),E('hB',C(3),224,190),E('lgA',L('3탄소 화합물','start'),330,80),E('lgB',L('3탄소 화합물','start'),330,260),E('lpA',L('피루브산 (C₃)','start'),330,80),E('lpB',L('피루브산 (C₃)','start'),330,260),
+E('pA2',Pp(),358,142),E('pB2',Pp(),358,322),E('nadA',T('NAD⁺','nad'),470,110),E('nhA',T('NADH','nadh'),470,110),E('nadB',T('NAD⁺','nad'),470,290),E('nhB',T('NADH','nadh'),470,290),
+E('adA',T('2ADP','adp'),520,150),E('atA',T('2ATP','atp'),520,150),E('adB',T('2ADP','adp'),520,330),E('atB',T('2ATP','atp'),520,330)],
+s:[S('세포질에 6탄소 화합물인 포도당이 있다. 크기가 커서 마이토콘드리아 막을 통과하지 못하므로 3탄소 화합물인 피루브산으로 분해되어야 한다.',{glc:[140,190,1],lgl:1,atp1:1,atp2:1}),
+S('ATP 1분자가 인산기를 내어 주어 ADP가 되고, 그 인산기가 포도당에 붙는다.',{atp1:[285,150,0],adp1:[240,45,1],P1:1},{a:-1}),
+S('ATP 1분자를 더 써서 인산기가 하나 더 붙으면 과당 2인산이 된다. 지금까지 ATP 2분자를 소모했다. (에너지 투입기)',{atp2:[145,150,0],adp2:[70,45,1],P2:1,lgl:0,lfr:1},{a:-1}),
+S('과당 2인산이 인산기를 하나씩 가진 3탄소 화합물 2분자로 갈라진다.',{glc:0,hA:[330,110,1],hB:[330,290,1],P2:[330,142,1],P1:[330,322,1],lfr:0,lgA:1,lgB:1,adp1:0,adp2:0}),
+S('탈수소효소가 H⁺과 고에너지 전자를 떼어 내(산화) NAD⁺가 NADH로 환원된다. 무기 인산(Pᵢ)이 붙고, ADP는 ATP 합성을 기다린다.',{nadA:1,nhA:[600,70,1],nadB:1,nhB:[600,250,1],pA2:1,pB2:1,adA:1,adB:1},{n:2}),
+S('인산기가 ADP로 전달되는 기질수준인산화로 ATP 4분자가 생긴다. 결과: 피루브산 2분자, NADH 2분자, ATP 순생성 2분자.',{adA:0,atA:1,adB:0,atB:1,P2:0,P1:0,pA2:0,pB2:0,lgA:0,lgB:0,lpA:1,lpB:1},{a:4})]},
+{n:'피루브산 산화·TCA 회로',p:'장소: 마이토콘드리아 바탕질',
+bg:MI+X(20,34,'')+'<circle cx="520" cy="205" r="90" class="ring"/>'+X(520,86,'시트르산','middle')+X(610,248,'5탄소 화합물','middle')+X(520,340,'4탄소 화합물','middle')+X(430,168,'옥살아세트산','middle'),
+e:[E('pyr',C(3),30,200),E('lpy',L('피루브산 (C₃)'),58,240),E('acC',C(2),170,200),E('lac',L('아세틸조효소 A (C₂)'),184,240),E('co2a',T('CO₂','co2'),226,200),E('nd1',T('NADH','nadh'),190,290),
+E('d6',D('C₆'),520,115),E('d5',D('C₅'),610,205),E('d4',D('C₄'),520,295),E('d4b',D('C₄'),430,205),
+E('co2b',T('CO₂','co2'),610,170),E('nb',T('NADH','nadh'),610,205),E('co2c',T('CO₂','co2'),610,240),E('nc',T('NADH','nadh'),520,330),E('atT',T('ATP','atp'),520,330),E('fadT',T('FADH₂','fad'),430,250),E('nd4',T('NADH','nadh'),430,230)],
+s:[S('해당 과정에서 만들어진 피루브산(C₃)이 세포질에 있다. 산소가 있으면 마이토콘드리아 안으로 들어간다.',{pyr:[30,200,1],lpy:1}),
+S('피루브산이 마이토콘드리아 막을 통과해 바탕질로 들어간다.',{pyr:[170,200,1],lpy:[198,240,1]}),
+S('피루브산이 CO₂를 내놓으며 산화되어 아세틸조효소 A(C₂)가 되고, NAD⁺가 NADH로 환원된다. 포도당 1분자 기준으로 이 반응은 2번 일어난다.',{pyr:0,lpy:0,acC:[170,200,1],lac:1,co2a:[260,110,1],nd1:1},{n:2,c:2}),
+S('TCA 회로 시작: 아세틸조효소 A(C₂)가 옥살아세트산(C₄)과 결합해 시트르산(C₆)이 된다.',{acC:[440,160,0],lac:0,d6:1}),
+S('시트르산이 5탄소 화합물로 바뀌며 CO₂와 NADH가 생긴다.',{d6:0,d5:1,co2b:[660,120,1],nb:[700,190,1]},{c:2,n:2}),
+S('5탄소 화합물이 4탄소 화합물이 되며 CO₂, NADH가 생기고, 기질수준인산화로 ATP가 합성된다.',{d5:0,d4:1,co2c:[660,280,1],nc:[610,350,1],atT:[430,355,1]},{c:2,n:2,a:2}),
+S('4탄소 화합물이 옥살아세트산으로 재생되며 FADH₂와 NADH가 생긴다. 옥살아세트산은 다시 아세틸조효소 A와 결합해 회로가 반복된다. TCA 회로 총합: CO₂ 4, NADH 6, FADH₂ 2, ATP 2.',{d4:0,d4b:1,fadT:[370,300,1],nd4:[340,250,1]},{f:2,n:2})]},
+{n:'산화적 인산화',p:'장소: 마이토콘드리아 내막',
+bg:R(4,4,792,190,0,'ims')+R(4,206,792,190,0,'mx')+R(4,190,792,20,0,'mb')+X(20,34,'막 사이 공간 (H⁺ 많음, pH 낮음)')+X(20,384,'바탕질 (H⁺ 적음, pH 높음)')+
+[150,250,350,450].map(function(x,i){return R(x-30,170,60,60,10,'cx')+'<text x="'+x+'" y="208" text-anchor="middle" class="cxt">'+['Ⅰ','Ⅱ','Ⅲ','Ⅳ'][i]+'</text>'}).join('')+R(622,176,36,48,8,'cx')+'<circle cx="640" cy="256" r="28" class="cx"/>'+X(640,310,'ATP 합성효소','middle')+X(300,150,'전자전달계','middle'),
+e:[E('nadh',T('NADH','nadh'),150,268),E('nadp',T('NAD⁺','nad'),60,320),E('fadh',T('FADH₂','fad'),250,268),E('fadp',T('FAD','nad'),250,330),E('e1',D('e⁻'),150,200),
+E('hA',T('H⁺','h'),150,262),E('hB',T('H⁺','h'),350,262),E('hC',T('H⁺','h'),450,262),E('o2',T('½O₂','o2'),450,340),E('h2o',T('H₂O','h2o'),530,330),
+E('hcr',[0,80,160,240,320,400].map(function(x){return '<g transform="translate('+x+',0)">'+T('H⁺','h')+'</g>'}).join(''),90,95),
+E('hs',T('H⁺','h')+'<g transform="translate(0,-34)">'+T('H⁺','h')+'</g>',640,140),E('atT',T('ATP +28','atp'),725,335)],
+s:[S('NADH와 FADH₂가 내막의 전자전달계에 고에너지 전자(e⁻)를 건네주고 NAD⁺, FAD로 산화된다.',{nadh:[150,262,1],nadp:1,fadh:[250,262,1],fadp:1,e1:1}),
+S('전자가 전자전달체를 따라 이동하며 에너지를 조금씩 내놓고, 그 에너지로 H⁺이 바탕질에서 막 사이 공간으로 능동수송된다.',{e1:[450,200,1],hA:[150,135,1],hB:[350,135,1],hC:[450,135,1]}),
+S('전자는 마지막에 산소에 전달되어 H⁺과 결합해 물이 된다. 산소가 없으면 전자 흐름이 끊겨 ATP가 합성되지 않고, 피루브산 산화와 TCA 회로도 멈춘다.',{e1:[450,250,0],o2:[450,270,1],h2o:1}),
+S('막 사이 공간에 H⁺이 쌓여 내막을 경계로 H⁺ 농도 기울기가 만들어진다.',{hcr:[90,95,1]}),
+S('H⁺이 농도 기울기에 따라 ATP 합성효소를 통해 바탕질로 확산(화학 삼투)하고, 이때 ATP가 합성된다. H⁺ 4개당 ATP 1분자이며 NADH 1분자는 약 2.5, FADH₂ 1분자는 약 1.5ATP를 만든다.',{hs:[640,330,1],atT:1},{a:28})]},
+{n:'ATP 수지',p:'포도당 1분자의 결과',bg:R(4,4,792,392,24,'pl'),
+e:[E('c1',B('기질수준인산화','ATP 4분자','해당 2 + TCA 2'),18,110),E('c2',B('산화적 인산화','ATP 28분자','NADH 25 + FADH₂ 3'),285,110),E('c3',B('합계','ATP 최대 32분자','세포마다 차이가 있다'),552,110),E('c4',L('포도당 1몰 686 kcal 중 ATP에 약 34 % 저장 (7.3 kcal × 32), 나머지 66 %는 열로 방출'),400,300)],
+s:[S('기질수준인산화로 해당 과정에서 2분자, TCA 회로에서 2분자, 모두 4분자의 ATP가 만들어진다.',{c1:1}),
+S('산화적 인산화는 NADH 10분자(× 2.5)와 FADH₂ 2분자(× 1.5)로 ATP 28분자를 만든다.',{c2:1}),
+S('포도당 1분자가 완전히 분해되면 ATP가 최대 32분자 생성된다.',{c3:1}),
+S('포도당 에너지의 약 34 %가 ATP에 저장되고, 나머지는 열로 방출되어 체온 유지 등에 쓰인다.',{c4:1})]},
+{n:'발효 (산소 없음)',p:'장소: 세포질',f:1,bg:CY,
+e:[E('pA',C(3),110,110),E('pB',C(3),110,290),E('lpA',L('피루브산 (C₃)','start'),110,150),E('lpB',L('피루브산 (C₃)','start'),110,330),E('nA',T('NADH','nadh'),280,75),E('nB',T('NADH','nadh'),280,255),
+E('lacA',C(3),430,110),E('lL',L('젖산 (C₃)','start'),430,150),E('ndA',T('NAD⁺','nad'),350,45),E('ach',C(2),330,290),E('lAc',L('아세트알데하이드 (C₂)','start'),330,330),E('co2',T('CO₂','co2'),230,345),E('eth',C(2),480,290),E('lE',L('에탄올 (C₂)','start'),480,330),E('ndB',T('NAD⁺','nad'),400,225)],
+s:[S('산소가 없으면 전자전달계가 작동하지 않아 해당 과정만으로 ATP 2분자를 얻는다. 쌓이는 NADH를 처리해 NAD⁺를 되살려야 해당 과정이 계속된다.',{pA:1,pB:1,lpA:1,lpB:1,nA:1,nB:1}),
+S('젖산 발효(젖산균, 사람의 근육세포): 피루브산이 NADH로부터 H⁺과 전자를 받아 젖산으로 환원되고 NAD⁺가 재생된다.',{pA:0,lpA:0,lacA:1,lL:1,nA:[350,75,0],ndA:1},{n:-2}),
+S('알코올 발효(효모): 피루브산이 CO₂를 내놓고 아세트알데하이드가 된다.',{pB:0,lpB:0,ach:1,lAc:1,co2:1}),
+S('아세트알데하이드가 NADH로부터 H⁺과 전자를 받아 에탄올로 환원되고 NAD⁺가 재생된다. 두 발효 모두 ATP는 2분자뿐이다.',{ach:0,lAc:0,eth:1,lE:1,nB:[400,255,0],ndB:1})]}];
+var FL=['포도당 (C₆)','피루브산 (C₃) ×2','아세틸조효소 A (C₂) ×2','TCA 회로: CO₂ 배출','전자전달계: H⁺ 수송','ATP 합성 · H₂O'];
+function fi(){var s=cur.s,j=cur.j;if(s==1)return j<3?0:1;if(s==2)return j<2?1:j<4?2:3;if(s==3)return j<4?4:5;if(s==4)return 5;return -1}
+var cur={s:0,j:0},built=-1,timer=null;
+function add(t,v){for(var k in v)t[k]+=v[k]}
+function state(){var sc=SC[cur.s],st={};sc.e.forEach(function(e){st[e.id]=e.s.slice()});
+for(var j=0;j<=cur.j;j++){var m=sc.s[j].m;for(var k in m){var v=m[k];if(typeof v=='number')st[k][2]=v;else st[k]=v.slice()}}return st}
+function put(g,a){g.style.transform='translate('+a[0]+'px,'+a[1]+'px)';g.style.opacity=a[2]}
+function draw(){var sc=SC[cur.s],st=state();
+if(built!=cur.s){$('bg').innerHTML=sc.bg;$('fg').innerHTML=sc.e.map(function(e){return '<g class="e" id="e_'+e.id+'">'+e.h+'</g>'}).join('');built=cur.s;
+sc.e.forEach(function(e){put($('e_'+e.id),st[e.id])})}
+else sc.e.forEach(function(e){put($('e_'+e.id),st[e.id])});
+$('t').textContent=sc.n+' · '+(cur.j+1)+'단계';$('w').textContent=sc.p;$('w').className='pl2'+(/바탕질|내막/.test(sc.p)?' m':'');$('d').textContent=sc.s[cur.j].c;
+var t={a:0,n:0,f:0,c:0};
+if(sc.f){t.a=2;t.n=2;for(var j=0;j<=cur.j;j++)add(t,sc.s[j].v)}
+else for(var i=0;i<=cur.s;i++){if(SC[i].f)continue;var m=i==cur.s?cur.j:SC[i].s.length-1;for(var j=0;j<=m;j++)add(t,SC[i].s[j].v)}
+$('vA').textContent=t.a;$('vN').textContent=t.n;$('vF').textContent=t.f;$('vC').textContent=t.c;$('bar').style.width=Math.max(0,t.a)/32*100+'%';
+$('pg').textContent=(cur.j+1)+' / '+sc.s.length;
+var first=cur.s==0&&cur.j==0,last=cur.s==SC.length-1&&cur.j==sc.s.length-1;$('pv').disabled=first;$('nx').disabled=last;
+Array.prototype.forEach.call($('tabs').children,function(b,i){b.setAttribute('aria-current',i==cur.s)});
+var k=fi();$('fl').innerHTML=FL.map(function(x,i){return '<span class="'+(i==k?'on':i<k?'dn':'')+'">'+x+'</span>'}).join('<i>▶</i>');
+if(last)stop()}
+function next(){var sc=SC[cur.s];if(cur.j<sc.s.length-1)cur.j++;else if(cur.s<SC.length-1){cur.s++;cur.j=0}draw()}
+function prev(){if(cur.j>0)cur.j--;else if(cur.s>0){cur.s--;cur.j=SC[cur.s].s.length-1}draw()}
+function stop(){clearInterval(timer);timer=null;$('pl').textContent='자동 재생'}
+$('tabs').innerHTML=SC.map(function(s,i){return '<button data-i="'+i+'">'+s.n+'</button>'}).join('');
+$('tabs').onclick=function(e){var b=e.target.closest('button');if(b){cur={s:+b.dataset.i,j:0};draw()}};
+$('nx').onclick=function(){stop();next()};$('pv').onclick=function(){stop();prev()};
+$('pl').onclick=function(){if(timer){stop();return}if(cur.s==SC.length-1&&cur.j==SC[cur.s].s.length-1){cur={s:0,j:0};draw()}$('pl').textContent='일시 정지';timer=setInterval(next,5500)};
+document.onkeydown=function(e){if(e.key=='ArrowRight'){stop();next()}if(e.key=='ArrowLeft'){stop();prev()}};
+draw();
+</script>
+</body>
+</html>

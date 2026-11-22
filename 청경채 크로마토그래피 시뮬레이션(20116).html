@@ -1,0 +1,1488 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>청경채 광합성 색소 분리</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f2f4ee;
+      color: #29392b;
+      font-family: 'DM Sans', 'Noto Sans KR', sans-serif;
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    .lab {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 34px 25px;
+    }
+
+    .top {
+      margin-bottom: 28px;
+    }
+
+    .eyebrow {
+      color: #7a9572;
+      font-size: 11px;
+      letter-spacing: 2px;
+      font-weight: 700;
+    }
+
+    h1 {
+      font-size: clamp(26px, 4vw, 40px);
+      letter-spacing: -1px;
+      margin: 12px 0;
+      font-weight: 900;
+    }
+
+    .top p {
+      font-size: 14px;
+      color: #778174;
+    }
+
+    .step-list {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .step {
+      background: #e5e9e0;
+      color: #7c8679;
+      border-radius: 30px;
+      padding: 9px 13px;
+      font-size: 12px;
+      transition: .25s;
+    }
+
+    .step.active {
+      background: #3f683c;
+      color: white;
+    }
+
+    .step.done {
+      background: #d2dfca;
+      color: #41623d;
+    }
+
+    .progress {
+      height: 4px;
+      width: 100%;
+      background: #dfe5dc;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 23px;
+    }
+
+    #progress {
+      width: 0;
+      height: 100%;
+      background: #6e9162;
+      transition: width .4s;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.8fr) minmax(240px, .8fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .experiment,
+    .records {
+      background: #fff;
+      border: 1px solid #e5e9e1;
+      border-radius: 18px;
+      padding: 22px;
+    }
+
+    .heading #stepLabel {
+      font-size: 11px;
+      color: #80967a;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+    }
+
+    .heading h2 {
+      font-size: 23px;
+      margin: 8px 0 0;
+    }
+
+    #instruction {
+      color: #7b8578;
+      font-size: 13px;
+      line-height: 1.7;
+      min-height: 42px;
+      margin: 12px 0 16px;
+    }
+
+    .canvas-box {
+      width: 100%;
+      background: #f2f4ee;
+      border-radius: 13px;
+      overflow: hidden;
+    }
+
+    #scene {
+      display: block;
+      width: 100%;
+      height: auto;
+      touch-action: none;
+    }
+
+    .bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    #counter {
+      font-size: 13px;
+      font-weight: 700;
+      color: #53664f;
+    }
+
+    #action {
+      border: none;
+      border-radius: 10px;
+      background: #456c40;
+      color: white;
+      padding: 12px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #action:disabled {
+      background: #cbd4c7;
+      color: #f7f8f5;
+      cursor: default;
+    }
+
+    .reset {
+      border: none;
+      background: #edf0e9;
+      color: #687564;
+      border-radius: 9px;
+      padding: 10px 14px;
+      margin-top: 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .records h3 {
+      margin: 2px 0 14px;
+      font-size: 16px;
+    }
+
+    .record {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 12px 0;
+      border-bottom: 1px solid #edf0ea;
+    }
+
+    .record span {
+      font-size: 11px;
+      color: #8a9387;
+    }
+
+    .record strong {
+      font-size: 13px;
+    }
+
+    .result-card {
+      margin-top: 18px;
+      padding: 15px;
+      background: #f4f5f0;
+      border-radius: 12px;
+    }
+
+    .result-card h4 {
+      margin: 0 0 13px;
+      font-size: 12px;
+      color: #71816d;
+    }
+
+    .preview-paper {
+      width: 54px;
+      height: 190px;
+      margin: 0 auto 12px;
+      border-radius: 3px;
+      background: #fffef8;
+      border: 1px solid #dedfd7;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview-origin {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      left: 23px;
+      bottom: 19px;
+      background: #38543a;
+      border-radius: 50%;
+    }
+
+    .preview-band {
+      position: absolute;
+      left: 3px;
+      width: 46px;
+      border-radius: 50%;
+      filter: blur(5px);
+    }
+
+    .carotene {
+      top: 17px;
+      height: 12px;
+      background: #9aab87;
+    }
+
+    .pheophytin {
+      top: 34px;
+      height: 10px;
+      background: #8cb98e;
+    }
+
+    .chlorA {
+      top: 78px;
+      height: 18px;
+      background: #3ca766;
+    }
+
+    .chlorB {
+      top: 106px;
+      height: 20px;
+      background: #16813a;
+    }
+
+    .lutein {
+      top: 139px;
+      height: 15px;
+      background: #c6c53a;
+    }
+
+    .violaxanthin {
+      top: 160px;
+      height: 11px;
+      background: #a8bd38;
+    }
+
+    .neoxanthin {
+      top: 173px;
+      height: 12px;
+      background: #9eb33d;
+    }
+
+    .preview-labels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      margin-top: 12px;
+    }
+
+    .preview-labels span {
+      color: #7c8579;
+      font-size: 10px;
+    }
+
+    .note {
+      margin-top: 17px;
+      background: #eaf0e5;
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .note h4 {
+      color: #718b67;
+      letter-spacing: 1px;
+      font-size: 10px;
+      margin: 0 0 8px;
+    }
+
+    .note p {
+      font-size: 12px;
+      color: #566852;
+      line-height: 1.8;
+      margin: 0;
+    }
+
+    @media (max-width: 760px) {
+      .lab {
+        padding: 20px 13px;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .experiment,
+      .records {
+        padding: 16px;
+      }
+
+      .step {
+        font-size: 10px;
+        padding: 8px 10px;
+      }
+
+      .heading h2 {
+        font-size: 21px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="lab">
+    <header class="top">
+      <div class="eyebrow">VIRTUAL BIOLOGY LAB · 01</div>
+      <h1>청경채 광합성 색소 분리</h1>
+      <p>청경채 속 색소를 추출하고 종이 크로마토그래피로 분리해 보자.</p>
+    </header>
+
+    <div class="step-list">
+      <div class="step active" id="s0">01 자르기</div>
+      <div class="step" id="s1">02 빻기</div>
+      <div class="step" id="s2">03 섞기</div>
+      <div class="step" id="s3">04 원점 찍기</div>
+      <div class="step" id="s4">05 분리 관찰</div>
+    </div>
+
+    <div class="progress">
+      <div id="progress"></div>
+    </div>
+
+    <div class="layout">
+      <section class="experiment">
+        <div class="heading">
+          <div id="stepLabel">STEP 01</div>
+          <h2 id="stageTitle">청경채 자르기</h2>
+        </div>
+
+        <p id="instruction">청경채 잎을 드래그하여 총 10번 잘라주세요.</p>
+
+        <div class="canvas-box">
+          <canvas id="scene" width="900" height="540"></canvas>
+        </div>
+
+        <div class="bottom">
+          <span id="counter">자르기 0 / 10</span>
+          <button id="action" disabled>자르기 완료</button>
+        </div>
+
+        <button id="reset" class="reset">↻ 실험 처음부터 다시 하기</button>
+      </section>
+
+      <aside class="records">
+        <h3>실험 기록</h3>
+
+        <div class="record">
+          <span>실험 재료</span>
+          <strong>청경채</strong>
+        </div>
+
+        <div class="record">
+          <span>추출 대상</span>
+          <strong>광합성 색소</strong>
+        </div>
+
+        <div class="record">
+          <span>현재 단계</span>
+          <strong id="status">청경채 자르기</strong>
+        </div>
+
+        <div class="result-card">
+          <h4>색소 분리 예상 결과</h4>
+          <div class="preview-paper">
+            <div class="preview-origin"></div>
+            <div class="preview-band carotene"></div>
+            <div class="preview-band pheophytin"></div>
+            <div class="preview-band chlorA"></div>
+            <div class="preview-band chlorB"></div>
+            <div class="preview-band lutein"></div>
+            <div class="preview-band violaxanthin"></div>
+            <div class="preview-band neoxanthin"></div>
+          </div>
+          <div class="preview-labels">
+            <span>카로틴</span>
+            <span>페오피틴</span>
+            <span>엽록소 a</span>
+            <span>엽록소 b</span>
+            <span>루테인</span>
+            <span>비올라잔틴</span>
+            <span>네오잔틴</span>
+          </div>
+        </div>
+
+        <div class="note">
+          <h4>SCIENCE NOTE</h4>
+          <p id="science">
+            청경채 잎에는 엽록소와 카로티노이드 등의 광합성 색소가 존재한다.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+  <script>
+
+const canvas = document.getElementById("scene");
+const ctx = canvas.getContext("2d");
+const $ = id => document.getElementById(id);
+
+const W = 900, H = 540;
+let stage = 0;
+let cuts = 0, mash = 0, stir = 0;
+let drawing = false, last = null;
+let cutLines = [], mashDots = [], stirDots = [];
+let origin = null;
+let stirAngle = 0, lastTheta = null;
+let separationStart = 0, raf = null;
+
+const stages = [
+  ["청경채 자르기", "청경채 잎을 드래그하여 총 10번 잘라주세요."],
+  ["청경채 빻기", "절구 안쪽을 누른 채 움직여 청경채를 빻아주세요."],
+  ["색소 추출액 섞기", "추출액을 누르고 원을 그리듯 저어 섞어주세요."],
+  ["원점 찍기", "종이 아래쪽에 원점을 찍으세요. 전개액에 잠기지 않도록 하세요."],
+  ["색소 분리 관찰", "시간이 흐르면서 색소들이 이동하고 분리되는 모습을 관찰하세요."],
+  ["실험 결과", "청경채의 광합성 색소 분리 결과를 확인하세요."]
+];
+
+const notes = [
+  "잎을 자르면 식물 조직이 잘게 나뉘어 다음 단계에서 색소를 추출하기 쉬워집니다.",
+  "절구로 조직을 빻으면 세포 구조가 파괴되어 색소가 추출액으로 나오도록 돕습니다.",
+  "추출액을 섞으면 식물 조직과 용매가 접촉하면서 색소가 용액에 추출됩니다.",
+  "원점은 색소를 묻히는 기준 위치입니다. 전개액에 원점이 직접 잠기지 않도록 해야 합니다.",
+  "색소마다 용매에 대한 용해도와 종이에 대한 흡착력이 달라 이동 속도 차이가 생겨 분리됩니다.",
+  "실험을 통해 식물 잎에 여러 광합성 색소가 포함되어 있으며, 색소마다 이동 정도가 달라 분리될 수 있음을 확인했습니다."
+];
+
+const bands = [
+  { name:"카로틴", color:"#d5a23a", target:145, width:65, h:14 },
+  { name:"페오피틴", color:"#9cae72", target:175, width:65, h:15 },
+  { name:"엽록소 a", color:"#39a365", target:220, width:100, h:28 },
+  { name:"엽록소 b", color:"#26843b", target:260, width:95, h:30 },
+  { name:"루테인", color:"#c7c83e", target:295, width:100, h:20 },
+  { name:"비올라잔틴", color:"#afbd45", target:325, width:90, h:18 },
+  { name:"네오잔틴", color:"#91a943", target:345, width:85, h:18 }
+];
+
+function point(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x:(e.clientX-r.left)*W/r.width,
+    y:(e.clientY-r.top)*H/r.height
+  };
+}
+
+function clear(bg="#f2f4ee") {
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=bg;
+  ctx.fillRect(0,0,W,H);
+}
+
+function ellipse(x,y,rx,ry,color,rot=0) {
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(rot);
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawLeaf(x,y,rx,ry,rot,color) {
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(rot);
+  ctx.fillStyle=color;
+  ctx.strokeStyle="#477744";
+  ctx.lineWidth=2;
+
+  ctx.beginPath();
+  ctx.moveTo(0,ry);
+  ctx.bezierCurveTo(-rx,ry*.5,-rx*1.2,-ry*.45,0,-ry);
+  ctx.bezierCurveTo(rx*1.2,-ry*.45,rx,ry*.5,0,ry);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.strokeStyle="#b9d78e";
+  ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.moveTo(0,ry*.75);
+  ctx.quadraticCurveTo(0,0,0,-ry*.8);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// STEP 1: 청경채 자르기
+function drawPlant() {
+  clear("#edf1e8");
+  ellipse(450,405,235,25,"rgba(61,82,53,.12)");
+
+  drawLeaf(350,235,112,185,-.48,"#51944b");
+  drawLeaf(510,220,105,170,.48,"#4a8c46");
+  drawLeaf(430,180,95,200,0,"#75ad59");
+  drawLeaf(290,285,85,140,-.9,"#6aa957");
+  drawLeaf(570,285,85,140,.9,"#4d9147");
+  drawLeaf(390,240,68,145,-.15,"#83b85c");
+
+  ctx.fillStyle="#e4ddb9";
+  ctx.beginPath();
+  ctx.moveTo(340,250);
+  ctx.quadraticCurveTo(360,320,370,410,410,420);
+  ctx.lineTo(490,420);
+  ctx.quadraticCurveTo(460,330,460,245);
+  ctx.closePath();
+  ctx.fill();
+
+  cutLines.forEach(l=>{
+    ctx.strokeStyle="#f4f1db";
+    ctx.lineWidth=6;
+    ctx.lineCap="round";
+    ctx.beginPath();
+    ctx.moveTo(l.x1,l.y1);
+    ctx.lineTo(l.x2,l.y2);
+    ctx.stroke();
+  });
+
+  cutLines.forEach((l,i)=>{
+    ellipse(210+(i%5)*100,435+Math.floor(i/5)*25,20,8,"#69a353",i*.4);
+  });
+
+  ctx.fillStyle="#607956";
+  ctx.font="19px sans-serif";
+  ctx.textAlign="center";
+  ctx.fillText("청경채",450,485);
+}
+
+// STEP 2: 절구 빻기
+function insideMortar(p) {
+  const dx=(p.x-450)/175, dy=(p.y-320)/75;
+  return dx*dx+dy*dy<1;
+}
+
+function drawMortar() {
+  clear();
+
+  ctx.fillStyle="#b9b9a8";
+  ctx.beginPath();
+  ctx.ellipse(450,345,205,120,0,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle="#868d7b";
+  ctx.beginPath();
+  ctx.ellipse(450,320,175,75,0,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle="#646f5e";
+  ctx.beginPath();
+  ctx.ellipse(450,320,140,55,0,0,Math.PI*2);
+  ctx.fill();
+
+  mashDots.forEach(d=>ellipse(d.x,d.y,d.r,d.r*.7,d.color,d.rot));
+
+  const p=drawing&&last&&insideMortar(last)?last:{x:530,y:240};
+
+  ctx.save();
+  ctx.translate(p.x,p.y);
+  ctx.rotate(.25);
+  ctx.fillStyle="#b7b6a8";
+  ctx.beginPath();
+  ctx.roundRect(-19,-70,38,125,17);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(0,55,25,15,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.fillStyle="#65775c";
+  ctx.font="18px sans-serif";
+  ctx.textAlign="center";
+  ctx.fillText("절구 안쪽을 누르고 움직이세요",450,485);
+}
+
+// STEP 3: 추출액 젓기
+function insideLiquid(p) {
+  return p.x>285&&p.x<615&&p.y>175&&p.y<390;
+}
+
+function drawExtract() {
+  clear();
+
+  ctx.fillStyle="#d3ddd4";
+  ctx.fillRect(280,115,340,315);
+  ctx.fillStyle="#f9fbf8";
+  ctx.fillRect(291,125,318,295);
+  ctx.fillStyle="#78954c";
+  ctx.fillRect(297,220,306,190);
+  ellipse(450,220,153,9,"#91a966");
+
+  mashDots.slice(0,80).forEach(d=>{
+    ellipse(310+(d.x%280),240+(d.y%150),3,5,"#506f35");
+  });
+
+  stirDots.forEach(d=>{
+    ctx.strokeStyle="rgba(221,239,186,.8)";
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.arc(d.x,d.y,18,0,Math.PI*1.6);
+    ctx.stroke();
+  });
+
+  if(drawing&&last){
+    ctx.strokeStyle="#dce8ba";
+    ctx.lineWidth=4;
+    ctx.beginPath();
+    ctx.arc(last.x,last.y,25,0,Math.PI*1.5);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle="#657a55";
+  ctx.font="18px sans-serif";
+  ctx.textAlign="center";
+  ctx.fillText("추출액을 원을 그리며 저어주세요",450,485);
+}
+
+// STEP 4: 원점 찍기
+function drawPaper() {
+  clear();
+
+  ctx.fillStyle="#dce5dc";
+  ctx.fillRect(205,50,490,450);
+  ctx.strokeStyle="#aebbae";
+  ctx.strokeRect(205,50,490,450);
+
+  ctx.fillStyle="#e6eee5";
+  ctx.fillRect(211,410,478,84);
+
+  ctx.fillStyle="#fffef8";
+  ctx.fillRect(365,85,170,405);
+  ctx.strokeStyle="#e2e2d8";
+  ctx.strokeRect(365,85,170,405);
+
+  ctx.strokeStyle="#a4b9a3";
+  ctx.setLineDash([7,6]);
+  ctx.beginPath();
+  ctx.moveTo(211,410);
+  ctx.lineTo(689,410);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle="#7b9278";
+  ctx.font="15px sans-serif";
+  ctx.textAlign="center";
+  ctx.fillText("전개액",250,450);
+  ctx.fillText("거름종이",450,70);
+
+  if(origin){
+    ellipse(origin.x,origin.y,8,8,"#38583a");
+    ctx.fillStyle="#667d5f";
+    ctx.font="15px sans-serif";
+    ctx.textAlign="left";
+    ctx.fillText("원점",origin.x+18,origin.y+5);
+  } else {
+    ctx.fillStyle="#778875";
+    ctx.font="18px sans-serif";
+    ctx.textAlign="center";
+    ctx.fillText("거름종이 아래쪽을 터치해 원점을 찍으세요",450,280);
+  }
+}
+
+// STEP 5: 색소 분리 애니메이션
+function smooth(t) {
+  return t*t*(3-2*t);
+}
+
+function drawSeparation() {
+  clear();
+
+  // 용기
+  ctx.fillStyle="#dce5dc";
+  ctx.fillRect(205,50,490,450);
+  ctx.strokeStyle="#aebbae";
+  ctx.strokeRect(205,50,490,450);
+
+  // 액체는 종이 하단에만
+  ctx.fillStyle="#e6eee5";
+  ctx.fillRect(211,410,478,84);
+
+  // 종이
+  ctx.fillStyle="#fffef8";
+  ctx.fillRect(365,85,170,405);
+  ctx.strokeStyle="#e2e2d8";
+  ctx.strokeRect(365,85,170,405);
+
+  const duration=16000;
+  const t=Math.min(1,(performance.now()-separationStart)/duration);
+  const eased=smooth(t);
+  const solventY=410-280*eased;
+
+  // 용매 전선
+  ctx.strokeStyle="#a4b9a3";
+  ctx.setLineDash([6,6]);
+  ctx.beginPath();
+  ctx.moveTo(365,solventY);
+  ctx.lineTo(535,solventY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 색소 띠: 모두 원점 위쪽으로 이동하도록 제한
+  bands.forEach((b,i)=>{
+    const startY=origin?Math.min(origin.y,395):395;
+    const y=startY+(b.target-startY)*eased;
+    const spread=(3+eased*4)*(1+Math.sin(t*4+i)*.08);
+    const opacity=Math.min(1,eased*1.6);
+
+    ctx.globalAlpha=opacity;
+    ctx.filter="blur(10px)";
+    ellipse(450,y,b.width*.52,spread*1.4,b.color);
+    ctx.filter="blur(5px)";
+    ellipse(450,y,b.width*.42,b.h*.32,b.color);
+    ctx.filter="blur(2px)";
+    ellipse(450,y,b.width*.28,b.h*.2,b.color);
+    ctx.filter="none";
+    ctx.globalAlpha=1;
+  });
+
+  if(origin) ellipse(origin.x,origin.y,4,4,"#3d593b");
+
+  ctx.fillStyle="#657b60";
+  ctx.font="17px sans-serif";
+  ctx.textAlign="center";
+  ctx.fillText(t<1?"색소가 이동하며 서서히 분리되고 있습니다":"색소 분리 완료",450,520);
+
+  if(t<1){
+    raf=requestAnimationFrame(drawSeparation);
+  } else {
+    raf=null;
+    stage=5;
+    update();
+  }
+}
+
+// STEP 6: 최종 결과 화면
+function drawResult() {
+  clear("#f2f4ee");
+
+  ctx.fillStyle="#fffef8";
+  ctx.fillRect(205,25,490,485);
+  ctx.strokeStyle="#d9ded5";
+  ctx.strokeRect(205,25,490,485);
+
+  ctx.fillStyle="#496747";
+  ctx.font="bold 25px sans-serif";
+  ctx.textAlign="center";
+  ctx.fillText("색소 분리 실험 결과",450,65);
+
+  ctx.fillStyle="#8a9584";
+  ctx.font="13px sans-serif";
+  ctx.fillText("CHROMATOGRAPHY RESULT",450,88);
+
+  // 종이와 전개액
+  ctx.fillStyle="#e6eee5";
+  ctx.fillRect(300,415,300,70);
+  ctx.fillStyle="#fffef8";
+  ctx.fillRect(370,105,160,375);
+  ctx.strokeStyle="#e0e1d7";
+  ctx.strokeRect(370,105,160,375);
+
+  // 색소 띠는 원점 위, 액체 위쪽에 고정
+  const resultBands=[
+    {name:"카로틴",color:"#d5a23a",y:145,h:13,w:55},
+    {name:"페오피틴",color:"#9cae72",y:175,h:14,w:50},
+    {name:"엽록소 a",color:"#39a365",y:220,h:27,w:70},
+    {name:"엽록소 b",color:"#26843b",y:260,h:29,w:66},
+    {name:"루테인",color:"#c7c83e",y:295,h:20,w:72},
+    {name:"비올라잔틴",color:"#afbd45",y:325,h:18,w:65},
+    {name:"네오잔틴",color:"#91a943",y:345,h:18,w:60}
+  ];
+
+  resultBands.forEach(b=>{
+    ctx.save();
+    ctx.filter="blur(6px)";
+    ctx.globalAlpha=.6;
+    ellipse(415,b.y,b.w*.6,b.h*.65,b.color);
+    ctx.restore();
+
+    ctx.save();
+    ctx.filter="blur(3px)";
+    ellipse(415,b.y,b.w*.45,b.h*.4,b.color);
+    ctx.restore();
+
+    ctx.fillStyle="#596b53";
+    ctx.font="12px sans-serif";
+    ctx.textAlign="left";
+    ctx.fillText(b.name,480,b.y+4);
+  });
+
+  // 원점
+  ellipse(415,405,4,4,"#3d593b");
+  ctx.fillStyle="#778875";
+  ctx.font="11px sans-serif";
+  ctx.fillText("원점",480,408);
+
+  // 성공 표시
+  ctx.fillStyle="#e7efe2";
+  ctx.beginPath();
+  ctx.roundRect(335,445,230,42,12);
+  ctx.fill();
+
+  ctx.fillStyle="#456740";
+  ctx.font="bold 17px sans-serif";
+  ctx.textAlign="center";
+  ctx.fillText("✓ 실험 성공!",450,472);
+}
+
+// 화면 및 단계 갱신
+function draw() {
+  if(stage===0) drawPlant();
+  if(stage===1) drawMortar();
+  if(stage===2) drawExtract();
+  if(stage===3) drawPaper();
+  if(stage===4) drawSeparation();
+  if(stage===5) drawResult();
+}
+
+function update() {
+  $("stepLabel").textContent="STEP 0"+Math.min(stage+1,5);
+  $("stageTitle").textContent=stages[stage][0];
+  $("instruction").textContent=stages[stage][1];
+  $("status").textContent=stages[stage][0];
+  $("science").textContent=notes[stage];
+
+  $("progress").style.width=(stage/5*100)+"%";
+
+  for(let i=0;i<5;i++){
+    $("s"+i).classList.toggle("active",i===stage);
+    $("s"+i).classList.toggle("done",i<stage);
+  }
+
+  if(stage===0) $("counter").textContent=`자르기 ${cuts} / 10`;
+  if(stage===1) $("counter").textContent=`빻기 ${mash} / 25`;
+  if(stage===2) $("counter").textContent=`젓기 ${stir} / 3`;
+  if(stage===3) $("counter").textContent=origin?"원점 찍기 완료":"원점 찍기 전";
+  if(stage===4) $("counter").textContent="색소 분리 관찰 중";
+  if(stage===5) $("counter").textContent="분리 결과 확인 완료";
+
+  const ready=
+    (stage===0&&cuts>=10)||
+    (stage===1&&mash>=25)||
+    (stage===2&&stir>=3)||
+    (stage===3&&origin!==null)||
+    stage===5;
+
+  $("action").disabled=!ready;
+
+  const labels=[
+    "자르기 완료",
+    "빻기 완료",
+    "섞기 완료",
+    "전개 시작",
+    "분리 진행 중",
+    "실험 다시하기"
+  ];
+  $("action").textContent=labels[stage];
+
+  if(stage!==4) draw();
+}
+
+// 입력
+canvas.addEventListener("pointerdown",e=>{
+  const p=point(e);
+
+  if(stage===0&&cuts<10){
+    drawing=true;
+    last=p;
+    canvas.setPointerCapture(e.pointerId);
+  } else if(stage===1&&insideMortar(p)){
+    drawing=true;
+    last=p;
+    canvas.setPointerCapture(e.pointerId);
+  } else if(stage===2&&insideLiquid(p)){
+    drawing=true;
+    last=p;
+    lastTheta=Math.atan2(p.y-300,p.x-450);
+    canvas.setPointerCapture(e.pointerId);
+  } else if(stage===3){
+    if(p.x>=365&&p.x<=535&&p.y>=350&&p.y<405){
+      origin=p;
+      update();
+    }
+  }
+});
+
+canvas.addEventListener("pointermove",e=>{
+  if(!drawing) return;
+  const p=point(e);
+
+  if(stage===0){
+    last=p;
+    drawPlant();
+  } else if(stage===1&&insideMortar(p)){
+    mash++;
+    mashDots.push({
+      x:p.x+(Math.random()-.5)*25,
+      y:p.y+(Math.random()-.5)*20,
+      r:5+Math.random()*7,
+      rot:Math.random()*3,
+      color:["#4d873d","#6b9d50","#397736","#82a95c"][Math.floor(Math.random()*4)]
+    });
+    last=p;
+    drawMortar();
+    update();
+  } else if(stage===2&&insideLiquid(p)){
+    const theta=Math.atan2(p.y-300,p.x-450);
+    let delta=theta-lastTheta;
+    while(delta>Math.PI) delta-=Math.PI*2;
+    while(delta<-Math.PI) delta+=Math.PI*2;
+    stirAngle+=delta;
+    lastTheta=theta;
+    last=p;
+    stirDots.push(p);
+
+    if(Math.abs(stirAngle)>=Math.PI*2){
+      stir++;
+      stirAngle=0;
+    }
+    drawExtract();
+    update();
+  }
+});
+
+canvas.addEventListener("pointerup",()=>{
+  if(stage===0&&drawing&&cuts<10){
+    cuts++;
+    cutLines.push({
+      x1:280+Math.random()*250,
+      y1:150+Math.random()*170,
+      x2:300+Math.random()*250,
+      y2:170+Math.random()*170
+    });
+  }
+  drawing=false;
+  last=null;
+  lastTheta=null;
+  update();
+});
+
+canvas.addEventListener("pointercancel",()=>{
+  drawing=false;
+  last=null;
+  lastTheta=null;
+  update();
+});
+
+// 단계 버튼
+$("action").addEventListener("click",()=>{
+  if($("action").disabled) return;
+
+  if(stage===0) stage=1;
+  else if(stage===1) stage=2;
+  else if(stage===2) stage=3;
+  else if(stage===3){
+    stage=4;
+    separationStart=performance.now();
+    if(raf) cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(drawSeparation);
+    update();
+    return;
+  } else if(stage===4){
+    return;
+  } else if(stage===5){
+    reset();
+    return;
+  }
+  update();
+});
+
+// 초기화
+function reset(){
+  if(raf) cancelAnimationFrame(raf);
+
+  stage=0;
+  cuts=0;
+  mash=0;
+  stir=0;
+  drawing=false;
+  last=null;
+  cutLines=[];
+  mashDots=[];
+  stirDots=[];
+  origin=null;
+  stirAngle=0;
+  lastTheta=null;
+  separationStart=0;
+  raf=null;
+  update();
+}
+
+$("reset").addEventListener("click",reset);
+update();
+  </script>
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,411 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미토콘드리아 세포호흡 시뮬레이션</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d1b;color:#edf4ff;font-family:Arial,sans-serif}
+.app{max-width:1200px;margin:auto;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px}
+h1{color:#76d7ff;font-size:clamp(24px,4vw,38px);margin:0}
+.subtitle{color:#91a4c8;margin-top:8px}
+.counter{background:#111e39;border:1px solid #28436c;border-radius:15px;padding:14px 24px;text-align:center}
+.counter strong{display:block;font-size:34px;color:#43dfff}
+.layout{display:grid;grid-template-columns:220px 1fr;gap:15px;margin-top:20px}
+.panel,.info{background:#101a31;border:1px solid #223858;border-radius:16px;padding:18px}
+button{background:#1b2c4c;color:white;border:1px solid #35527d;border-radius:10px;padding:12px;cursor:pointer}
+button:hover{background:#2c4772}
+.controls button{width:100%;margin:5px 0}
+.primary{background:#2565c9}
+label{display:block;color:#9cb2d4;margin:20px 0 8px}
+.speed{display:flex;gap:5px}
+.speed button{flex:1;padding:9px 3px}
+.selected{background:#2874d4}
+#scene{height:500px;background:#070e20;border:1px solid #263f68;border-radius:16px;overflow:hidden}
+canvas{width:100%;height:100%;display:block}
+.info{margin-top:15px;padding:20px}
+.info h2{color:#66dfff;margin-top:0}
+.info p{color:#c1d0e8;line-height:1.8}
+.stages{display:grid;grid-template-columns:1fr;gap:7px;margin-top:12px}
+.stages button{font-size:13px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;color:#9eb1d1;font-size:12px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}
+@media(max-width:750px){.layout{grid-template-columns:1fr}#scene{height:400px}.stages{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<div>
+<h1>MITOCHONDRIA LAB</h1>
+<div class="subtitle">미토콘드리아 세포호흡 인터랙티브 시뮬레이션</div>
+</div>
+<div class="counter">생성된 ATP<strong id="atp">0</strong></div>
+</header>
+
+<div class="layout">
+<div class="panel controls">
+<h3>시뮬레이션 조작</h3>
+<button class="primary" onclick="startSim()">▶ 시작</button>
+<button onclick="pauseSim()">Ⅱ 일시정지</button>
+<button onclick="resetSim()">↻ 다시 시작</button>
+<label>진행 속도</label>
+<div class="speed">
+<button onclick="setSpeed(0.5,this)">0.5x</button>
+<button class="selected" onclick="setSpeed(1,this)">1x</button>
+<button onclick="setSpeed(2,this)">2x</button>
+</div>
+<label>단계 선택</label>
+<div class="stages">
+<button onclick="jumpStage(0)">1. 해당과정</button>
+<button onclick="jumpStage(1)">2. 피루브산 산화</button>
+<button onclick="jumpStage(2)">3. 시트르산 회로</button>
+<button onclick="jumpStage(3)">4. 전자전달계</button>
+</div>
+</div>
+
+<div>
+<div id="scene"><canvas id="canvas"></canvas></div>
+<div class="info">
+<h2 id="stageTitle">세포호흡 준비</h2>
+<p id="stageText">시작 버튼을 눌러 포도당이 에너지로 바뀌는 과정을 관찰해 봐.</p>
+</div>
+</div>
+
+<div class="legend">
+<span><i class="dot" style="background:#ffbd40"></i>포도당</span>
+<span><i class="dot" style="background:#43baff"></i>전자</span>
+<span><i class="dot" style="background:#ff527e"></i>수소 이온</span>
+<span><i class="dot" style="background:#50ffd0"></i>ATP</span>
+<span><i class="dot" style="background:#ddd"></i>CO₂</span>
+</div>
+</div>
+
+<script>
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+let W=0,H=0;
+let stage=0;
+let progress=0;
+let running=false;
+let speed=1;
+let atp=0;
+let particles=[];
+let lastTime=0;
+
+const names=["해당과정","피루브산 산화","시트르산 회로","전자전달계"];
+
+const descriptions=[
+"세포질에서 포도당이 피루브산 2분자로 분해돼. 이 과정에서 순 ATP 2개가 생성돼.",
+"피루브산이 미토콘드리아 기질로 이동해 아세틸 CoA로 바뀌며 이산화탄소가 발생해.",
+"아세틸 CoA가 시트르산 회로를 거치면서 CO₂와 NADH, FADH₂ 및 ATP가 생성돼.",
+"전자전달계에서 전자가 이동하면서 수소 이온 농도 차이가 만들어져. ATP 합성효소를 통해 ATP가 생성되고 산소는 최종 전자 수용체 역할을 해."
+];
+
+function resizeCanvas(){
+const rect=canvas.getBoundingClientRect();
+W=rect.width;
+H=rect.height;
+canvas.width=Math.max(1,Math.floor(W*devicePixelRatio));
+canvas.height=Math.max(1,Math.floor(H*devicePixelRatio));
+ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+window.addEventListener("resize",resizeCanvas);
+resizeCanvas();
+
+function drawBackground(){
+ctx.fillStyle="#070e20";
+ctx.fillRect(0,0,W,H);
+for(let i=0;i<55;i++){
+const x=(i*137)%W;
+const y=(i*79)%H;
+ctx.fillStyle="rgba(110,160,255,0.13)";
+ctx.fillRect(x,y,2,2);
+}
+}
+
+function drawMito(){
+const cx=W*.52,cy=H*.52;
+ctx.save();
+ctx.translate(cx,cy);
+ctx.rotate(-.1);
+
+ctx.beginPath();
+ctx.ellipse(0,0,W*.39,H*.32,0,0,Math.PI*2);
+ctx.fillStyle="#351d58";
+ctx.fill();
+ctx.lineWidth=11;
+ctx.strokeStyle="#ad72ff";
+ctx.shadowBlur=20;
+ctx.shadowColor="#9255ff";
+ctx.stroke();
+ctx.shadowBlur=0;
+
+ctx.beginPath();
+ctx.ellipse(0,0,W*.355,H*.275,0,0,Math.PI*2);
+ctx.fillStyle="#171f42";
+ctx.fill();
+ctx.lineWidth=4;
+ctx.strokeStyle="#4bd8ff";
+ctx.stroke();
+
+for(let i=-2;i<=2;i++){
+let x=i*W*.105;
+ctx.beginPath();
+ctx.moveTo(x,-H*.19);
+ctx.bezierCurveTo(x-30,-H*.10,x+30,-H*.03,x,0);
+ctx.bezierCurveTo(x-30,H*.10,x+30,H*.17,x,H*.19);
+ctx.strokeStyle="#7050bf";
+ctx.lineWidth=8;
+ctx.stroke();
+}
+
+ctx.fillStyle="#a9baff";
+ctx.font="bold 14px Arial";
+ctx.textAlign="center";
+ctx.fillText("미토콘드리아 기질",0,0);
+ctx.restore();
+
+ctx.fillStyle="#9bbaff";
+ctx.font="12px Arial";
+ctx.fillText("외막",cx-W*.31,cy-H*.28);
+ctx.fillText("내막",cx+W*.29,cy-H*.24);
+ctx.fillText("크리스타",cx+W*.2,cy+H*.24);
+}
+
+function drawParticle(x,y,color,r=5){
+ctx.save();
+ctx.shadowBlur=12;
+ctx.shadowColor=color;
+ctx.fillStyle=color;
+ctx.beginPath();
+ctx.arc(x,y,r,0,Math.PI*2);
+ctx.fill();
+ctx.restore();
+}
+
+function drawGlycolysis(){
+const x=W*.12,y=H*.48;
+ctx.fillStyle="#ffca59";
+ctx.font="bold 14px Arial";
+ctx.fillText("포도당",x,y-45);
+
+drawParticle(x,y,"#ffbd40",7);
+
+if(progress>.25){
+drawParticle(x+45,y-28,"#ffbd40",6);
+drawParticle(x+45,y+28,"#ffbd40",6);
+ctx.fillStyle="#ffd36a";
+ctx.fillText("피루브산 2개",x+70,y+65);
+}
+}
+
+function drawMatrix(){
+const x=W*.52,y=H*.52;
+
+if(stage===1){
+drawParticle(x-W*.15,y,"#ffbd40",7);
+drawParticle(x-W*.05,y,"#ffbd40",7);
+ctx.fillStyle="#ffca60";
+ctx.fillText("아세틸 CoA",x,y+80);
+}
+
+if(stage===2){
+const r=75;
+for(let i=0;i<8;i++){
+const a=(i/8)*Math.PI*2+progress*5;
+drawParticle(x+Math.cos(a)*r,y+Math.sin(a)*r,i%2?"#ffbd40":"#48cfff",6);
+}
+ctx.strokeStyle="#ffc75a";
+ctx.lineWidth=3;
+ctx.beginPath();
+ctx.arc(x,y,r,0,Math.PI*2);
+ctx.stroke();
+ctx.fillStyle="#ffc75a";
+ctx.fillText("시트르산 회로",x,y+120);
+}
+}
+
+function drawETC(){
+const x=W*.72,y=H*.45;
+ctx.fillStyle="#9bc7ff";
+ctx.font="bold 13px Arial";
+ctx.fillText("전자전달계",x,y-65);
+
+for(let i=0;i<5;i++){
+const px=x-100+i*50;
+ctx.fillStyle="#214d9a";
+ctx.fillRect(px-12,y-22,24,45);
+ctx.fillStyle="#5edbff";
+ctx.fillRect(px-7,y-15,14,30);
+}
+
+for(let i=0;i<5;i++){
+const px=x-100+((progress*120+i*43)%200);
+drawParticle(px,y-40,"#42aaff",5);
+drawParticle(px,y+45,"#ff527e",5);
+}
+
+ctx.fillStyle="#56ffd1";
+ctx.fillText("ATP 합성효소",x+100,y+90);
+if(progress>.3){
+drawParticle(x+100,y+125,"#50ffd0",7);
+drawParticle(x+120,y+140,"#50ffd0",7);
+}
+}
+
+function drawCO2(){
+if(stage===1||stage===2){
+for(let i=0;i<3;i++){
+drawParticle(W*.42+i*20,H*.25-progress*20,"#dddddd",5);
+}
+ctx.fillStyle="#ddd";
+ctx.fillText("CO₂ 배출",W*.43,H*.20);
+}
+}
+
+function drawATP(){
+if(atp>0){
+ctx.fillStyle="#50ffd0";
+ctx.font="bold 18px Arial";
+ctx.fillText("ATP "+atp,W*.82,H*.82);
+}
+}
+
+function drawParticles(){
+particles.forEach(p=>{
+p.x+=p.vx;
+p.y+=p.vy;
+p.life-=.006;
+ctx.globalAlpha=Math.max(0,p.life);
+drawParticle(p.x,p.y,p.color,p.size);
+ctx.globalAlpha=1;
+});
+particles=particles.filter(p=>p.life>0);
+}
+
+function render(){
+drawBackground();
+drawMito();
+
+if(stage===0)drawGlycolysis();
+if(stage===1||stage===2)drawMatrix();
+if(stage===3)drawETC();
+
+drawCO2();
+drawATP();
+drawParticles();
+}
+
+function spawn(x,y,color,size=5){
+particles.push({
+x:x,
+y:y,
+color:color,
+size:size,
+life:1,
+vx:(Math.random()-.5)*1.2,
+vy:(Math.random()-.5)*1.2
+});
+}
+
+function update(dt){
+if(!running)return;
+
+progress+=dt*speed*.00035;
+
+if(stage===0){
+if(Math.random()<.15)spawn(W*.12+Math.random()*45,H*.48+Math.random()*30,"#ffbd40");
+if(progress>=1){
+atp=2;
+nextStage();
+}
+}
+else if(stage===1){
+if(Math.random()<.1)spawn(W*.5,H*.5,"#dddddd");
+if(progress>=1)nextStage();
+}
+else if(stage===2){
+if(Math.random()<.2)spawn(W*.53+Math.random()*30,H*.53+Math.random()*30,"#48cfff");
+if(progress>=1){
+atp=4;
+nextStage();
+}
+}
+else if(stage===3){
+if(Math.random()<.3)spawn(W*.72+Math.random()*100,H*.45+Math.random()*60,"#50ffd0");
+if(progress>=1){
+atp=30;
+running=false;
+document.getElementById("stageText").textContent="세포호흡 완료! 학습용 단순화 모델로 총 ATP 30개를 표시했어.";
+}
+}
+
+document.getElementById("atp").textContent=atp;
+}
+
+function nextStage(){
+stage++;
+progress=0;
+particles=[];
+if(stage>3)stage=3;
+updateInfo();
+}
+
+function updateInfo(){
+document.getElementById("stageTitle").textContent=names[stage]||"완료";
+document.getElementById("stageText").textContent=descriptions[stage]||"시뮬레이션이 완료됐어.";
+}
+
+function startSim(){
+if(stage===3&&progress>=1)return;
+running=true;
+}
+
+function pauseSim(){
+running=false;
+}
+
+function resetSim(){
+running=false;
+stage=0;
+progress=0;
+atp=0;
+particles=[];
+document.getElementById("atp").textContent="0";
+updateInfo();
+}
+
+function jumpStage(s){
+running=false;
+stage=s;
+progress=0;
+particles=[];
+atp=[0,2,2,4][s];
+document.getElementById("atp").textContent=atp;
+updateInfo();
+}
+
+function setSpeed(v,el){
+speed=v;
+document.querySelectorAll(".speed button").forEach(b=>b.classList.remove("selected"));
+el.classList.add("selected");
+}
+
+function loop(time){
+const dt=lastTime?time-lastTime:0;
+lastTime=time;
+update(Math.min(dt,100));
+render();
+requestAnimationFrame(loop);
+}
+
+updateInfo();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

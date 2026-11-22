@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>생명과학 II : 미토콘드리아 산화적 인산화 & 화학삼투 3D 시뮬레이터</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-void: #020617;
+      --glass-bg: rgba(8, 14, 30, 0.84);
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-void);
+      color: #f8fafc;
+      font-family: 'Noto Sans KR', sans-serif;
+      touch-action: none;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .glass-hud {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      box-shadow: 0 14px 36px -6px rgba(0, 0, 0, 0.78), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    #webgl-container {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+
+    /* 3D Floating Anchored Labels & Reaction Popups */
+    #labels-container, #popups-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+      overflow: hidden;
+    }
+
+    .label-3d {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.2s ease;
+      white-space: nowrap;
+    }
+    .label-3d:hover {
+      transform: translate(-50%, -108%) scale(1.07);
+      z-index: 30;
+    }
+
+    .reaction-popup {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      white-space: nowrap;
+      animation: floatUpFade 1.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      z-index: 40;
+    }
+
+    @keyframes floatUpFade {
+      0% { opacity: 0; transform: translate(-50%, -20%) scale(0.8); }
+      18% { opacity: 1; transform: translate(-50%, -60%) scale(1.04); }
+      80% { opacity: 1; transform: translate(-50%, -140%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -185%) scale(0.92); }
+    }
+
+    /* Custom Range Sliders with large touch targets */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 7px;
+      background: #1e293b;
+      border-radius: 999px;
+      outline: none;
+      cursor: pointer;
+      touch-action: pan-x;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 12px #38bdf8;
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:active {
+      transform: scale(1.25);
+    }
+    input[type="range"].purple-slider::-webkit-slider-thumb {
+      background: #c084fc;
+      box-shadow: 0 0 12px #c084fc;
+    }
+    input[type="range"].emerald-slider::-webkit-slider-thumb {
+      background: #34d399;
+      box-shadow: 0 0 12px #34d399;
+    }
+
+    .pulse-btn {
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .pulse-btn:active {
+      transform: scale(0.94);
+    }
+
+    .inhibitor-btn {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .inhibitor-btn.active {
+      border-color: #f43f5e !important;
+      background: rgba(225, 29, 72, 0.32) !important;
+      color: #fecdd3 !important;
+      box-shadow: 0 0 20px rgba(244, 63, 94, 0.45);
+    }
+    .inhibitor-btn.active-dnp {
+      border-color: #f97316 !important;
+      background: rgba(234, 88, 12, 0.34) !important;
+      color: #fed7aa !important;
+      box-shadow: 0 0 20px rgba(249, 115, 22, 0.5);
+    }
+
+    .cam-btn.active {
+      background: rgba(56, 189, 248, 0.28);
+      border-color: #38bdf8;
+      color: #bae6fd;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. 3D WebGL Canvas Container -->
+  <div id="webgl-container"></div>
+
+  <!-- 2. 3D Projected HTML Labels & Floating Chemical Equations Layer -->
+  <div id="labels-container"></div>
+  <div id="popups-container"></div>
+
+  <!-- 3. Top Telemetry & Camera Bar (HUD) -->
+  <header class="ui-panel fixed top-2 left-2 right-2 z-20 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-2 pointer-events-none">
+    <!-- Title & Camera Presets -->
+    <div class="glass-hud rounded-2xl px-3.5 py-2 flex flex-wrap items-center justify-between gap-2.5 pointer-events-auto">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center shadow-[0_0_15px_rgba(56,189,248,0.35)]">
+          <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="px-1.5 py-0.5 text-[10px] font-black rounded bg-sky-500/25 text-sky-300 border border-sky-400/30">생명과학 II 3D 실험실</span>
+            <h1 class="text-sm sm:text-base font-black tracking-tight text-white">산화적 인산화 & 화학삼투 3D 시뮬레이터</h1>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">드래그: 360° 회전 · 핀치/휠: 줌 · 좌측 하단 <span class="text-sky-300 font-bold">[⚡즉시 투입]</span> 버튼으로 전자전달계를 직접 가동하세요!</p>
+        </div>
+      </div>
+
+      <!-- 3D Camera Preset Buttons -->
+      <div class="flex items-center gap-1 flex-wrap">
+        <button data-cam="overview" class="cam-btn active px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-700 bg-slate-900/80 text-slate-300 hover:border-sky-400 transition">전체 조망</button>
+        <button data-cam="supply" class="cam-btn px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-700 bg-slate-900/80 text-sky-300 hover:border-sky-400 transition">복합체 I·II (기질 투입구)</button>
+        <button data-cam="cross" class="cam-btn px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-700 bg-slate-900/80 text-slate-300 hover:border-sky-400 transition">전자전달계 단면</button>
+        <button data-cam="synthase" class="cam-btn px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-700 bg-slate-900/80 text-amber-300 hover:border-amber-400 transition">ATP 합성효소 터빈</button>
+        <button data-cam="top" class="cam-btn px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-700 bg-slate-900/80 text-slate-300 hover:border-sky-400 transition">막간 공간(상단)</button>
+      </div>
+    </div>
+
+    <!-- Live Biophysics Telemetry -->
+    <div class="glass-hud rounded-2xl px-3 py-1.5 grid grid-cols-3 sm:grid-cols-6 gap-2 pointer-events-auto">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-1">
+        <div class="text-[10px] text-sky-300 font-semibold flex justify-between">
+          <span>막간공간 pH</span>
+          <span id="hudImsH" class="mono text-amber-300">24 H⁺</span>
+        </div>
+        <div id="hudImsPh" class="mono text-sm sm:text-base font-black text-white">6.85</div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-1">
+        <div class="text-[10px] text-fuchsia-300 font-semibold flex justify-between">
+          <span>기질 pH</span>
+          <span id="hudEtcRate" class="mono text-cyan-300">e⁻ 정상</span>
+        </div>
+        <div id="hudMatPh" class="mono text-sm sm:text-base font-black text-fuchsia-300">7.80</div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-1">
+        <div class="text-[10px] text-emerald-300 font-semibold flex justify-between">
+          <span>구동력(PMF)</span>
+          <span id="hudPmfVal" class="mono text-emerald-400">180mV</span>
+        </div>
+        <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1.5">
+          <div id="hudPmfBar" class="h-full bg-gradient-to-r from-sky-400 via-emerald-400 to-amber-400 transition-all duration-300" style="width: 75%"></div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-amber-500/40 rounded-xl px-2.5 py-1">
+        <div class="text-[10px] text-amber-300 font-semibold flex justify-between">
+          <span>생성 ATP</span>
+          <span id="hudAtpRate" class="mono text-amber-400">+0.0/s</span>
+        </div>
+        <div id="hudAtpCount" class="mono text-sm sm:text-base font-black text-amber-400">0</div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-1">
+        <div class="text-[10px] text-cyan-300 font-semibold flex justify-between">
+          <span>생성 H₂O</span>
+          <span id="hudRpm" class="mono text-emerald-300">0 RPM</span>
+        </div>
+        <div id="hudH2oCount" class="mono text-sm sm:text-base font-black text-cyan-300">0</div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-1">
+        <div class="text-[10px] text-slate-400 font-semibold flex justify-between">
+          <span>온도/발열</span>
+          <span id="hudTemp" class="mono text-slate-200">36.5°C</span>
+        </div>
+        <div id="hudStateText" class="text-[11px] font-bold text-emerald-400 truncate">정상 작동 중</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 4. Dynamic Status & Selected Complex Inspector Card (Left Floating Overlay) -->
+  <aside class="ui-panel fixed top-[142px] xl:top-[76px] left-2 right-2 sm:right-auto sm:w-[395px] z-20 flex flex-col gap-2 pointer-events-none">
+    <!-- Real-time Biochemical Status Explanation -->
+    <div id="bioBanner" class="glass-hud rounded-2xl p-3 border-l-4 border-l-sky-400 pointer-events-auto transition-all duration-300">
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <span id="bioTag" class="px-2 py-0.5 rounded text-[11px] font-black bg-sky-500/20 text-sky-300">정상 산화적 인산화</span>
+        <div class="flex items-center gap-2 text-[11px] text-slate-300">
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="toggleLabels" checked class="accent-sky-400 rounded cursor-pointer" />
+            <span>3D 라벨 표시</span>
+          </label>
+        </div>
+      </div>
+      <p id="bioDesc" class="text-xs text-slate-200 leading-relaxed">
+        좌측 하단의 <b>[⚡ NADH 즉시 투입]</b> 또는 <b>[⚡ FADH₂ 즉시 투입]</b> 버튼을 눌러보세요! <b>NADH</b>는 복합체 I(4H⁺ 펌핑)로, <b>FADH₂</b>는 복합체 II(H⁺ 펌핑 안 함)로 전자를 전달합니다.
+      </p>
+    </div>
+
+    <!-- Clicked 3D Complex / Action Feedback Inspector -->
+    <div id="complexInspector" class="glass-hud rounded-2xl p-3 border border-sky-500/30 pointer-events-auto transition-all duration-200">
+      <div class="flex items-center justify-between">
+        <span id="inspTitle" class="text-xs font-black text-sky-300">💡 왼쪽 아래 [공급 제어] 패널 사용법</span>
+        <span id="inspBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">기질 & 전자 공여체</span>
+      </div>
+      <p id="inspBody" class="text-[11px] text-slate-300 mt-1 leading-relaxed">
+        • <b>NADH 공급</b>: 해당과정·TCA 회로 산물로, <b>복합체 I</b>에 고에너지 전자(2e⁻)를 주고 H⁺를 총 10개(I·III·IV) 퍼 올립니다.<br/>
+        • <b>FADH₂ 공급</b>: TCA 회로 산물로, <b>복합체 II</b>에 전자를 주며 복합체 I을 건너뛰어 H⁺를 6개(III·IV)만 퍼 올립니다.
+      </p>
+    </div>
+  </aside>
+
+  <!-- 5. Legend Pill (Right Floating) -->
+  <div class="ui-panel fixed top-[76px] right-2 z-20 hidden lg:flex flex-col gap-1.5 glass-hud rounded-2xl p-3 text-[11px] pointer-events-none">
+    <div class="font-bold text-slate-300 mb-0.5">3D 입자 범례</div>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-amber-300 shadow-[0_0_8px_#fde047]"></span><span>양성자 (H⁺ 이온)</span></div>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></span><span>고에너지 전자 (e⁻) 궤적</span></div>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8]"></span><span>NADH (복합체 I 기질)</span></div>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-purple-400 shadow-[0_0_8px_#c084fc]"></span><span>FADH₂ (복합체 II 기질)</span></div>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span><span>산소 분자 (O₂)</span></div>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-yellow-400 shadow-[0_0_10px_#facc15]"></span><span class="font-bold text-yellow-300">합성된 ATP 분자</span></div>
+  </div>
+
+  <!-- 6. Bottom Interactive Control Deck (PRIMARY FOCUS: Upgraded Bottom-Left Supply Panel + Right Inhibitor Panel) -->
+  <footer class="ui-panel fixed bottom-2 left-2 right-2 z-30 grid grid-cols-1 lg:grid-cols-12 gap-2 pointer-events-auto">
+    
+    <!-- LEFT PANEL (6 cols): 기질(NADH / FADH2 / ADP+Pi) 공급 제어 & 즉시 투입 버튼 -->
+    <div id="supplyControlCard" class="glass-hud rounded-2xl p-3 lg:col-span-6 border border-sky-500/40 flex flex-col justify-between gap-2 transition-all duration-300">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
+          <span class="text-xs font-black text-white">기질 공급 제어 (전자 공여체 & 인산화 기질)</span>
+        </div>
+        <span id="supplyActionToast" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/30">
+          버튼 클릭 또는 슬라이더 조절 시 즉시 반영!
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <!-- 1. NADH Supply Control + Instant Pulse Button -->
+        <div id="nadhBox" class="bg-slate-900/90 border border-sky-500/40 rounded-xl p-2.5 flex flex-col justify-between gap-1.5 transition-all">
+          <div>
+            <div class="flex items-center justify-between text-[11px] mb-1">
+              <span class="font-black text-sky-400">① NADH 자동공급</span>
+              <span id="nadhValText" class="mono text-[10px] font-bold text-white bg-sky-500/30 border border-sky-400/40 px-1.5 py-0.5 rounded">Lv.6 (표준)</span>
+            </div>
+            <input type="range" id="nadhSlider" min="0" max="10" value="6" />
+            <div class="flex justify-between text-[9px] text-slate-400 mt-1">
+              <span>0 (중단)</span>
+              <span class="text-sky-300 font-semibold">복합체 I → 10H⁺ 펌핑</span>
+              <span>10 (최대)</span>
+            </div>
+          </div>
+          <button id="btnPulseNadh" class="pulse-btn w-full py-1.5 px-2 rounded-lg bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-500 hover:to-cyan-400 text-slate-950 font-black text-[11px] shadow-[0_0_15px_rgba(56,189,248,0.4)] flex items-center justify-center gap-1">
+            <span>⚡ NADH 3분자 즉시 투입</span>
+          </button>
+        </div>
+
+        <!-- 2. FADH2 Supply Control + Instant Pulse Button -->
+        <div id="fadhBox" class="bg-slate-900/90 border border-purple-500/40 rounded-xl p-2.5 flex flex-col justify-between gap-1.5 transition-all">
+          <div>
+            <div class="flex items-center justify-between text-[11px] mb-1">
+              <span class="font-black text-purple-400">② FADH₂ 자동공급</span>
+              <span id="fadhValText" class="mono text-[10px] font-bold text-white bg-purple-500/30 border border-purple-400/40 px-1.5 py-0.5 rounded">Lv.4 (표준)</span>
+            </div>
+            <input type="range" id="fadhSlider" class="purple-slider" min="0" max="10" value="4" />
+            <div class="flex justify-between text-[9px] text-slate-400 mt-1">
+              <span>0 (중단)</span>
+              <span class="text-purple-300 font-semibold">복합체 II(펌핑X) → 6H⁺</span>
+              <span>10 (최대)</span>
+            </div>
+          </div>
+          <button id="btnPulseFadh" class="pulse-btn w-full py-1.5 px-2 rounded-lg bg-gradient-to-r from-purple-600 to-fuchsia-500 hover:from-purple-500 hover:to-fuchsia-400 text-white font-black text-[11px] shadow-[0_0_15px_rgba(192,132,252,0.4)] flex items-center justify-center gap-1">
+            <span>⚡ FADH₂ 3분자 즉시 투입</span>
+          </button>
+        </div>
+
+        <!-- 3. ADP + Pi Supply Toggle & Membrane Opacity -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex flex-col justify-between gap-1.5">
+          <div>
+            <div class="flex items-center justify-between text-[11px] mb-1">
+              <span class="font-bold text-emerald-300">③ 내막 투명도 투시</span>
+              <span id="opacityValText" class="mono text-[10px] text-emerald-300">65%</span>
+            </div>
+            <input type="range" id="opacitySlider" class="emerald-slider" min="10" max="100" value="65" />
+          </div>
+
+          <button id="btnAdpToggle" class="pulse-btn w-full py-1.5 px-2 rounded-lg border border-amber-400/50 bg-amber-500/20 text-amber-300 font-black text-[11px] flex items-center justify-between">
+            <span>🔋 기질 ADP+Pᵢ 공급</span>
+            <span id="adpBadge" class="px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[9.5px] font-black">충분 (ON)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL (6 cols): 산소(O2) 공급 & 5대 핵심 저해제/짝풀림제 실험 -->
+    <div class="glass-hud rounded-2xl p-3 lg:col-span-6 flex flex-col justify-between gap-2">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+        <span class="text-xs font-black text-white">산소(O₂) 수용체 & 저해제·짝풀림제 실험 제어</span>
+        <button id="btnResetSim" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          🔄 전체 초기화
+        </button>
+      </div>
+
+      <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5 flex-1">
+        <!-- O2 Toggle -->
+        <button id="btnO2" class="pulse-btn p-2 rounded-xl border border-emerald-500/60 bg-emerald-500/20 text-emerald-300 flex flex-col justify-between text-left transition shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+          <div class="flex items-center justify-between w-full">
+            <span class="text-[11px] font-black">🫧 산소(O₂)</span>
+            <span id="o2Badge" class="text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-400 text-slate-950">ON</span>
+          </div>
+          <span class="text-[9.5px] text-emerald-200/90 mt-1 leading-tight">최종 전자 수용체</span>
+        </button>
+
+        <!-- Rotenone -->
+        <button id="btnRotenone" class="inhibitor-btn p-2 rounded-xl border border-slate-700 bg-slate-900/90 text-slate-300 flex flex-col justify-between text-left hover:border-slate-500">
+          <div class="flex items-center justify-between w-full">
+            <span class="text-[11px] font-bold">로테논</span>
+            <span class="dot w-2 h-2 rounded-full bg-slate-600"></span>
+          </div>
+          <span class="text-[9.5px] text-slate-400 mt-1 leading-tight"><b>복합체 I</b> 차단</span>
+        </button>
+
+        <!-- Antimycin A -->
+        <button id="btnAntimycin" class="inhibitor-btn p-2 rounded-xl border border-slate-700 bg-slate-900/90 text-slate-300 flex flex-col justify-between text-left hover:border-slate-500">
+          <div class="flex items-center justify-between w-full">
+            <span class="text-[11px] font-bold">안티마이신A</span>
+            <span class="dot w-2 h-2 rounded-full bg-slate-600"></span>
+          </div>
+          <span class="text-[9.5px] text-slate-400 mt-1 leading-tight"><b>복합체 III</b> 차단</span>
+        </button>
+
+        <!-- Cyanide (CN-) -->
+        <button id="btnCyanide" class="inhibitor-btn p-2 rounded-xl border border-slate-700 bg-slate-900/90 text-slate-300 flex flex-col justify-between text-left hover:border-slate-500">
+          <div class="flex items-center justify-between w-full">
+            <span class="text-[11px] font-bold">사이안화물</span>
+            <span class="dot w-2 h-2 rounded-full bg-slate-600"></span>
+          </div>
+          <span class="text-[9.5px] text-slate-400 mt-1 leading-tight"><b>복합체 IV</b> 차단</span>
+        </button>
+
+        <!-- Oligomycin -->
+        <button id="btnOligomycin" class="inhibitor-btn p-2 rounded-xl border border-slate-700 bg-slate-900/90 text-slate-300 flex flex-col justify-between text-left hover:border-slate-500">
+          <div class="flex items-center justify-between w-full">
+            <span class="text-[11px] font-bold">올리고마이신</span>
+            <span class="dot w-2 h-2 rounded-full bg-slate-600"></span>
+          </div>
+          <span class="text-[9.5px] text-slate-400 mt-1 leading-tight"><b>ATP합성효소</b> 차단</span>
+        </button>
+
+        <!-- 2,4-DNP Uncoupler -->
+        <button id="btnDnp" class="inhibitor-btn p-2 rounded-xl border border-slate-700 bg-slate-900/90 text-slate-300 flex flex-col justify-between text-left hover:border-slate-500">
+          <div class="flex items-center justify-between w-full">
+            <span class="text-[11px] font-bold">짝풀림제(DNP)</span>
+            <span class="dot w-2 h-2 rounded-full bg-slate-600"></span>
+          </div>
+          <span class="text-[9.5px] text-slate-400 mt-1 leading-tight">내막 H⁺ 누출·발열</span>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // ============================================================================
+    // 0. STRICT UI EVENT ISOLATION (Prevents 3D Canvas from stealing Slider/Button touches)
+    // ============================================================================
+    document.querySelectorAll('.ui-panel').forEach(panel => {
+      ['pointerdown', 'mousedown', 'touchstart', 'touchmove', 'wheel'].forEach(evtName => {
+        panel.addEventListener(evtName, (e) => {
+          e.stopPropagation();
+        }, { passive: true });
+      });
+    });
+
+    // ============================================================================
+    // 1. BIOPHYSICAL SIMULATION STATE & CONFIGURATION
+    // ============================================================================
+    const sim = {
+      time: 0,
+      nadhLevel: 6,
+      fadhLevel: 4,
+      adpAvailable: true,
+      bilayerOpacity: 0.65,
+      showLabels: true,
+
+      // Experimental Toggles
+      oxygenOn: true,
+      rotenone: false,     // Blocks Complex I
+      antimycin: false,    // Blocks Complex III
+      cyanide: false,      // Blocks Complex IV
+      oligomycin: false,   // Blocks F0 channel of ATP Synthase
+      dnp: false,          // 2,4-DNP Uncoupler (proton leak across bilayer)
+
+      // Live Telemetry
+      atpTotal: 0,
+      h2oTotal: 0,
+      temperature: 36.5,
+      rotorSpeed: 0,
+      rotorAngle: 0,
+      atpTimestamps: [],
+
+      // 3D Coordinates along X-axis
+      posX: {
+        c1: -13.5,
+        c2: -7.8,
+        c3: -2.0,
+        c4: 4.5,
+        dnp: 9.0,
+        synthase: 13.8
+      },
+
+      // Internal Electronic States of Complexes
+      c1Electrons: 0,
+      c2Electrons: 0,
+      c3Electrons: 0,
+      c4Electrons: 0,
+      synthaseProtonBuffer: 0
+    };
+
+    const COMPLEX_INFO = {
+      c1: {
+        title: '🔍 복합체 I (NADH 탈수소효소)',
+        badge: '막 관통 H⁺ 펌프 (4H⁺)',
+        body: '기질에서 공급된 <b>NADH를 NAD⁺ + H⁺ + 2e⁻로 산화</b>시키고, 방출된 고에너지 전자로 기질의 <b>4H⁺를 막간 공간으로 능동수송</b>합니다. <b>로테논</b>에 의해 차단됩니다.'
+      },
+      c2: {
+        title: '🔍 복합체 II (석신산 탈수소효소)',
+        badge: 'H⁺ 펌핑 안 함 (기질면 결합)',
+        body: '내막을 관통하지 않고 기질 쪽 내막에만 묻혀 있습니다. <b>FADH₂ → FAD + 2H⁺ + 2e⁻</b> 반응을 통해 전자를 유비퀴논(Q)에 전달하지만, 에너지 낙차가 작아 <b>H⁺를 능동수송하지 못합니다!</b>'
+      },
+      q: {
+        title: '🔍 유비퀴논 (Ubiquinone / 코엔자임 Q)',
+        badge: '지용성 이동성 운반체',
+        body: '인지질 이중층의 소수성 영역 내부를 자유롭게 이동하며 <b>복합체 I과 복합체 II 모두로부터 전자를 받아 복합체 III로 전달</b>하는 합류 지점입니다.'
+      },
+      c3: {
+        title: '🔍 복합체 III (사이토크롬 bc₁ 복합체)',
+        badge: '막 관통 H⁺ 펌프 (4H⁺)',
+        body: '유비퀴논(QH₂)의 전자를 사이토크롬 c로 전달하면서 <b>4H⁺를 막간 공간으로 능동수송</b>합니다. <b>안티마이신 A</b>에 의해 차단됩니다.'
+      },
+      cytC: {
+        title: '🔍 사이토크롬 c (Cytochrome c)',
+        badge: '막간 공간 표면 운반체',
+        body: '내막의 막간 공간 쪽(상단) 표면을 따라 이동하며 복합체 III에서 복합체 IV로 전자를 운반합니다.'
+      },
+      c4: {
+        title: '🔍 복합체 IV (사이토크롬 c 산화효소)',
+        badge: '2H⁺ 펌프 & O₂ → H₂O 환원',
+        body: '전자를 최종 전자 수용체인 <b>산소(½O₂ + 2H⁺ + 2e⁻ → H₂O)</b>에 전달하여 물을 만들고 <b>2H⁺를 막간 공간으로 능동수송</b>합니다. <b>사이안화물(CN⁻)</b>에 의해 차단됩니다.'
+      },
+      dnp: {
+        title: '🔍 2,4-DNP (짝풀림제 / Uncoupler)',
+        badge: '지용성 양성자 누출 통로',
+        body: '막간 공간의 H⁺를 ATP 합성효소 대신 내막을 직접 가로질러 기질로 누출시킵니다. 농도 기울기(ΔpH)가 사라져 <b>ATP 합성은 멈추지만 전자 전달과 산소 소비는 최대치로 가속되며 열(Heat)만 방출</b>합니다.'
+      },
+      synthase: {
+        title: '🔍 F₀F₁-ATP 합성효소 (분자 회전 터빈)',
+        badge: '화학삼투적 인산화',
+        body: '막간 공간의 H⁺가 <b>F₀ 회전 링</b>을 통해 기질로 쏟아져 내려올 때 <b>중앙 γ 회전축이 회전</b>하며 기질 쪽 <b>F₁ 촉매 머리</b>에서 <b>ADP + Pᵢ → ATP</b>를 합성합니다. <b>올리고마이신</b> 또는 <b>ADP 고갈</b> 시 멈춥니다.'
+      }
+    };
+
+    // ============================================================================
+    // 2. THREE.JS SCENE, CAMERA, RENDERER & ORBIT CONTROLS
+    // ============================================================================
+    const container = document.getElementById('webgl-container');
+    const labelsContainer = document.getElementById('labels-container');
+    const popupsContainer = document.getElementById('popups-container');
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020617);
+    scene.fog = new THREE.FogExp2(0x020617, 0.011);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    container.appendChild(renderer.domElement);
+
+    const camCtrl = {
+      target: new THREE.Vector3(0, -0.5, 0),
+      goalTarget: new THREE.Vector3(0, -0.5, 0),
+      spherical: { radius: 34, phi: 1.28, theta: 0.12 },
+      goalSpherical: { radius: 34, phi: 1.28, theta: 0.12 },
+      isDragging: false,
+      isPanning: false,
+      prevX: 0,
+      prevY: 0,
+      pinchDist: 0,
+
+      setPreset(name) {
+        document.querySelectorAll('.cam-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.cam === name);
+        });
+        if (name === 'overview') {
+          this.goalTarget.set(0, -0.5, 0);
+          this.goalSpherical = { radius: 34, phi: 1.26, theta: 0.14 };
+        } else if (name === 'supply') {
+          // Focus right on Complex I & II where NADH and FADH2 dock!
+          this.goalTarget.set(-10.5, -2.2, 0.5);
+          this.goalSpherical = { radius: 16.5, phi: 1.62, theta: 0.25 };
+        } else if (name === 'cross') {
+          this.goalTarget.set(-1.5, -0.4, 0);
+          this.goalSpherical = { radius: 26, phi: Math.PI / 2, theta: 0.0 };
+        } else if (name === 'synthase') {
+          this.goalTarget.set(13.5, -2.4, 0);
+          this.goalSpherical = { radius: 13.5, phi: 1.72, theta: -0.35 };
+        } else if (name === 'top') {
+          this.goalTarget.set(0, 0, 0);
+          this.goalSpherical = { radius: 32, phi: 0.28, theta: 0.0 };
+        }
+      },
+
+      update() {
+        this.spherical.radius += (this.goalSpherical.radius - this.spherical.radius) * 0.09;
+        this.spherical.phi += (this.goalSpherical.phi - this.spherical.phi) * 0.09;
+        this.spherical.theta += (this.goalSpherical.theta - this.spherical.theta) * 0.09;
+        this.target.lerp(this.goalTarget, 0.09);
+
+        this.spherical.phi = Math.max(0.12, Math.min(Math.PI - 0.12, this.spherical.phi));
+        this.spherical.radius = Math.max(9, Math.min(62, this.spherical.radius));
+
+        const r = this.spherical.radius;
+        const sinPhi = Math.sin(this.spherical.phi);
+        camera.position.x = this.target.x + r * sinPhi * Math.sin(this.spherical.theta);
+        camera.position.y = this.target.y + r * Math.cos(this.spherical.phi);
+        camera.position.z = this.target.z + r * sinPhi * Math.cos(this.spherical.theta);
+        camera.lookAt(this.target);
+      }
+    };
+
+    const domElem = renderer.domElement;
+    let pointerDownPos = { x: 0, y: 0 };
+
+    domElem.addEventListener('mousedown', (e) => {
+      camCtrl.isDragging = true;
+      camCtrl.isPanning = (e.button === 2 || e.shiftKey);
+      camCtrl.prevX = e.clientX;
+      camCtrl.prevY = e.clientY;
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!camCtrl.isDragging) return;
+      const dx = e.clientX - camCtrl.prevX;
+      const dy = e.clientY - camCtrl.prevY;
+      camCtrl.prevX = e.clientX;
+      camCtrl.prevY = e.clientY;
+
+      if (camCtrl.isPanning) {
+        const panScale = camCtrl.spherical.radius * 0.0015;
+        camCtrl.goalTarget.x -= dx * panScale;
+        camCtrl.goalTarget.y += dy * panScale;
+      } else {
+        camCtrl.goalSpherical.theta -= dx * 0.0065;
+        camCtrl.goalSpherical.phi -= dy * 0.0065;
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (!camCtrl.isDragging) return;
+      camCtrl.isDragging = false;
+      const moveDist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+      if (moveDist < 5 && e.button === 0) {
+        handleCanvasClick(e.clientX, e.clientY);
+      }
+    });
+
+    domElem.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    domElem.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      camCtrl.goalSpherical.radius += e.deltaY * 0.022;
+      camCtrl.goalSpherical.radius = Math.max(9, Math.min(62, camCtrl.goalSpherical.radius));
+    }, { passive: false });
+
+    domElem.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        camCtrl.isDragging = true;
+        camCtrl.isPanning = false;
+        camCtrl.prevX = e.touches[0].clientX;
+        camCtrl.prevY = e.touches[0].clientY;
+        pointerDownPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      } else if (e.touches.length === 2) {
+        camCtrl.isDragging = false;
+        camCtrl.pinchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    }, { passive: true });
+
+    domElem.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1 && camCtrl.isDragging) {
+        const dx = e.touches[0].clientX - camCtrl.prevX;
+        const dy = e.touches[0].clientY - camCtrl.prevY;
+        camCtrl.prevX = e.touches[0].clientX;
+        camCtrl.prevY = e.touches[0].clientY;
+        camCtrl.goalSpherical.theta -= dx * 0.0065;
+        camCtrl.goalSpherical.phi -= dy * 0.0065;
+      } else if (e.touches.length === 2) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const delta = camCtrl.pinchDist - dist;
+        camCtrl.pinchDist = dist;
+        camCtrl.goalSpherical.radius = Math.max(9, Math.min(62, camCtrl.goalSpherical.radius + delta * 0.06));
+      }
+    }, { passive: true });
+
+    domElem.addEventListener('touchend', () => {
+      camCtrl.isDragging = false;
+    });
+
+    // ============================================================================
+    // 3. LIGHTING & GLOW TEXTURE GENERATOR
+    // ============================================================================
+    scene.add(new THREE.AmbientLight(0x94a3b8, 0.8));
+
+    const imsLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+    imsLight.position.set(5, 22, 12);
+    scene.add(imsLight);
+
+    const matrixLight = new THREE.DirectionalLight(0xe879f9, 0.8);
+    matrixLight.position.set(-8, -20, 10);
+    scene.add(matrixLight);
+
+    const turbineLight = new THREE.PointLight(0xfacc15, 1.5, 20);
+    turbineLight.position.set(sim.posX.synthase, -4.5, 2);
+    scene.add(turbineLight);
+
+    function createGlowTexture(colorHex) {
+      const c = document.createElement('canvas');
+      c.width = 64;
+      c.height = 64;
+      const gCtx = c.getContext('2d');
+      const grad = gCtx.createRadialGradient(32, 32, 2, 32, 32, 30);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.38, colorHex);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      gCtx.fillStyle = grad;
+      gCtx.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(c);
+    }
+
+    const glowTexYellow = createGlowTexture('#fde047');
+    const glowTexCyan = createGlowTexture('#22d3ee');
+    const glowTexPurple = createGlowTexture('#c084fc');
+    const glowTexGold = createGlowTexture('#f59e0b');
+    const glowTexRed = createGlowTexture('#f43f5e');
+
+    // ============================================================================
+    // 4. 3D PHOSPHOLIPID BILAYER
+    // ============================================================================
+    const bilayerGroup = new THREE.Group();
+    scene.add(bilayerGroup);
+
+    const headGeo = new THREE.SphereGeometry(0.32, 10, 10);
+    const tailGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.45, 6);
+
+    const headMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      roughness: 0.35,
+      metalness: 0.2,
+      transparent: true,
+      opacity: sim.bilayerOpacity
+    });
+    const tailMat = new THREE.MeshStandardMaterial({
+      color: 0x334155,
+      roughness: 0.6,
+      metalness: 0.1,
+      transparent: true,
+      opacity: sim.bilayerOpacity * 0.75
+    });
+
+    const lipidCoords = [];
+    const holeCheck = (x, z, isTop) => {
+      if (Math.hypot(x - sim.posX.c1, z) < 2.2) return true;
+      if (!isTop && Math.hypot(x - sim.posX.c2, z - 1.5) < 1.9) return true;
+      if (Math.hypot(x - sim.posX.c3, z) < 2.2) return true;
+      if (Math.hypot(x - sim.posX.c4, z) < 2.1) return true;
+      if (Math.hypot(x - sim.posX.synthase, z) < 2.3) return true;
+      return false;
+    };
+
+    for (let x = -18.5; x <= 18.5; x += 0.95) {
+      for (let z = -5.2; z <= 5.2; z += 0.95) {
+        if (!holeCheck(x, z, true)) lipidCoords.push({ x, z, layer: 1 });
+        if (!holeCheck(x, z, false)) lipidCoords.push({ x, z, layer: -1 });
+      }
+    }
+
+    const headInstanced = new THREE.InstancedMesh(headGeo, headMat, lipidCoords.length);
+    const tailInstanced = new THREE.InstancedMesh(tailGeo, tailMat, lipidCoords.length * 2);
+    bilayerGroup.add(headInstanced);
+    bilayerGroup.add(tailInstanced);
+
+    const coreBoxMat = new THREE.MeshPhysicalMaterial({
+      color: 0x0f172a,
+      transparent: true,
+      opacity: 0.22,
+      roughness: 0.8
+    });
+    const coreBoxMesh = new THREE.Mesh(new THREE.BoxGeometry(38, 3.4, 11), coreBoxMat);
+    bilayerGroup.add(coreBoxMesh);
+
+    const dummyObj = new THREE.Object3D();
+
+    function updatePhospholipidBilayer(time) {
+      let tailIdx = 0;
+      for (let i = 0; i < lipidCoords.length; i++) {
+        const c = lipidCoords[i];
+        const wave = Math.sin(time * 1.8 + c.x * 0.35 + c.z * 0.4) * 0.14;
+        const headY = c.layer * 1.95 + wave;
+
+        dummyObj.position.set(c.x, headY, c.z);
+        dummyObj.rotation.set(0, 0, 0);
+        dummyObj.updateMatrix();
+        headInstanced.setMatrixAt(i, dummyObj.matrix);
+
+        const tailY = c.layer * 1.05 + wave;
+        dummyObj.position.set(c.x - 0.11, tailY, c.z);
+        dummyObj.rotation.z = c.layer * 0.08;
+        dummyObj.updateMatrix();
+        tailInstanced.setMatrixAt(tailIdx++, dummyObj.matrix);
+
+        dummyObj.position.set(c.x + 0.11, tailY, c.z);
+        dummyObj.rotation.z = -c.layer * 0.08;
+        dummyObj.updateMatrix();
+        tailInstanced.setMatrixAt(tailIdx++, dummyObj.matrix);
+      }
+      headInstanced.instanceMatrix.needsUpdate = true;
+      tailInstanced.instanceMatrix.needsUpdate = true;
+    }
+
+    // ============================================================================
+    // 5. 3D PROTEIN COMPLEXES, ELECTRON CONDUIT & MOBILE CARRIERS
+    // ============================================================================
+    const pickableMeshes = [];
+    function registerPickable(mesh, key) {
+      mesh.userData.complexKey = key;
+      pickableMeshes.push(mesh);
+    }
+
+    // Visual 3D Electron Pathway Curves (So users clearly see the electron transport path!)
+    const pathC1toQ = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(sim.posX.c1 - 0.9, -3.5, 0.4),
+      new THREE.Vector3(sim.posX.c1, -0.5, 0.2),
+      new THREE.Vector3(-8.5, 0, 0.3),
+      new THREE.Vector3(sim.posX.c3 - 0.5, 0, 0)
+    ]);
+    const pathC2toQ = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(sim.posX.c2, -3.0, 1.5),
+      new THREE.Vector3(sim.posX.c2 + 1.2, -0.4, 1.0),
+      new THREE.Vector3(sim.posX.c3 - 0.5, 0, 0)
+    ]);
+    const pathC3toC4 = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(sim.posX.c3, 0, 0),
+      new THREE.Vector3(sim.posX.c3 + 0.5, 2.8, 0.4),
+      new THREE.Vector3(1.2, 2.9, 0.5),
+      new THREE.Vector3(sim.posX.c4 - 0.4, 2.7, 0.3),
+      new THREE.Vector3(sim.posX.c4, -2.5, 0)
+    ]);
+
+    const conduitMat1 = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.32 });
+    const conduitMat2 = new THREE.MeshBasicMaterial({ color: 0xc084fc, transparent: true, opacity: 0.32 });
+    const conduitMat3 = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.35 });
+
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(pathC1toQ, 32, 0.1, 8, false), conduitMat1));
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(pathC2toQ, 24, 0.1, 8, false), conduitMat2));
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(pathC3toC4, 32, 0.1, 8, false), conduitMat3));
+
+    // --- 5.1 Complex I ---
+    const c1Group = new THREE.Group();
+    c1Group.position.set(sim.posX.c1, 0, 0);
+    scene.add(c1Group);
+
+    const c1Mat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3, metalness: 0.35, emissive: 0x0369a1, emissiveIntensity: 0.3 });
+    const c1MemMesh = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.65, 4.8, 20), c1Mat);
+    registerPickable(c1MemMesh, 'c1');
+    c1Group.add(c1MemMesh);
+
+    const c1ArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.35, 3.8, 16), c1Mat);
+    c1ArmMesh.position.set(-0.9, -2.9, 0.4);
+    c1ArmMesh.rotation.z = -0.35;
+    registerPickable(c1ArmMesh, 'c1');
+    c1Group.add(c1ArmMesh);
+
+    // Glowing NADH Docking Ring at the bottom of Complex I
+    const nadhDockRing = new THREE.Mesh(
+      new THREE.TorusGeometry(1.25, 0.12, 10, 24),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+    );
+    nadhDockRing.rotation.x = Math.PI / 2;
+    nadhDockRing.position.set(-1.3, -4.3, 0.4);
+    c1Group.add(nadhDockRing);
+
+    const rotenoneLock = new THREE.Mesh(
+      new THREE.TorusGeometry(2.0, 0.2, 12, 32),
+      new THREE.MeshBasicMaterial({ color: 0xf43f5e })
+    );
+    rotenoneLock.rotation.x = Math.PI / 2;
+    rotenoneLock.visible = false;
+    c1Group.add(rotenoneLock);
+
+    // --- 5.2 Complex II ---
+    const c2Group = new THREE.Group();
+    c2Group.position.set(sim.posX.c2, -1.95, 1.5);
+    scene.add(c2Group);
+
+    const c2Mat = new THREE.MeshStandardMaterial({ color: 0x9333ea, roughness: 0.35, metalness: 0.3, emissive: 0x6b21a8, emissiveIntensity: 0.35 });
+    const c2Body = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.4, 2.7, 18), c2Mat);
+    registerPickable(c2Body, 'c2');
+    c2Group.add(c2Body);
+
+    const c2Cap = new THREE.Mesh(new THREE.SphereGeometry(1.3, 16, 16), c2Mat);
+    c2Cap.position.y = -1.2;
+    registerPickable(c2Cap, 'c2');
+    c2Group.add(c2Cap);
+
+    // Glowing FADH2 Docking Ring on Complex II
+    const fadhDockRing = new THREE.Mesh(
+      new THREE.TorusGeometry(1.25, 0.12, 10, 24),
+      new THREE.MeshBasicMaterial({ color: 0xc084fc })
+    );
+    fadhDockRing.rotation.x = Math.PI / 2;
+    fadhDockRing.position.set(0, -2.1, 0);
+    c2Group.add(fadhDockRing);
+
+    // --- 5.3 Ubiquinone (Q) ---
+    const qGroup = new THREE.Group();
+    qGroup.position.set(-5.0, 0, 0.5);
+    scene.add(qGroup);
+
+    const qMat = new THREE.MeshStandardMaterial({ color: 0x22d3ee, roughness: 0.2, metalness: 0.5, emissive: 0x0891b2, emissiveIntensity: 0.6 });
+    const qSphere = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), qMat);
+    registerPickable(qSphere, 'q');
+    qGroup.add(qSphere);
+
+    const qGlowSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexCyan, transparent: true, opacity: 0.85 }));
+    qGlowSprite.scale.set(3.0, 3.0, 1);
+    qGroup.add(qGlowSprite);
+
+    const qCarrier = { electrons: 0 };
+
+    // --- 5.4 Complex III ---
+    const c3Group = new THREE.Group();
+    c3Group.position.set(sim.posX.c3, 0, 0);
+    scene.add(c3Group);
+
+    const c3Mat = new THREE.MeshStandardMaterial({ color: 0x0d9488, roughness: 0.3, metalness: 0.35, emissive: 0x115e59, emissiveIntensity: 0.3 });
+    const c3Left = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.2, 5.1, 18), c3Mat);
+    c3Left.position.x = -0.55;
+    registerPickable(c3Left, 'c3');
+    c3Group.add(c3Left);
+
+    const c3Right = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.2, 5.1, 18), c3Mat);
+    c3Right.position.x = 0.55;
+    registerPickable(c3Right, 'c3');
+    c3Group.add(c3Right);
+
+    const antimycinLock = new THREE.Mesh(
+      new THREE.TorusGeometry(2.05, 0.2, 12, 32),
+      new THREE.MeshBasicMaterial({ color: 0xf43f5e })
+    );
+    antimycinLock.rotation.x = Math.PI / 2;
+    antimycinLock.visible = false;
+    c3Group.add(antimycinLock);
+
+    // --- 5.5 Cytochrome c ---
+    const cytGroup = new THREE.Group();
+    cytGroup.position.set(1.2, 2.85, 0.5);
+    scene.add(cytGroup);
+
+    const cytMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.25, metalness: 0.4, emissive: 0xe11d48, emissiveIntensity: 0.5 });
+    const cytMesh = new THREE.Mesh(new THREE.DodecahedronGeometry(0.68, 1), cytMat);
+    registerPickable(cytMesh, 'cytC');
+    cytGroup.add(cytMesh);
+
+    const cytCarrier = { electrons: 0 };
+
+    // --- 5.6 Complex IV ---
+    const c4Group = new THREE.Group();
+    c4Group.position.set(sim.posX.c4, 0, 0);
+    scene.add(c4Group);
+
+    const c4Mat = new THREE.MeshStandardMaterial({ color: 0x4f46e5, roughness: 0.3, metalness: 0.35, emissive: 0x3730a3, emissiveIntensity: 0.3 });
+    const c4Main = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.65, 5.0, 20), c4Mat);
+    registerPickable(c4Main, 'c4');
+    c4Group.add(c4Main);
+
+    const cyanideLock = new THREE.Mesh(
+      new THREE.TorusGeometry(2.05, 0.2, 12, 32),
+      new THREE.MeshBasicMaterial({ color: 0xf43f5e })
+    );
+    cyanideLock.rotation.x = Math.PI / 2;
+    cyanideLock.visible = false;
+    c4Group.add(cyanideLock);
+
+    // --- 5.7 2,4-DNP Uncoupler Channel ---
+    const dnpGroup = new THREE.Group();
+    dnpGroup.position.set(sim.posX.dnp, 0, 0);
+    dnpGroup.visible = false;
+    scene.add(dnpGroup);
+
+    const dnpMat = new THREE.MeshStandardMaterial({
+      color: 0xf97316,
+      emissive: 0xea580c,
+      emissiveIntensity: 0.75,
+      transparent: true,
+      opacity: 0.88
+    });
+    const dnpTube = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 4.4, 18, 1, true), dnpMat);
+    registerPickable(dnpTube, 'dnp');
+    dnpGroup.add(dnpTube);
+
+    // --- 5.8 F0F1-ATP Synthase ---
+    const synGroup = new THREE.Group();
+    synGroup.position.set(sim.posX.synthase, 0, 0);
+    scene.add(synGroup);
+
+    const f0RotorGroup = new THREE.Group();
+    synGroup.add(f0RotorGroup);
+
+    const cSubunitMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.25, metalness: 0.4, emissive: 0x059669, emissiveIntensity: 0.25 });
+    for (let i = 0; i < 10; i++) {
+      const angle = (i / 10) * Math.PI * 2;
+      const subMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 4.1, 12), cSubunitMat);
+      subMesh.position.set(Math.cos(angle) * 1.25, 0, Math.sin(angle) * 1.25);
+      registerPickable(subMesh, 'synthase');
+      f0RotorGroup.add(subMesh);
+    }
+
+    const gammaMat = new THREE.MeshStandardMaterial({ color: 0x34d399, roughness: 0.2, metalness: 0.5, emissive: 0x10b981, emissiveIntensity: 0.35 });
+    const gammaShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.48, 5.4, 12), gammaMat);
+    gammaShaft.position.y = -2.7;
+    registerPickable(gammaShaft, 'synthase');
+    f0RotorGroup.add(gammaShaft);
+
+    const gammaCam = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.45, 0.45), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+    gammaCam.position.y = -3.4;
+    f0RotorGroup.add(gammaCam);
+
+    const statorMat = new THREE.MeshStandardMaterial({ color: 0x047857, roughness: 0.4, metalness: 0.2 });
+    const aSubunit = new THREE.Mesh(new THREE.BoxGeometry(1.1, 4.0, 1.5), statorMat);
+    aSubunit.position.set(2.0, 0, 0);
+    registerPickable(aSubunit, 'synthase');
+    synGroup.add(aSubunit);
+
+    const peripheralStalk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 6.2, 10), statorMat);
+    peripheralStalk.position.set(2.35, -2.9, 0);
+    synGroup.add(peripheralStalk);
+
+    const stalkCap = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.4, 0.8), statorMat);
+    stalkCap.position.set(1.2, -6.1, 0);
+    synGroup.add(stalkCap);
+
+    const f1HeadGroup = new THREE.Group();
+    f1HeadGroup.position.y = -5.2;
+    synGroup.add(f1HeadGroup);
+
+    const alphaMat = new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.3, metalness: 0.3 });
+    const betaMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.25, metalness: 0.4, emissive: 0xd97706, emissiveIntensity: 0.35 });
+    const f1Lobes = [];
+
+    for (let i = 0; i < 6; i++) {
+      const ang = (i / 6) * Math.PI * 2;
+      const isBeta = i % 2 === 1;
+      const lobe = new THREE.Mesh(new THREE.SphereGeometry(0.95, 16, 16), isBeta ? betaMat : alphaMat);
+      lobe.scale.set(0.85, 1.35, 0.85);
+      lobe.position.set(Math.cos(ang) * 1.35, 0, Math.sin(ang) * 1.35);
+      registerPickable(lobe, 'synthase');
+      f1HeadGroup.add(lobe);
+      f1Lobes.push({ mesh: lobe, baseAngle: ang, isBeta });
+    }
+
+    const oligomycinLock = new THREE.Mesh(
+      new THREE.TorusGeometry(2.15, 0.22, 12, 32),
+      new THREE.MeshBasicMaterial({ color: 0xf43f5e })
+    );
+    oligomycinLock.rotation.x = Math.PI / 2;
+    oligomycinLock.visible = false;
+    synGroup.add(oligomycinLock);
+
+    // ============================================================================
+    // 6. 3D FLOATING LABELS & FLOATING REACTION EQUATION POPUPS
+    // ============================================================================
+    const labelDefs = [
+      { key: 'c1', title: '복합체 I (NADH 산화)', sub: '4H⁺ 능동수송', pos: new THREE.Vector3(sim.posX.c1, 3.3, 0), color: 'border-sky-400 text-sky-300' },
+      { key: 'c2', title: '복합체 II (FADH₂ 산화)', sub: 'H⁺ 펌핑 안 함!', pos: new THREE.Vector3(sim.posX.c2, -4.4, 1.5), color: 'border-purple-400 text-purple-300' },
+      { key: 'q', title: '유비퀴논 (Q)', sub: '내막 이동 운반체', pos: new THREE.Vector3(-5.0, 1.2, 0.5), color: 'border-cyan-400 text-cyan-300', dynamicMesh: qGroup },
+      { key: 'c3', title: '복합체 III', sub: '4H⁺ 능동수송', pos: new THREE.Vector3(sim.posX.c3, 3.3, 0), color: 'border-teal-400 text-teal-300' },
+      { key: 'cytC', title: '사이토크롬 c', sub: '표면 전자 운반체', pos: new THREE.Vector3(1.2, 4.1, 0.5), color: 'border-rose-400 text-rose-300', dynamicMesh: cytGroup },
+      { key: 'c4', title: '복합체 IV (O₂ 환원)', sub: '2H⁺ 펌프 · H₂O 생성', pos: new THREE.Vector3(sim.posX.c4, 3.3, 0), color: 'border-indigo-400 text-indigo-300' },
+      { key: 'dnp', title: '짝풀림제 (DNP)', sub: 'H⁺ 누출 · 열 방출', pos: new THREE.Vector3(sim.posX.dnp, 3.1, 0), color: 'border-orange-400 text-orange-300', isDnp: true },
+      { key: 'synthase', title: 'F₀F₁-ATP 합성효소', sub: '화학삼투 회전 터빈', pos: new THREE.Vector3(sim.posX.synthase, 3.4, 0), color: 'border-amber-400 text-amber-300' }
+    ];
+
+    labelDefs.forEach(def => {
+      const el = document.createElement('div');
+      el.className = `label-3d bg-slate-950/90 backdrop-blur-md border ${def.color} rounded-lg px-2 py-1 shadow-lg`;
+      el.innerHTML = `<div class="text-[11px] font-black leading-none">${def.title}</div><div class="text-[9px] text-slate-400 mt-0.5 leading-none">${def.sub}</div>`;
+      el.addEventListener('click', () => selectComplex(def.key));
+      labelsContainer.appendChild(el);
+      def.el = el;
+    });
+
+    function update3DLabels() {
+      const halfW = window.innerWidth / 2;
+      const halfH = window.innerHeight / 2;
+
+      labelDefs.forEach(def => {
+        if (!sim.showLabels || (def.isDnp && !sim.dnp)) {
+          def.el.style.display = 'none';
+          return;
+        }
+        const worldPos = def.dynamicMesh
+          ? def.dynamicMesh.position.clone().add(new THREE.Vector3(0, 1.3, 0))
+          : def.pos.clone();
+
+        worldPos.project(camera);
+        if (worldPos.z > 1) {
+          def.el.style.display = 'none';
+          return;
+        }
+        const x = (worldPos.x * halfW) + halfW;
+        const y = -(worldPos.y * halfH) + halfH;
+        def.el.style.display = 'block';
+        def.el.style.left = `${x}px`;
+        def.el.style.top = `${y}px`;
+      });
+    }
+
+    // Spawn a floating 3D chemical equation popup at a 3D world position!
+    function spawnReactionPopup3D(worldVec, htmlText, badgeClass) {
+      const projected = worldVec.clone().project(camera);
+      if (projected.z > 1) return;
+      const x = (projected.x * (window.innerWidth / 2)) + (window.innerWidth / 2);
+      const y = -(projected.y * (window.innerHeight / 2)) + (window.innerHeight / 2);
+
+      const pop = document.createElement('div');
+      pop.className = `reaction-popup px-2.5 py-1 rounded-full text-[11px] font-black border shadow-xl ${badgeClass}`;
+      pop.innerHTML = htmlText;
+      pop.style.left = `${x}px`;
+      pop.style.top = `${y}px`;
+      popupsContainer.appendChild(pop);
+
+      setTimeout(() => {
+        if (pop.parentNode) pop.parentNode.removeChild(pop);
+      }, 1550);
+    }
+
+    // ============================================================================
+    // 7. 3D PARTICLE & SHOCKWAVE SYSTEMS
+    // ============================================================================
+    const particleGroup = new THREE.Group();
+    scene.add(particleGroup);
+
+    const protonGeo = new THREE.SphereGeometry(0.28, 12, 12);
+    const protonMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+
+    const imsProtons = [];
+    const matrixProtons = [];
+    const activeTransitingProtons = [];
+    const substrateMolecules = [];
+    const productMolecules = [];
+    const electronPulses = [];
+    const shockwaves = [];
+    const o2Molecules = [];
+
+    function createProtonMesh(zone, customPos) {
+      const mesh = new THREE.Mesh(protonGeo, protonMat);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexYellow, transparent: true, opacity: 0.85 }));
+      sprite.scale.set(1.25, 1.25, 1);
+      mesh.add(sprite);
+
+      if (customPos) {
+        mesh.position.copy(customPos);
+      } else {
+        const isIms = zone === 'ims';
+        mesh.position.set(
+          (Math.random() - 0.5) * 32,
+          isIms ? 3.2 + Math.random() * 4.5 : -3.4 - Math.random() * 4.5,
+          (Math.random() - 0.5) * 8
+        );
+      }
+      particleGroup.add(mesh);
+
+      return {
+        mesh,
+        vel: new THREE.Vector3((Math.random() - 0.5) * 0.07, (Math.random() - 0.5) * 0.05, (Math.random() - 0.5) * 0.07)
+      };
+    }
+
+    // 3D Expanding Shockwave Ring when NADH, FADH2, O2, or ATP reacts
+    function spawnShockwave3D(posVec, colorHex, maxScale = 3.5) {
+      const ringGeo = new THREE.RingGeometry(0.3, 0.55, 28);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.95
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.position.copy(posVec);
+      ringMesh.lookAt(camera.position);
+      particleGroup.add(ringMesh);
+      shockwaves.push({ mesh: ringMesh, mat: ringMat, scale: 0.5, maxScale });
+    }
+
+    // High-speed 3D Electron Pulse racing along the conduit curves
+    function spawnElectronPulse3D(curve, colorHex = 0x22d3ee) {
+      const eMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.26, 10, 10),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+      );
+      const spr = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: colorHex === 0xc084fc ? glowTexPurple : glowTexCyan,
+        transparent: true,
+        opacity: 1
+      }));
+      spr.scale.set(1.9, 1.9, 1);
+      eMesh.add(spr);
+      particleGroup.add(eMesh);
+      electronPulses.push({ mesh: eMesh, curve, t: 0, speed: 0.032 });
+    }
+
+    function spawnTransitingProton(startVec, endVec, mode) {
+      if (mode === 'pump' && matrixProtons.length > 5) {
+        const old = matrixProtons.pop();
+        particleGroup.remove(old.mesh);
+      }
+      const pObj = createProtonMesh('ims', startVec);
+      activeTransitingProtons.push({
+        mesh: pObj.mesh,
+        start: startVec.clone(),
+        end: endVec.clone(),
+        progress: 0,
+        speed: mode === 'dnp' ? 0.045 : mode === 'synthase' ? 0.03 : 0.035,
+        mode
+      });
+    }
+
+    // Spawn 3D NADH or FADH2 Pod in Matrix
+    const nadhGeo = new THREE.OctahedronGeometry(0.62, 1);
+    const nadhMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.75 });
+    const fadhMat = new THREE.MeshStandardMaterial({ color: 0xc084fc, emissive: 0x9333ea, emissiveIntensity: 0.75 });
+
+    function spawnSubstrate3D(type, isManualBurst = false) {
+      const isNadh = type === 'NADH';
+      const mesh = new THREE.Mesh(nadhGeo, isNadh ? nadhMat : fadhMat);
+
+      const spr = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: isNadh ? glowTexCyan : glowTexPurple,
+        transparent: true,
+        opacity: 0.95
+      }));
+      spr.scale.set(2.4, 2.4, 1);
+      mesh.add(spr);
+
+      const targetPos = isNadh
+        ? new THREE.Vector3(sim.posX.c1 - 1.2, -4.3, 0.4)
+        : new THREE.Vector3(sim.posX.c2, -3.5, 1.5);
+
+      mesh.position.set(
+        targetPos.x + (Math.random() - 0.5) * 4.5,
+        -8.2 - Math.random() * 1.8,
+        targetPos.z + (Math.random() - 0.5) * 3.0
+      );
+      particleGroup.add(mesh);
+      substrateMolecules.push({
+        mesh,
+        type,
+        targetPos,
+        speed: isManualBurst ? 0.24 : 0.13,
+        isManualBurst
+      });
+    }
+
+    // Spawn 3D Double-Sphere Oxygen (O2) Molecule moving toward Complex IV
+    const oAtomGeo = new THREE.SphereGeometry(0.32, 12, 12);
+    const oAtomMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.65 });
+
+    function spawnO2Molecule3D() {
+      const grp = new THREE.Group();
+      const s1 = new THREE.Mesh(oAtomGeo, oAtomMat);
+      s1.position.x = -0.22;
+      const s2 = new THREE.Mesh(oAtomGeo, oAtomMat);
+      s2.position.x = 0.22;
+      grp.add(s1, s2);
+
+      const targetPos = new THREE.Vector3(sim.posX.c4, -2.9, 0);
+      grp.position.set(
+        sim.posX.c4 + 2.5 + Math.random() * 3,
+        -7.5 - Math.random() * 2,
+        (Math.random() - 0.5) * 3
+      );
+      particleGroup.add(grp);
+      o2Molecules.push({ mesh: grp, targetPos });
+    }
+
+    // Spawn Golden 3D ATP or Cyan H2O Product Molecule
+    const atpGeo = new THREE.IcosahedronGeometry(0.6, 0);
+    const atpMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.95, metalness: 0.4, roughness: 0.2 });
+    const h2oGeo = new THREE.SphereGeometry(0.45, 12, 12);
+    const h2oMat = new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x0891b2, emissiveIntensity: 0.7 });
+
+    function spawnProduct3D(type, originVec) {
+      const isAtp = type === 'ATP';
+      const mesh = new THREE.Mesh(isAtp ? atpGeo : h2oGeo, isAtp ? atpMat : h2oMat);
+      mesh.position.copy(originVec);
+
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: isAtp ? glowTexGold : glowTexCyan,
+        transparent: true,
+        opacity: 0.95
+      }));
+      sprite.scale.set(isAtp ? 2.8 : 2.0, isAtp ? 2.8 : 2.0, 1);
+      mesh.add(sprite);
+
+      particleGroup.add(mesh);
+      productMolecules.push({
+        mesh,
+        vel: new THREE.Vector3((Math.random() - 0.5) * 0.14, -0.06 - Math.random() * 0.05, (Math.random() - 0.5) * 0.14),
+        life: 1.0
+      });
+    }
+
+    function init3DParticles() {
+      [...imsProtons, ...matrixProtons, ...activeTransitingProtons, ...substrateMolecules, ...productMolecules, ...electronPulses, ...shockwaves, ...o2Molecules].forEach(p => {
+        if (p.mesh) particleGroup.remove(p.mesh);
+      });
+      imsProtons.length = 0;
+      matrixProtons.length = 0;
+      activeTransitingProtons.length = 0;
+      substrateMolecules.length = 0;
+      productMolecules.length = 0;
+      electronPulses.length = 0;
+      shockwaves.length = 0;
+      o2Molecules.length = 0;
+
+      for (let i = 0; i < 24; i++) imsProtons.push(createProtonMesh('ims'));
+      for (let i = 0; i < 16; i++) matrixProtons.push(createProtonMesh('matrix'));
+    }
+
+    // ============================================================================
+    // 8. CORE BIOCHEMICAL & 3D PHYSICS UPDATE LOOP
+    // ============================================================================
+    function updateBiophysics() {
+      sim.time += 0.016;
+      const frameCount = Math.round(sim.time * 60);
+
+      rotenoneLock.visible = sim.rotenone;
+      antimycinLock.visible = sim.antimycin;
+      cyanideLock.visible = sim.cyanide || !sim.oxygenOn;
+      oligomycinLock.visible = sim.oligomycin || !sim.adpAvailable;
+      dnpGroup.visible = sim.dnp;
+
+      // Respiratory control / Oligomycin backpressure check
+      const isTurbineBlocked = sim.oligomycin || !sim.adpAvailable;
+      const isBackpressureHalted = isTurbineBlocked && !sim.dnp && imsProtons.length >= 62;
+      const dnpSpeedBoost = sim.dnp ? 1.75 : 1.0;
+
+      // Pulse docking rings
+      nadhDockRing.scale.setScalar(1 + Math.sin(sim.time * 5) * 0.08);
+      fadhDockRing.scale.setScalar(1 + Math.cos(sim.time * 5) * 0.08);
+
+      // 1) Continuous Auto-Supply of NADH & FADH2 based on Bottom-Left Sliders
+      if (sim.nadhLevel > 0 && substrateMolecules.filter(m => m.type === 'NADH').length < 6) {
+        const interval = Math.max(14, Math.round(115 - sim.nadhLevel * 9.5));
+        if (frameCount % interval === 0) spawnSubstrate3D('NADH', false);
+      }
+      if (sim.fadhLevel > 0 && substrateMolecules.filter(m => m.type === 'FADH2').length < 6) {
+        const interval = Math.max(18, Math.round(125 - sim.fadhLevel * 9.5));
+        if (frameCount % interval === 0) spawnSubstrate3D('FADH2', false);
+      }
+
+      // 2) Update NADH & FADH2 Docking into Complex I & Complex II
+      for (let i = substrateMolecules.length - 1; i >= 0; i--) {
+        const sub = substrateMolecules[i];
+        sub.mesh.rotation.x += 0.06;
+        sub.mesh.rotation.y += 0.07;
+
+        const dir = sub.targetPos.clone().sub(sub.mesh.position);
+        const dist = dir.length();
+        if (dist > 0.45) {
+          sub.mesh.position.add(dir.normalize().multiplyScalar(sub.speed));
+        } else {
+          if (sub.type === 'NADH') {
+            if (sim.rotenone) {
+              // Blocked by Rotenone! Show red rejection flash if manual burst
+              if (sub.isManualBurst) {
+                spawnShockwave3D(sub.targetPos, 0xf43f5e, 2.8);
+                spawnReactionPopup3D(sub.targetPos, '🚫 로테논에 의해 복합체 I 산화 차단됨!', 'bg-rose-950/90 text-rose-300 border-rose-500');
+                particleGroup.remove(sub.mesh);
+                substrateMolecules.splice(i, 1);
+              }
+              continue;
+            }
+            if (!isBackpressureHalted && (sim.c1Electrons === 0 || sub.isManualBurst)) {
+              sim.c1Electrons = 2;
+              spawnShockwave3D(sub.targetPos, 0x38bdf8, 3.6);
+              spawnElectronPulse3D(pathC1toQ, 0x38bdf8);
+
+              if (sub.isManualBurst || Math.random() < 0.45) {
+                spawnReactionPopup3D(
+                  new THREE.Vector3(sim.posX.c1, -2.5, 0),
+                  '⚡ NADH → NAD⁺ + H⁺ + 2e⁻ (4H⁺ 펌핑!)',
+                  'bg-sky-950/90 text-sky-300 border-sky-400'
+                );
+              }
+
+              // Pump H+ upward through Complex I
+              const pumpCount = sub.isManualBurst ? 4 : 2;
+              for (let p = 0; p < pumpCount; p++) {
+                spawnTransitingProton(
+                  new THREE.Vector3(sim.posX.c1 + (p - 1) * 0.4, -2.5, 0),
+                  new THREE.Vector3(sim.posX.c1 + (Math.random() - 0.5) * 2.8, 4.2 + Math.random() * 2.5, (Math.random() - 0.5) * 2.5),
+                  'pump'
+                );
+              }
+              particleGroup.remove(sub.mesh);
+              substrateMolecules.splice(i, 1);
+            }
+          } else {
+            // FADH2 at Complex II (NO H+ pumping at Complex II!)
+            if (!isBackpressureHalted && (sim.c2Electrons === 0 || sub.isManualBurst)) {
+              sim.c2Electrons = 2;
+              spawnShockwave3D(sub.targetPos, 0xc084fc, 3.4);
+              spawnElectronPulse3D(pathC2toQ, 0xc084fc);
+
+              if (sub.isManualBurst || Math.random() < 0.45) {
+                spawnReactionPopup3D(
+                  new THREE.Vector3(sim.posX.c2, -2.8, 1.5),
+                  '⚡ FADH₂ → FAD + 2H⁺ + 2e⁻ (복합체 II 펌핑 없음)',
+                  'bg-purple-950/90 text-purple-300 border-purple-400'
+                );
+              }
+              particleGroup.remove(sub.mesh);
+              substrateMolecules.splice(i, 1);
+            }
+          }
+        }
+      }
+
+      // 3) Ubiquinone (Q) Shuttle (Complex I / II -> Complex III)
+      if (qCarrier.electrons === 0) {
+        let targetX = -5.5;
+        let targetZ = 0.4;
+        let source = null;
+
+        if (sim.c1Electrons > 0 && !sim.rotenone) {
+          targetX = sim.posX.c1 + 1.2;
+          targetZ = 0;
+          source = 'c1';
+        } else if (sim.c2Electrons > 0) {
+          targetX = sim.posX.c2;
+          targetZ = 1.2;
+          source = 'c2';
+        }
+
+        const goal = new THREE.Vector3(targetX, 0, targetZ);
+        if (qGroup.position.distanceTo(goal) > 0.4) {
+          qGroup.position.lerp(goal, 0.14 * dnpSpeedBoost);
+        } else if (source) {
+          qCarrier.electrons = 2;
+          if (source === 'c1') sim.c1Electrons = 0;
+          else sim.c2Electrons = 0;
+        }
+      } else {
+        const c3Goal = new THREE.Vector3(sim.posX.c3 - 1.0, 0, 0);
+        if (qGroup.position.distanceTo(c3Goal) > 0.4) {
+          qGroup.position.lerp(c3Goal, 0.14 * dnpSpeedBoost);
+        } else if (!sim.antimycin && !isBackpressureHalted && sim.c3Electrons === 0) {
+          sim.c3Electrons = 2;
+          qCarrier.electrons = 0;
+          spawnElectronPulse3D(pathC3toC4, 0x22d3ee);
+          // Complex III pumps H+
+          for (let p = 0; p < 2; p++) {
+            spawnTransitingProton(
+              new THREE.Vector3(sim.posX.c3 + (p - 0.5) * 0.6, -2.5, 0),
+              new THREE.Vector3(sim.posX.c3 + (Math.random() - 0.5) * 2.5, 4.2 + Math.random() * 2.5, (Math.random() - 0.5) * 2.5),
+              'pump'
+            );
+          }
+        }
+      }
+      qGlowSprite.material.opacity = qCarrier.electrons > 0 ? 0.98 : 0.35;
+
+      // 4) Cytochrome c Shuttle (Complex III -> Complex IV)
+      if (cytCarrier.electrons === 0) {
+        const goal = new THREE.Vector3(sim.posX.c3 + 0.8, 2.85, 0.5);
+        if (cytGroup.position.distanceTo(goal) > 0.35) {
+          cytGroup.position.lerp(goal, 0.14 * dnpSpeedBoost);
+        } else if (sim.c3Electrons > 0 && !sim.antimycin) {
+          cytCarrier.electrons = 2;
+          sim.c3Electrons = 0;
+        }
+      } else {
+        const c4Goal = new THREE.Vector3(sim.posX.c4 - 0.8, 2.85, 0.5);
+        if (cytGroup.position.distanceTo(c4Goal) > 0.35) {
+          cytGroup.position.lerp(c4Goal, 0.14 * dnpSpeedBoost);
+        } else if (sim.c4Electrons === 0 && !isBackpressureHalted) {
+          sim.c4Electrons = 2;
+          cytCarrier.electrons = 0;
+        }
+      }
+      cytMesh.rotation.y += 0.05;
+
+      // 5) O2 Molecules & Complex IV Reduction to H2O
+      if (sim.oxygenOn && o2Molecules.length < 3 && frameCount % 35 === 0) {
+        spawnO2Molecule3D();
+      }
+      for (let i = o2Molecules.length - 1; i >= 0; i--) {
+        const o2 = o2Molecules[i];
+        o2.mesh.rotation.z += 0.05;
+        if (!sim.oxygenOn) {
+          particleGroup.remove(o2.mesh);
+          o2Molecules.splice(i, 1);
+          continue;
+        }
+        const dir = o2.targetPos.clone().sub(o2.mesh.position);
+        if (dir.length() > 0.6) {
+          o2.mesh.position.add(dir.normalize().multiplyScalar(0.11));
+        }
+      }
+
+      if (sim.c4Electrons > 0 && sim.oxygenOn && !sim.cyanide && !isBackpressureHalted) {
+        if (frameCount % Math.max(7, Math.round(15 / dnpSpeedBoost)) === 0) {
+          sim.c4Electrons = 0;
+          sim.h2oTotal += 1;
+
+          if (o2Molecules.length > 0) {
+            const consumedO2 = o2Molecules.shift();
+            particleGroup.remove(consumedO2.mesh);
+          }
+
+          spawnTransitingProton(
+            new THREE.Vector3(sim.posX.c4, -2.5, 0),
+            new THREE.Vector3(sim.posX.c4 + (Math.random() - 0.5) * 2.2, 4.2 + Math.random() * 2.5, (Math.random() - 0.5) * 2.2),
+            'pump'
+          );
+
+          const h2oPos = new THREE.Vector3(sim.posX.c4, -3.2, 0);
+          spawnShockwave3D(h2oPos, 0x22d3ee, 2.8);
+          spawnProduct3D('H2O', h2oPos);
+        }
+      }
+
+      // 6) 2,4-DNP Uncoupler Proton Leak
+      if (sim.dnp && imsProtons.length > 4) {
+        if (frameCount % 6 === 0) {
+          const popped = imsProtons.pop();
+          particleGroup.remove(popped.mesh);
+          spawnTransitingProton(
+            new THREE.Vector3(sim.posX.dnp, 2.6, 0),
+            new THREE.Vector3(sim.posX.dnp + (Math.random() - 0.5) * 2.5, -4.5, (Math.random() - 0.5) * 2.5),
+            'dnp'
+          );
+        }
+        sim.temperature = Math.min(41.9, sim.temperature + 0.014);
+      } else {
+        sim.temperature = Math.max(36.5, sim.temperature - 0.008);
+      }
+
+      // 7) Chemiosmosis via F0F1-ATP Synthase Turbine
+      if (!isTurbineBlocked && imsProtons.length > 8) {
+        const fluxInterval = Math.max(6, Math.round(36 - Math.min(28, imsProtons.length * 0.55)));
+        if (frameCount % fluxInterval === 0) {
+          const popped = imsProtons.pop();
+          particleGroup.remove(popped.mesh);
+          spawnTransitingProton(
+            new THREE.Vector3(sim.posX.synthase, 2.6, 0),
+            new THREE.Vector3(sim.posX.synthase, -6.5, 0),
+            'synthase'
+          );
+        }
+      }
+
+      // 8) Update Active Transiting Protons
+      for (let i = activeTransitingProtons.length - 1; i >= 0; i--) {
+        const tp = activeTransitingProtons[i];
+        tp.progress += tp.speed;
+
+        if (tp.mode === 'synthase') {
+          const spiralAngle = tp.progress * Math.PI * 4 + sim.rotorAngle;
+          const spiralRadius = tp.progress < 0.75 ? 1.3 : 0.4;
+          tp.mesh.position.set(
+            sim.posX.synthase + Math.cos(spiralAngle) * spiralRadius,
+            2.6 - tp.progress * 8.8,
+            Math.sin(spiralAngle) * spiralRadius
+          );
+        } else {
+          tp.mesh.position.lerpVectors(tp.start, tp.end, tp.progress);
+        }
+
+        if (tp.progress >= 1) {
+          particleGroup.remove(tp.mesh);
+          activeTransitingProtons.splice(i, 1);
+
+          if (tp.mode === 'pump') {
+            if (imsProtons.length < 70) imsProtons.push(createProtonMesh('ims', tp.end));
+          } else if (tp.mode === 'dnp') {
+            if (matrixProtons.length < 36) matrixProtons.push(createProtonMesh('matrix', tp.end));
+          } else if (tp.mode === 'synthase') {
+            if (matrixProtons.length < 36) matrixProtons.push(createProtonMesh('matrix', tp.end));
+
+            sim.rotorSpeed = Math.min(0.26, sim.rotorSpeed + 0.07);
+            sim.synthaseProtonBuffer += 1;
+
+            if (sim.synthaseProtonBuffer >= 3) {
+              sim.synthaseProtonBuffer = 0;
+              sim.atpTotal += 1;
+              sim.atpTimestamps.push(performance.now());
+              const atpOrigin = new THREE.Vector3(sim.posX.synthase, -6.2, 0);
+              spawnShockwave3D(atpOrigin, 0xfacc15, 3.2);
+              spawnProduct3D('ATP', atpOrigin);
+            }
+          }
+        }
+      }
+
+      // 9) Update Electron Pulses & Shockwaves
+      for (let i = electronPulses.length - 1; i >= 0; i--) {
+        const ep = electronPulses[i];
+        ep.t += ep.speed;
+        if (ep.t >= 1) {
+          particleGroup.remove(ep.mesh);
+          electronPulses.splice(i, 1);
+        } else {
+          ep.mesh.position.copy(ep.curve.getPointAt(ep.t));
+        }
+      }
+
+      for (let i = shockwaves.length - 1; i >= 0; i--) {
+        const sw = shockwaves[i];
+        sw.scale += 0.14;
+        sw.mesh.scale.setScalar(sw.scale);
+        sw.mesh.lookAt(camera.position);
+        sw.mat.opacity = Math.max(0, 1 - (sw.scale / sw.maxScale));
+        if (sw.scale >= sw.maxScale) {
+          particleGroup.remove(sw.mesh);
+          shockwaves.splice(i, 1);
+        }
+      }
+
+      // Rotate F0F1 Rotor
+      sim.rotorAngle += sim.rotorSpeed;
+      sim.rotorSpeed *= 0.965;
+      f0RotorGroup.rotation.y = sim.rotorAngle;
+
+      f1Lobes.forEach((lobe, idx) => {
+        if (lobe.isBeta) {
+          const pulse = 1 + Math.sin(sim.rotorAngle * 3 + idx) * (sim.rotorSpeed * 1.4);
+          lobe.mesh.scale.set(0.85 * pulse, 1.35, 0.85 * pulse);
+        }
+      });
+
+      updateFreeProtonCloud(imsProtons, 2.8, 8.2);
+      updateFreeProtonCloud(matrixProtons, -8.5, -2.8);
+
+      for (let i = productMolecules.length - 1; i >= 0; i--) {
+        const pm = productMolecules[i];
+        pm.mesh.position.add(pm.vel);
+        pm.mesh.rotation.x += 0.05;
+        pm.mesh.rotation.y += 0.06;
+        pm.life -= 0.012;
+        pm.mesh.scale.setScalar(Math.max(0.01, pm.life));
+        if (pm.life <= 0) {
+          particleGroup.remove(pm.mesh);
+          productMolecules.splice(i, 1);
+        }
+      }
+
+      if (frameCount % 6 === 0) {
+        updateTelemetryHUD();
+      }
+    }
+
+    function updateFreeProtonCloud(list, minY, maxY) {
+      for (let i = 0; i < list.length; i++) {
+        const p = list[i];
+        p.mesh.position.add(p.vel);
+        if (p.mesh.position.x < -17.5 || p.mesh.position.x > 17.5) p.vel.x *= -1;
+        if (p.mesh.position.y < minY || p.mesh.position.y > maxY) p.vel.y *= -1;
+        if (p.mesh.position.z < -4.8 || p.mesh.position.z > 4.8) p.vel.z *= -1;
+      }
+    }
+
+    // ============================================================================
+    // 9. HUD TELEMETRY & BIOLOGICAL EXPLANATION UPDATES
+    // ============================================================================
+    const hudImsH = document.getElementById('hudImsH');
+    const hudImsPh = document.getElementById('hudImsPh');
+    const hudMatPh = document.getElementById('hudMatPh');
+    const hudEtcRate = document.getElementById('hudEtcRate');
+    const hudPmfVal = document.getElementById('hudPmfVal');
+    const hudPmfBar = document.getElementById('hudPmfBar');
+    const hudAtpRate = document.getElementById('hudAtpRate');
+    const hudAtpCount = document.getElementById('hudAtpCount');
+    const hudRpm = document.getElementById('hudRpm');
+    const hudH2oCount = document.getElementById('hudH2oCount');
+    const hudTemp = document.getElementById('hudTemp');
+    const hudStateText = document.getElementById('hudStateText');
+
+    const bioBanner = document.getElementById('bioBanner');
+    const bioTag = document.getElementById('bioTag');
+    const bioDesc = document.getElementById('bioDesc');
+    const supplyActionToast = document.getElementById('supplyActionToast');
+
+    function showSupplyToast(msg, colorClass = 'bg-sky-500/25 text-sky-300 border-sky-400/40') {
+      supplyActionToast.className = `text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all ${colorClass}`;
+      supplyActionToast.textContent = msg;
+    }
+
+    function updateTelemetryHUD() {
+      const imsCount = imsProtons.length;
+      const imsPh = Math.max(6.35, 7.55 - imsCount * 0.018);
+      const matPh = Math.min(8.15, 7.25 + Math.max(0, imsCount - 10) * 0.014);
+      const deltaPh = Math.max(0, matPh - imsPh);
+      const pmf = Math.round(deltaPh * 150);
+
+      hudImsH.textContent = `${imsCount} H⁺`;
+      hudImsPh.textContent = imsPh.toFixed(2);
+      hudMatPh.textContent = matPh.toFixed(2);
+      hudPmfVal.textContent = `${pmf}mV`;
+      hudPmfBar.style.width = `${Math.min(100, Math.max(5, (pmf / 220) * 100))}%`;
+
+      const now = performance.now();
+      sim.atpTimestamps = sim.atpTimestamps.filter(t => now - t < 3000);
+      const atpRate = (sim.atpTimestamps.length / 3).toFixed(1);
+
+      hudAtpRate.textContent = `+${atpRate}/s`;
+      hudAtpCount.textContent = sim.atpTotal;
+      hudH2oCount.textContent = sim.h2oTotal;
+      hudRpm.textContent = `${Math.round(sim.rotorSpeed * 650)} RPM`;
+      hudTemp.textContent = `${sim.temperature.toFixed(1)}°C`;
+
+      const isTurbineBlocked = sim.oligomycin || !sim.adpAvailable;
+      const isBackpressureHalted = isTurbineBlocked && !sim.dnp && imsProtons.length >= 62;
+
+      if (sim.nadhLevel === 0 && sim.fadhLevel === 0) {
+        hudEtcRate.textContent = '기질 중단';
+        hudEtcRate.className = 'mono text-amber-400';
+      } else if (!sim.oxygenOn || sim.cyanide || sim.antimycin || isBackpressureHalted) {
+        hudEtcRate.textContent = 'e⁻ 정지';
+        hudEtcRate.className = 'mono text-rose-400';
+      } else if (sim.dnp) {
+        hudEtcRate.textContent = 'e⁻ 초고속';
+        hudEtcRate.className = 'mono text-orange-400';
+      } else {
+        hudEtcRate.textContent = 'e⁻ 활발';
+        hudEtcRate.className = 'mono text-cyan-300';
+      }
+
+      if (!sim.oxygenOn) {
+        bioBanner.className = 'glass-hud rounded-2xl p-3 border-l-4 border-l-rose-500 pointer-events-auto';
+        bioTag.className = 'px-2 py-0.5 rounded text-[11px] font-black bg-rose-500/20 text-rose-300';
+        bioTag.textContent = '⚠️ 무산소 조건 (O₂ 공급 차단)';
+        bioDesc.innerHTML = '최종 전자 수용체인 <b>산소(O₂) 공급이 꺼져</b> 복합체 IV에서 전자가 빠져나가지 못합니다. 전자 전달계 전체가 정지하고 H⁺ 펌핑과 ATP 합성이 멈춥니다.';
+        hudStateText.className = 'text-[11px] font-bold text-rose-400 truncate';
+        hudStateText.textContent = '전자전달 정지 (O₂ 없음)';
+      } else if (!sim.adpAvailable && !sim.dnp) {
+        bioBanner.className = 'glass-hud rounded-2xl p-3 border-l-4 border-l-amber-400 pointer-events-auto';
+        bioTag.className = 'px-2 py-0.5 rounded text-[11px] font-black bg-amber-500/20 text-amber-300';
+        bioTag.textContent = '🔋 호흡 조절 (ADP + Pᵢ 기질 고갈)';
+        bioDesc.innerHTML = '인산화 기질인 <b>ADP + Pᵢ가 고갈</b>되어 ATP 합성효소 터빈이 멈췄습니다! H⁺가 내려오지 못해 막간 공간에 H⁺가 과축적되면 전자 전달계도 함께 멈춥니다.';
+        hudStateText.className = 'text-[11px] font-bold text-amber-300 truncate';
+        hudStateText.textContent = isBackpressureHalted ? '역압 정지 (ADP 고갈)' : 'ATP 합성 중단 (ADP 고갈)';
+      } else if (sim.nadhLevel === 0 && sim.fadhLevel === 0) {
+        bioBanner.className = 'glass-hud rounded-2xl p-3 border-l-4 border-l-amber-400 pointer-events-auto';
+        bioTag.className = 'px-2 py-0.5 rounded text-[11px] font-black bg-amber-500/20 text-amber-300';
+        bioTag.textContent = '기질(NADH·FADH₂) 자동 공급 중단됨';
+        bioDesc.innerHTML = '왼쪽 아래의 <b>NADH·FADH₂ 자동공급 슬라이더가 모두 0</b>입니다. 슬라이더를 올리거나 <b>[⚡ 즉시 투입]</b> 버튼을 눌러 고에너지 전자를 공급해 보세요!';
+        hudStateText.className = 'text-[11px] font-bold text-amber-300 truncate';
+        hudStateText.textContent = '기질 투입 대기 중';
+      } else if (sim.cyanide) {
+        bioBanner.className = 'glass-hud rounded-2xl p-3 border-l-4 border-l-rose-500 pointer-events-auto';
+        bioTag.className = 'px-2 py-0.5 rounded text-[11px] font-black bg-rose-500/20 text-rose-300';
+        bioTag.textContent = '사이안화물(CN⁻) 저해 실험';
+        bioDesc.innerHTML = '<b>사이안화물(CN⁻)이 복합체 IV를 차단</b>하여 O₂가 있어도 물(H₂O) 생성과 전자 전달이 완전히 정지했습니다.';
+        hudStateText.className = 'text-[11px] font-bold text-rose-400 truncate';
+        hudStateText.textContent = '복합체 IV 차단됨';
+      } else if (sim.antimycin) {
+        bioBanner.className = 'glass-hud rounded-2xl p-3 border-l-4 border-l-rose-500 pointer-events-auto';
+        bioTag.className = 'px-2 py-0.5 rounded text-[11px] font-black bg-rose-500/20 text-rose-300';
+        bioTag.textContent = '안티마이신 A 저해 실험';
+        bioDesc.innerHTML = '<b>안티마이신 A가 복합체 III를 차단</b>하여 NADH와 FADH₂에서 온 전자 모두 사이토크롬 c로 넘어가지 못합니다.';
+        hudStateText.className = 'text-[11px] font-bold text-rose-400 truncate';
+        hudStateText.textContent = '복합체 III 차단됨';
+      } else if (sim.rotenone) {
+        bioBanner.className = 'glass-hud rounded-2xl p-3 border-l-4 border-l-amber-400 pointer-events-auto';
+        bioTag.className = 'px-2 py-0.5 rounded text-[11px] font-black bg-amber-500/20 text-amber-300';
+        bioTag.textContent = '로테논 (복합체 I 차단) 실험';
+        bioDesc.innerHTML = '<b>로테논이 복합체 I을 막아 NADH는 산화되지 못합니다.</b> 지금 왼쪽 아래의 <b>[⚡ FADH₂ 3분자 즉시 투입]</b>을 눌러보세요! 복합체 II로 우회하여 ATP가 정상 합성됩니다.';
+        hudStateText.className = 'text-[11px] font-bold text-amber-300 truncate';
+        hudStateText.textContent = 'FADH₂ 우회 작동 중';
+      } else if (sim.oligomycin && sim.dnp) {
+        bioBanner.className = 'glass-hud rounded-2xl p-3 border-l-4 border-l-orange-500 pointer-events-auto';
+        bioTag.className = 'px-2 py-0.5 rounded text-[11px] font-black bg-orange-500/20 text-orange-300';
+        bioTag.textContent = '올리고마이신 + 짝풀림제(DNP) 동시 처리';
+        bioDesc.innerHTML = '올리고마이신이 ATP 합성효소를 막았지만, <b>짝풀림제(DNP)가 내막으로 H⁺를 누출시켜 역압을 해소</b>했습니다! ATP 합성은 0이지만 전자 전달과 발열은 최대 속도로 가동됩니다.';
+        hudStateText.className = 'text-[11px] font-bold text-orange-400 truncate';
+        hudStateText.textContent = 'O₂ 소비 폭증 · 열 발생';
+      } else if (sim.oligomycin) {
+        bioBanner.className = 'glass-hud rounded-2xl p-3 border-l-4 border-l-purple-400 pointer-events-auto';
+        bioTag.className = 'px-2 py-0.5 rounded text-[11px] font-black bg-purple-500/20 text-purple-300';
+        bioTag.textContent = '올리고마이신 (ATP 합성효소 차단)';
+        bioDesc.innerHTML = isBackpressureHalted
+          ? '<b>올리고마이신이 F₀ 통로를 차단</b>해 막간 공간에 H⁺가 한계치까지 쌓였습니다. 과분극 역압 때문에 전자 전달계까지 멈췄습니다!'
+          : '<b>올리고마이신이 F₀ 양성자 통로를 차단</b>하여 터빈 회전과 ATP 합성이 멈췄습니다. 막간 공간 H⁺ 농도가 급상승 중입니다.';
+        hudStateText.className = 'text-[11px] font-bold text-purple-300 truncate';
+        hudStateText.textContent = isBackpressureHalted ? '역압에 의한 정지' : 'H⁺ 과축적 진행 중';
+      } else if (sim.dnp) {
+        bioBanner.className = 'glass-hud rounded-2xl p-3 border-l-4 border-l-orange-500 pointer-events-auto';
+        bioTag.className = 'px-2 py-0.5 rounded text-[11px] font-black bg-orange-500/20 text-orange-300';
+        bioTag.textContent = '짝풀림제 (2,4-DNP) 처리 실험';
+        bioDesc.innerHTML = '<b>DNP가 내막을 통해 H⁺를 직접 누출</b>시켜 농도 기울기(ΔpH)가 소멸했습니다. ATP 합성은 멈추고 산소 소비와 발열 반응만 폭증합니다.';
+        hudStateText.className = 'text-[11px] font-bold text-orange-400 truncate';
+        hudStateText.textContent = '탈공역 발열 가속 중';
+      } else {
+        bioBanner.className = 'glass-hud rounded-2xl p-3 border-l-4 border-l-sky-400 pointer-events-auto';
+        bioTag.className = 'px-2 py-0.5 rounded text-[11px] font-black bg-sky-500/20 text-sky-300';
+        bioTag.textContent = '정상 산화적 인산화';
+        bioDesc.innerHTML = '왼쪽 아래의 <b>[⚡ NADH 즉시 투입]</b> 또는 <b>[⚡ FADH₂ 즉시 투입]</b> 버튼을 누르면 기질에서 복합체 I·II로 3D 분자가 돌진하며 즉시 산화 충격파와 H⁺ 펌핑이 일어납니다!';
+        hudStateText.className = 'text-[11px] font-bold text-emerald-400 truncate';
+        hudStateText.textContent = '정상 작동 중';
+      }
+    }
+
+    // ============================================================================
+    // 10. RAYCASTING & INTERACTIVE SUPPLY PANEL HANDLERS
+    // ============================================================================
+    const raycaster = new THREE.Raycaster();
+    const mouseVec = new THREE.Vector2();
+
+    function selectComplex(key) {
+      const info = COMPLEX_INFO[key];
+      if (!info) return;
+      document.getElementById('inspTitle').textContent = info.title;
+      document.getElementById('inspBadge').textContent = info.badge;
+      document.getElementById('inspBody').innerHTML = info.body;
+    }
+
+    function handleCanvasClick(clientX, clientY) {
+      mouseVec.x = (clientX / window.innerWidth) * 2 - 1;
+      mouseVec.y = -(clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouseVec, camera);
+      const hits = raycaster.intersectObjects(pickableMeshes, false);
+      if (hits.length > 0 && hits[0].object.userData.complexKey) {
+        selectComplex(hits[0].object.userData.complexKey);
+      }
+    }
+
+    document.querySelectorAll('.cam-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        camCtrl.setPreset(btn.dataset.cam);
+      });
+    });
+
+    // --- PRIMARY FIX: Instant Burst Buttons & Responsive Sliders in Bottom-Left Panel ---
+    function formatRateLabel(val) {
+      if (val === 0) return 'OFF (중단)';
+      if (val <= 3) return `Lv.${val} (저속)`;
+      if (val <= 7) return `Lv.${val} (표준)`;
+      return `Lv.${val} (폭발적)`;
+    }
+
+    // 1) NADH Instant Burst Button
+    document.getElementById('btnPulseNadh').addEventListener('click', () => {
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => spawnSubstrate3D('NADH', true), i * 130);
+      }
+      selectComplex('c1');
+      showSupplyToast('⚡ NADH 3분자 복합체 I으로 즉시 투입! (4H⁺×3 펌핑)', 'bg-sky-500/30 text-sky-200 border-sky-400');
+    });
+
+    // 2) FADH2 Instant Burst Button
+    document.getElementById('btnPulseFadh').addEventListener('click', () => {
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => spawnSubstrate3D('FADH2', true), i * 130);
+      }
+      selectComplex('c2');
+      showSupplyToast('⚡ FADH₂ 3분자 복합체 II로 즉시 투입! (복합체 I 우회)', 'bg-purple-500/30 text-purple-200 border-purple-400');
+    });
+
+    // 3) NADH Slider (Fires immediate burst when increased!)
+    document.getElementById('nadhSlider').addEventListener('input', (e) => {
+      const prev = sim.nadhLevel;
+      sim.nadhLevel = parseInt(e.target.value, 10);
+      document.getElementById('nadhValText').textContent = formatRateLabel(sim.nadhLevel);
+      if (sim.nadhLevel > prev) {
+        spawnSubstrate3D('NADH', true);
+        showSupplyToast(`NADH 공급 속도 증가 → Lv.${sim.nadhLevel}`, 'bg-sky-500/25 text-sky-300 border-sky-400/40');
+      } else if (sim.nadhLevel === 0) {
+        showSupplyToast('NADH 자동 공급 중단됨 (Lv.0)', 'bg-amber-500/25 text-amber-300 border-amber-400/40');
+      }
+      selectComplex('c1');
+      updateTelemetryHUD();
+    });
+
+    // 4) FADH2 Slider (Fires immediate burst when increased!)
+    document.getElementById('fadhSlider').addEventListener('input', (e) => {
+      const prev = sim.fadhLevel;
+      sim.fadhLevel = parseInt(e.target.value, 10);
+      document.getElementById('fadhValText').textContent = formatRateLabel(sim.fadhLevel);
+      if (sim.fadhLevel > prev) {
+        spawnSubstrate3D('FADH2', true);
+        showSupplyToast(`FADH₂ 공급 속도 증가 → Lv.${sim.fadhLevel}`, 'bg-purple-500/25 text-purple-300 border-purple-400/40');
+      } else if (sim.fadhLevel === 0) {
+        showSupplyToast('FADH₂ 자동 공급 중단됨 (Lv.0)', 'bg-amber-500/25 text-amber-300 border-amber-400/40');
+      }
+      selectComplex('c2');
+      updateTelemetryHUD();
+    });
+
+    // 5) ADP + Pi Supply Toggle (Respiratory Control)
+    const btnAdpToggle = document.getElementById('btnAdpToggle');
+    const adpBadge = document.getElementById('adpBadge');
+    btnAdpToggle.addEventListener('click', () => {
+      sim.adpAvailable = !sim.adpAvailable;
+      if (sim.adpAvailable) {
+        btnAdpToggle.className = 'pulse-btn w-full py-1.5 px-2 rounded-lg border border-amber-400/50 bg-amber-500/20 text-amber-300 font-black text-[11px] flex items-center justify-between';
+        adpBadge.className = 'px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[9.5px] font-black';
+        adpBadge.textContent = '충분 (ON)';
+        showSupplyToast('🔋 ADP + Pᵢ 기질 공급 재개! ATP 합성효소 가동', 'bg-amber-500/25 text-amber-300 border-amber-400/40');
+        spawnReactionPopup3D(new THREE.Vector3(sim.posX.synthase, -5.2, 0), '🔋 ADP + Pᵢ 공급 → ATP 합성 재개!', 'bg-amber-950/90 text-amber-300 border-amber-400');
+      } else {
+        btnAdpToggle.className = 'pulse-btn w-full py-1.5 px-2 rounded-lg border border-rose-500/60 bg-rose-500/25 text-rose-300 font-black text-[11px] flex items-center justify-between';
+        adpBadge.className = 'px-1.5 py-0.5 rounded bg-rose-500 text-white text-[9.5px] font-black';
+        adpBadge.textContent = '고갈 (OFF)';
+        showSupplyToast('⚠️ ADP + Pᵢ 고갈! ATP 합성효소 터빈 정지', 'bg-rose-500/25 text-rose-300 border-rose-400/40');
+        spawnReactionPopup3D(new THREE.Vector3(sim.posX.synthase, -5.2, 0), '🚫 ADP + Pᵢ 고갈 → 터빈 잠김!', 'bg-rose-950/90 text-rose-300 border-rose-500');
+      }
+      selectComplex('synthase');
+      updateTelemetryHUD();
+    });
+
+    // 6) Membrane Opacity Slider
+    document.getElementById('opacitySlider').addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      sim.bilayerOpacity = val / 100;
+      document.getElementById('opacityValText').textContent = `${val}%`;
+      headMat.opacity = sim.bilayerOpacity;
+      tailMat.opacity = sim.bilayerOpacity * 0.75;
+      coreBoxMat.opacity = sim.bilayerOpacity * 0.35;
+    });
+
+    document.getElementById('toggleLabels').addEventListener('change', (e) => {
+      sim.showLabels = e.target.checked;
+    });
+
+    // Oxygen Toggle
+    const btnO2 = document.getElementById('btnO2');
+    const o2Badge = document.getElementById('o2Badge');
+    btnO2.addEventListener('click', () => {
+      sim.oxygenOn = !sim.oxygenOn;
+      if (sim.oxygenOn) {
+        btnO2.className = 'pulse-btn p-2 rounded-xl border border-emerald-500/60 bg-emerald-500/20 text-emerald-300 flex flex-col justify-between text-left transition shadow-[0_0_15px_rgba(16,185,129,0.2)]';
+        o2Badge.className = 'text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-400 text-slate-950';
+        o2Badge.textContent = 'ON';
+        spawnO2Molecule3D();
+        spawnO2Molecule3D();
+        spawnReactionPopup3D(new THREE.Vector3(sim.posX.c4, -2.5, 0), '🫧 산소(O₂) 공급 재개 → ½O₂ + 2H⁺ + 2e⁻ → H₂O', 'bg-emerald-950/90 text-emerald-300 border-emerald-400');
+      } else {
+        btnO2.className = 'pulse-btn p-2 rounded-xl border border-rose-500/60 bg-rose-500/25 text-rose-300 flex flex-col justify-between text-left transition';
+        o2Badge.className = 'text-[9px] font-black px-1.5 py-0.2 rounded bg-rose-500 text-white';
+        o2Badge.textContent = 'OFF';
+        spawnReactionPopup3D(new THREE.Vector3(sim.posX.c4, -2.5, 0), '⚠️ 무산소 상태! 최종 전자 수용체 부재로 전자전달 정지', 'bg-rose-950/90 text-rose-300 border-rose-500');
+      }
+      selectComplex('c4');
+      updateTelemetryHUD();
+    });
+
+    // Inhibitor Toggles
+    function bindInhibitor(btnId, stateKey, inspectKey, isDnp = false) {
+      const btn = document.getElementById(btnId);
+      btn.addEventListener('click', () => {
+        sim[stateKey] = !sim[stateKey];
+        const dot = btn.querySelector('.dot');
+        if (sim[stateKey]) {
+          btn.classList.add(isDnp ? 'active-dnp' : 'active');
+          dot.className = `dot w-2 h-2 rounded-full ${isDnp ? 'bg-orange-400 shadow-[0_0_8px_#fb923c]' : 'bg-rose-400 shadow-[0_0_8px_#fb7185]'}`;
+          selectComplex(inspectKey);
+        } else {
+          btn.classList.remove('active', 'active-dnp');
+          dot.className = 'dot w-2 h-2 rounded-full bg-slate-600';
+        }
+        updateTelemetryHUD();
+      });
+    }
+
+    bindInhibitor('btnRotenone', 'rotenone', 'c1');
+    bindInhibitor('btnAntimycin', 'antimycin', 'c3');
+    bindInhibitor('btnCyanide', 'cyanide', 'c4');
+    bindInhibitor('btnOligomycin', 'oligomycin', 'synthase');
+    bindInhibitor('btnDnp', 'dnp', 'dnp', true);
+
+    // Reset All Button
+    document.getElementById('btnResetSim').addEventListener('click', () => {
+      sim.nadhLevel = 6;
+      sim.fadhLevel = 4;
+      sim.adpAvailable = true;
+      sim.oxygenOn = true;
+      sim.rotenone = false;
+      sim.antimycin = false;
+      sim.cyanide = false;
+      sim.oligomycin = false;
+      sim.dnp = false;
+      sim.atpTotal = 0;
+      sim.h2oTotal = 0;
+      sim.temperature = 36.5;
+
+      document.getElementById('nadhSlider').value = 6;
+      document.getElementById('fadhSlider').value = 4;
+      document.getElementById('nadhValText').textContent = formatRateLabel(6);
+      document.getElementById('fadhValText').textContent = formatRateLabel(4);
+
+      btnO2.className = 'pulse-btn p-2 rounded-xl border border-emerald-500/60 bg-emerald-500/20 text-emerald-300 flex flex-col justify-between text-left transition shadow-[0_0_15px_rgba(16,185,129,0.2)]';
+      o2Badge.className = 'text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-400 text-slate-950';
+      o2Badge.textContent = 'ON';
+
+      btnAdpToggle.className = 'pulse-btn w-full py-1.5 px-2 rounded-lg border border-amber-400/50 bg-amber-500/20 text-amber-300 font-black text-[11px] flex items-center justify-between';
+      adpBadge.className = 'px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[9.5px] font-black';
+      adpBadge.textContent = '충분 (ON)';
+
+      ['btnRotenone', 'btnAntimycin', 'btnCyanide', 'btnOligomycin', 'btnDnp'].forEach(id => {
+        const b = document.getElementById(id);
+        b.classList.remove('active', 'active-dnp');
+        b.querySelector('.dot').className = 'dot w-2 h-2 rounded-full bg-slate-600';
+      });
+
+      init3DParticles();
+      camCtrl.setPreset('overview');
+      showSupplyToast('🔄 모든 실험 조건이 초기화되었습니다.');
+      updateTelemetryHUD();
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ============================================================================
+    // 11. MAIN ANIMATION LOOP
+    // ============================================================================
+    function animate() {
+      requestAnimationFrame(animate);
+      updateBiophysics();
+      updatePhospholipidBilayer(sim.time);
+      camCtrl.update();
+      update3DLabels();
+      renderer.render(scene, camera);
+    }
+
+    window.onload = () => {
+      init3DParticles();
+      updatePhospholipidBilayer(0);
+      updateTelemetryHUD();
+      animate();
+    };
+  </script>
+</body>
+</html>

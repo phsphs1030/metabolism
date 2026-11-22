@@ -1,0 +1,1328 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <script src="/codelet/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIiwia2lkIjoia2V5In0..sd79c5yaN5WSN1ri.u_p567edgSY6u61PrXYegV4w3TOP9GSnNH3jpqnuVSg6UZCJL6Ejddeume6T39ZXAV1INex_UtagaBbsARtU6ECqRNju-YP4QnjWueuBv_vHPKnmJg5g4jgsjbiZgOMQubl3bkRje9U2pwTymkaYdxhV6Nykb6h716ypGbBEYu4rnNPb5nhtQzNTJnF_Ol8f7MkvE5e6dCixsN3ueknoCbuPoPeA3awq8XDD01zHqZr6kYfeIkXwWLBX5h8OlX8x6NWC6zNUOEcV5ZsrJFf6vZn8RI8rzmvmfJ4jZquXiI9qJgAth3B1X3GB7sAqNC_Z1OQ6ko7gfQkxhxrNBcPS_-lMG0BMbCd9un9le8vouZM7w5YERdH3LEIceFJrxGZ5oUcF36McA0zdp5T2dM3932VNTwgIvh1PXuRV5igJbxABp-j9kEzS9RkVgMjd288v4hLrWspk0FCZzs7p1X4Qm2V4uVVQbRg7wQ.RkYGoIA5EiroBlNaECs3yw/telemetry_sdk.js?pin_id=5c60cb79007714add1781d888dc0bc5a"></script>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>광합성 전자흐름 비교 시뮬레이션</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/lucide@0.577.0/dist/umd/lucide.min.js"></script>
+        <style>
+            :root {
+                --bg: #081827;
+                --panel: #10283a;
+                --text: #f0f8fa;
+                --muted: #aec4cc;
+                --light: #ffd66b;
+                --electron: #65d9f4;
+                --proton: #f49cbd;
+                --atp: #b8ed78;
+                --nadph: #c5a5ff
+            }
+
+            * {
+                box-sizing: border-box
+            }
+
+            html {
+                scroll-behavior: smooth
+            }
+
+            body,button,select {
+                font-family: "Noto Sans KR",sans-serif
+            }
+
+            body {
+                margin: 0;
+                background: radial-gradient(circle at 15% 0%,#164457 0,transparent 34%),var(--bg);
+                color: var(--text);
+                line-height: 1.55
+            }
+
+            button,select {
+                font-size: inherit
+            }
+
+            button {
+                cursor: pointer
+            }
+
+            button:focus-visible,select:focus-visible {
+                outline: 3px solid var(--light);
+                outline-offset: 3px
+            }
+
+            .shell {
+                max-width: 1450px;
+                margin: auto;
+                padding: 32px 24px 55px
+            }
+
+            .eyebrow {
+                color: var(--atp);
+                font-size: 12px;
+                font-weight: 800;
+                letter-spacing: .18em;
+                margin: 0 0 9px
+            }
+
+            .intro h1 {
+                font-size: clamp(27px,4vw,43px);
+                line-height: 1.25;
+                margin: 0 0 12px;
+                letter-spacing: -.04em
+            }
+
+            .intro p:last-child {
+                color: var(--muted);
+                margin: 0;
+                max-width: 900px;
+                font-size: 15px
+            }
+
+            .legend {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 9px;
+                margin: 23px 0
+            }
+
+            .chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 7px;
+                border: 1px solid #365367;
+                background: #102b3b;
+                padding: 7px 11px;
+                border-radius: 100px;
+                font-size: 12px;
+                font-weight: 700
+            }
+
+            .controlbar {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 10px;
+                background: #153448;
+                border: 1px solid #3a5b6c;
+                border-radius: 19px;
+                padding: 14px;
+                margin-bottom: 15px
+            }
+
+            .controlbar button {
+                border: 1px solid #456779;
+                color: var(--text);
+                background: #204258;
+                border-radius: 10px;
+                min-height: 40px;
+                padding: 8px 12px;
+                display: inline-flex;
+                align-items: center;
+                gap: 7px;
+                font-weight: 700
+            }
+
+            .controlbar button:hover {
+                background: #2a5670
+            }
+
+            .controlbar button.primary {
+                background: var(--atp);
+                border-color: var(--atp);
+                color: #133125
+            }
+
+            .controlbar svg {
+                width: 17px;
+                height: 17px
+            }
+
+            .step-count {
+                margin-left: auto;
+                color: var(--light);
+                font-weight: 800;
+                font-size: 14px
+            }
+
+            .speed-label {
+                color: var(--muted);
+                font-size: 13px;
+                margin-left: 5px
+            }
+
+            .controlbar select {
+                background: #204258;
+                border: 1px solid #456779;
+                border-radius: 9px;
+                color: white;
+                padding: 8px
+            }
+
+            .timeline {
+                display: grid;
+                grid-template-columns: repeat(8,1fr);
+                gap: 6px;
+                margin-bottom: 22px
+            }
+
+            .timeline button {
+                background: #19374a;
+                color: #a9bfca;
+                border: 1px solid #355366;
+                border-radius: 9px;
+                padding: 9px 3px;
+                font-size: 12px;
+                font-weight: 800
+            }
+
+            .timeline button.active {
+                background: var(--light);
+                color: #1e2c30;
+                border-color: var(--light)
+            }
+
+            .timeline button.done:not(.active) {
+                color: var(--atp);
+                border-color: #63835f
+            }
+
+            .lanes {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 18px
+            }
+
+            .lane {
+                background: linear-gradient(155deg,#153648,#0e2637);
+                border: 1px solid #396074;
+                border-radius: 22px;
+                padding: 20px;
+                min-width: 0
+            }
+
+            .lane.cyclic {
+                background: linear-gradient(155deg,#183b43,#102b38)
+            }
+
+            .lane-head {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                align-items: flex-start;
+                border-bottom: 1px solid #365467;
+                padding-bottom: 16px
+            }
+
+            .lane-head h2 {
+                font-size: 22px;
+                margin: 0 0 3px;
+                letter-spacing: -.04em
+            }
+
+            .lane-head p {
+                margin: 0;
+                color: var(--muted);
+                font-size: 12px
+            }
+
+            .route-badge {
+                white-space: nowrap;
+                border-radius: 99px;
+                padding: 5px 9px;
+                font-size: 11px;
+                font-weight: 800;
+                background: #245169;
+                color: #a8e9fa
+            }
+
+            .cyclic .route-badge {
+                background: #38534c;
+                color: #caf7ae
+            }
+
+            .model-scroll {
+                overflow-x: auto;
+                margin: 18px 0;
+                border-radius: 17px;
+                border: 1px solid #315469;
+                background: #091d2c
+            }
+
+            .model {
+                position: relative;
+                width: 100%;
+                min-width: 570px;
+                height: 480px;
+                overflow: hidden;
+                background: radial-gradient(ellipse at 55% 27%,#20506a70,transparent 65%),linear-gradient(#0e2839 0 47%,#143343 47% 69%,#092a37 69% 100%)
+            }
+
+            .zone {
+                position: absolute;
+                left: 16px;
+                font-size: 11px;
+                font-weight: 800;
+                color: #9fc1c9;
+                letter-spacing: .06em
+            }
+
+            .zone.top {
+                top: 12px
+            }
+
+            .zone.bottom {
+                bottom: 11px
+            }
+
+            .membrane {
+                position: absolute;
+                left: 3%;
+                right: 3%;
+                top: 226px;
+                height: 82px;
+                border-radius: 46% / 20%;
+                background: linear-gradient(180deg,#66b9a5 0%,#337f83 12%,#265764 22%,#123e52 55%,#235d68 80%,#4a9f91 100%);
+                box-shadow: inset 0 9px 10px #a0ecd357,inset 0 -9px 11px #061f30b3,0 21px 27px #031522a8;
+                border: 2px solid #7cc6aa70
+            }
+
+            .membrane:before,.membrane:after {
+                content: "";
+                position: absolute;
+                left: 1%;
+                right: 1%;
+                height: 14px;
+                border-radius: 50%;
+                border-top: 3px dotted #a4e7bc66
+            }
+
+            .membrane:before {
+                top: 8px
+            }
+
+            .membrane:after {
+                bottom: 0;
+                transform: rotate(180deg)
+            }
+
+            .model-paths {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 4;
+                overflow: visible
+            }
+
+            .path {
+                fill: none;
+                stroke: #65d9f47a;
+                stroke-width: 2.5;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+                stroke-dasharray: 5 7;
+                transition: stroke .3s,stroke-width .3s,opacity .3s
+            }
+
+            .path.proton {
+                stroke: #f49cbd82
+            }
+
+            .path.lightpath {
+                stroke: #ffd66b8a
+            }
+
+            .path.nadpath {
+                stroke: #c5a5ff95
+            }
+
+            .path.atppath {
+                stroke: #b8ed7895
+            }
+
+            .path.active {
+                stroke-width: 4;
+                filter: drop-shadow(0 0 6px currentColor);
+                animation: travel .7s linear infinite
+            }
+
+            .path.electron.active {
+                stroke: #65d9f4;
+                color: #65d9f4
+            }
+
+            .path.proton.active {
+                stroke: #f49cbd;
+                color: #f49cbd
+            }
+
+            .path.lightpath.active {
+                stroke: #ffd66b;
+                color: #ffd66b
+            }
+
+            .path.nadpath.active {
+                stroke: #c5a5ff;
+                color: #c5a5ff
+            }
+
+            .path.atppath.active {
+                stroke: #b8ed78;
+                color: #b8ed78
+            }
+
+            @keyframes travel {
+                to {
+                    stroke-dashoffset: -24
+                }
+            }
+
+            .complex,.molecule,.sunbeam,.protons {
+                position: absolute;
+                z-index: 3;
+                text-align: center;
+                transition: filter .25s,transform .25s,opacity .25s
+            }
+
+            .complex {
+                width: 92px;
+                height: 138px;
+                top: 182px;
+                border-radius: 48% 48% 35% 35% / 27% 27% 30% 30%;
+                border: 2px solid #b7f3cc89;
+                background: linear-gradient(100deg,#225d5b 0%,#5aba91 19%,#174b59 45%,#2e886e 75%,#0d3b51 100%);
+                box-shadow: inset 9px 4px 14px #c7ffe047,inset -12px -7px 14px #062a3b,8px 12px 13px #031726bb;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                padding: 5px;
+                color: #f1fff9
+            }
+
+            .complex:before {
+                content: "";
+                position: absolute;
+                top: -9px;
+                left: 12px;
+                right: 12px;
+                height: 23px;
+                border-radius: 50%;
+                background: radial-gradient(ellipse,#a4e5ab,#327e77 68%,#184e56);
+                border: 2px solid #a9eac699
+            }
+
+            .complex.chain {
+                width: 78px;
+                height: 95px;
+                top: 204px;
+                background: linear-gradient(100deg,#405e72,#66a4ad 22%,#2b6079 55%,#22485f);
+                border-color: #8ad9ed99
+            }
+
+            .complex.atpase {
+                width: 66px;
+                height: 113px;
+                top: 189px;
+                background: linear-gradient(90deg,#53764f,#9abf69 30%,#426a52 75%,#263e48);
+                border-color: #d2f19b99
+            }
+
+            .complex.atpase:before {
+                top: -27px;
+                left: 3px;
+                right: 3px;
+                height: 53px;
+                border-radius: 50%;
+                background: radial-gradient(circle at 35% 30%,#d8f3a7,#6d9d65 65%,#375b51);
+                box-shadow: 0 6px 8px #09242a
+            }
+
+            .complex strong {
+                font-size: 11px;
+                line-height: 1.25;
+                position: relative;
+                z-index: 2;
+                text-shadow: 0 1px 3px #062b31
+            }
+
+            .complex small {
+                font-size: 10px;
+                color: #d9fbdf;
+                position: relative;
+                z-index: 2;
+                font-weight: 800
+            }
+
+            .antenna {
+                position: absolute;
+                top: 15px;
+                left: -13px;
+                right: -13px;
+                display: flex;
+                justify-content: space-between;
+                z-index: 2
+            }
+
+            .antenna i {
+                width: 16px;
+                height: 24px;
+                border-radius: 50%;
+                background: radial-gradient(circle at 35% 30%,#f5e991,#8ebf6f 55%,#337a65);
+                border: 1px solid #e4eea6;
+                box-shadow: 0 0 9px #cced83
+            }
+
+            .antenna i:nth-child(2) {
+                transform: translateY(-8px)
+            }
+
+            .complex .core {
+                background: #ffdc76;
+                color: #2e3731;
+                border-radius: 20px;
+                padding: 2px 5px;
+                margin-top: 18px;
+                box-shadow: 0 0 12px #ffd66b;
+                font-size: 12px
+            }
+
+            .molecule {
+                border-radius: 12px;
+                padding: 5px 6px;
+                background: #17384b;
+                border: 1px solid #5c8592;
+                box-shadow: 0 8px 13px #031825aa;
+                font-size: 11px;
+                font-weight: 800;
+                line-height: 1.3
+            }
+
+            .molecule small {
+                display: block;
+                color: #b7d0d7;
+                font-size: 9px;
+                font-weight: 600
+            }
+
+            .molecule.acceptor {
+                color: #8de9f7;
+                border-color: #4aa6ba
+            }
+
+            .molecule.water {
+                color: #a3e8fa
+            }
+
+            .molecule.nad {
+                color: #dcc7ff;
+                border-color: #a285d7
+            }
+
+            .molecule.output {
+                color: #c9f294;
+                border-color: #83a96b
+            }
+
+            .sunbeam {
+                color: #ffd66b;
+                font-size: 12px;
+                font-weight: 800;
+                text-shadow: 0 0 14px #ffd66b
+            }
+
+            .protons {
+                color: #ffb7cf;
+                font-size: 12px;
+                font-weight: 800;
+                letter-spacing: 3px;
+                text-shadow: 0 0 9px #e87aab
+            }
+
+            .active:not(.path) {
+                filter: drop-shadow(0 0 10px #ffd66b);
+                transform: translateY(-5px)
+            }
+
+            .molecule.active {
+                background: #31546a;
+                border-color: #fff4af
+            }
+
+            .complex.active {
+                border-color: #ffe38b;
+                box-shadow: inset 9px 4px 14px #c7ffe047,inset -12px -7px 14px #062a3b,0 0 0 3px #ffd66b77,0 0 24px #ffd66b8a
+            }
+
+            .protons.active {
+                filter: drop-shadow(0 0 10px #ff89b5);
+                transform: scale(1.12)
+            }
+
+            .model-note {
+                position: absolute;
+                z-index: 5;
+                bottom: 31px;
+                left: 12px;
+                right: 12px;
+                text-align: center;
+                font-size: 10px;
+                color: #b6d3d9;
+                background: #071d2acc;
+                padding: 6px;
+                border-radius: 8px
+            }
+
+            .explain {
+                min-height: 137px;
+                background: #0b2333;
+                border: 1px solid #365568;
+                border-radius: 15px;
+                padding: 15px 16px
+            }
+
+            .explain .micro {
+                font-size: 11px;
+                color: var(--light);
+                font-weight: 800;
+                letter-spacing: .08em;
+                margin-bottom: 6px
+            }
+
+            .explain h3 {
+                font-size: 16px;
+                margin: 0 0 5px
+            }
+
+            .explain p {
+                font-size: 13px;
+                color: #c5d8dc;
+                margin: 0
+            }
+
+            .products {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 7px;
+                margin-top: 15px
+            }
+
+            .product {
+                font-size: 12px;
+                font-weight: 800;
+                padding: 6px 10px;
+                border-radius: 8px;
+                background: #203e4e;
+                color: #8ca5ae;
+                border: 1px solid #385364;
+                transition: all .25s
+            }
+
+            .product.on {
+                color: #fff;
+                border-color: currentColor;
+                background: #294f57
+            }
+
+            .product.atp.on {
+                color: var(--atp)
+            }
+
+            .product.nadph.on {
+                color: var(--nadph)
+            }
+
+            .product.oxygen.on {
+                color: var(--electron)
+            }
+
+            .compare {
+                margin-top: 21px;
+                background: #102c3d;
+                border: 1px solid #39596a;
+                border-radius: 20px;
+                padding: 20px;
+                overflow-x: auto
+            }
+
+            .compare h2 {
+                font-size: 19px;
+                margin: 0 0 14px
+            }
+
+            .compare table {
+                border-collapse: collapse;
+                width: 100%;
+                min-width: 560px;
+                text-align: left;
+                font-size: 13px
+            }
+
+            .compare th,.compare td {
+                padding: 12px;
+                border-top: 1px solid #355267;
+                vertical-align: top
+            }
+
+            .compare th {
+                color: #c0d8dd;
+                font-weight: 800
+            }
+
+            .compare td:first-child {
+                color: var(--light);
+                font-weight: 800;
+                width: 22%
+            }
+
+            .footer {
+                color: #8daab4;
+                font-size: 11px;
+                margin-top: 18px;
+                text-align: center
+            }
+
+            @media(max-width: 1050px) {
+                .lanes {
+                    grid-template-columns:1fr
+                }
+
+                .model {
+                    min-width: 650px
+                }
+
+                .step-count {
+                    margin-left: 0
+                }
+            }
+
+            @media(max-width: 600px) {
+                .shell {
+                    padding:24px 13px 40px
+                }
+
+                .lane {
+                    padding: 15px
+                }
+
+                .timeline {
+                    grid-template-columns: repeat(4,1fr)
+                }
+
+                .controlbar {
+                    gap: 7px
+                }
+
+                .controlbar button {
+                    font-size: 12px;
+                    padding: 7px 9px
+                }
+
+                .model {
+                    width: 650px
+                }
+            }
+
+            /* Flat schematic: a double-line membrane and simple labeled components. */
+            .model {
+                background: #0b2635
+            }
+
+            .membrane {
+                top: 226px;
+                height: 76px;
+                border: 0;
+                border-top: 3px solid #71b8b2;
+                border-bottom: 3px solid #71b8b2;
+                border-radius: 0;
+                background: #27596155;
+                box-shadow: none
+            }
+
+            .membrane:before,.membrane:after {
+                display: none
+            }
+
+            .complex,.complex.chain,.complex.atpase {
+                top: 207px;
+                height: 112px;
+                width: 82px;
+                border-radius: 14px;
+                background: #226372;
+                border: 2px solid #7bd4ce;
+                box-shadow: none;
+                padding: 8px
+            }
+
+            .complex.chain {
+                top: 221px;
+                height: 82px;
+                width: 78px;
+                background: #27576b;
+                border-color: #8cc8de
+            }
+
+            .complex.atpase {
+                top: 211px;
+                height: 103px;
+                width: 72px;
+                background: #42664d;
+                border-color: #b8ed78
+            }
+
+            .complex:before,.complex.atpase:before,.antenna {
+                display: none
+            }
+
+            .complex .core {
+                margin-top: 5px;
+                background: #ffd66b;
+                box-shadow: none;
+                text-shadow: none
+            }
+
+            .complex strong {
+                text-shadow: none
+            }
+
+            .complex.active {
+                box-shadow: 0 0 0 3px #ffd66b88
+            }
+
+            .molecule {
+                box-shadow: none
+            }
+
+            .sunbeam,.protons {
+                text-shadow: none
+            }
+
+            .path {
+                stroke-dasharray: none;
+                stroke-width: 2.5;
+                opacity: .85
+            }
+
+            .path.active {
+                stroke-width: 4;
+                animation: none;
+                filter: none
+            }
+
+            .path.electron {
+                marker-end: url(#electron-arrow)
+            }
+
+            .path.proton {
+                marker-end: url(#proton-arrow)
+            }
+
+            .path.lightpath {
+                marker-end: url(#light-arrow)
+            }
+
+            .path.nadpath {
+                marker-end: url(#nad-arrow)
+            }
+
+            .path.atppath {
+                marker-end: url(#atp-arrow)
+            }
+
+            .meaning {
+                margin-top: 18px;
+                padding: 24px;
+                border: 1px solid #77985f;
+                border-radius: 20px;
+                background: linear-gradient(120deg,#1b3c3f,#163546)
+            }
+
+            .meaning h2 {
+                font-size: 21px;
+                margin: 0 0 10px;
+                color: #d5f5a7
+            }
+
+            .meaning p {
+                margin: 0 0 15px;
+                color: #dfebdf
+            }
+
+            .meaning strong {
+                color: #fff
+            }
+
+            .meaning-grid {
+                display: grid;
+                grid-template-columns: repeat(3,1fr);
+                gap: 10px
+            }
+
+            .meaning-item {
+                padding: 14px;
+                border-radius: 12px;
+                background: #102c38;
+                border: 1px solid #54706b;
+                font-size: 13px;
+                font-weight: 700
+            }
+
+            .meaning-item b {
+                display: block;
+                color: var(--atp);
+                margin-bottom: 5px
+            }
+
+            @media(max-width: 700px) {
+                .meaning-grid {
+                    grid-template-columns:1fr
+                }
+            }
+
+            @media(prefers-reduced-motion:reduce) {
+                .path.active {
+                    animation: none
+                }
+
+                *,*:before,*:after {
+                    scroll-behavior: auto!important
+                }
+            }
+        </style>
+        <script src="/codelet/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIiwia2lkIjoia2V5In0..sd79c5yaN5WSN1ri.u_p567edgSY6u61PrXYegV4w3TOP9GSnNH3jpqnuVSg6UZCJL6Ejddeume6T39ZXAV1INex_UtagaBbsARtU6ECqRNju-YP4QnjWueuBv_vHPKnmJg5g4jgsjbiZgOMQubl3bkRje9U2pwTymkaYdxhV6Nykb6h716ypGbBEYu4rnNPb5nhtQzNTJnF_Ol8f7MkvE5e6dCixsN3ueknoCbuPoPeA3awq8XDD01zHqZr6kYfeIkXwWLBX5h8OlX8x6NWC6zNUOEcV5ZsrJFf6vZn8RI8rzmvmfJ4jZquXiI9qJgAth3B1X3GB7sAqNC_Z1OQ6ko7gfQkxhxrNBcPS_-lMG0BMbCd9un9le8vouZM7w5YERdH3LEIceFJrxGZ5oUcF36McA0zdp5T2dM3932VNTwgIvh1PXuRV5igJbxABp-j9kEzS9RkVgMjd288v4hLrWspk0FCZzs7p1X4Qm2V4uVVQbRg7wQ.RkYGoIA5EiroBlNaECs3yw/data_sdk.js?pin_id=5c60cb79007714add1781d888dc0bc5a" type="text/javascript"></script>
+        <script src="/codelet/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIiwia2lkIjoia2V5In0..sd79c5yaN5WSN1ri.u_p567edgSY6u61PrXYegV4w3TOP9GSnNH3jpqnuVSg6UZCJL6Ejddeume6T39ZXAV1INex_UtagaBbsARtU6ECqRNju-YP4QnjWueuBv_vHPKnmJg5g4jgsjbiZgOMQubl3bkRje9U2pwTymkaYdxhV6Nykb6h716ypGbBEYu4rnNPb5nhtQzNTJnF_Ol8f7MkvE5e6dCixsN3ueknoCbuPoPeA3awq8XDD01zHqZr6kYfeIkXwWLBX5h8OlX8x6NWC6zNUOEcV5ZsrJFf6vZn8RI8rzmvmfJ4jZquXiI9qJgAth3B1X3GB7sAqNC_Z1OQ6ko7gfQkxhxrNBcPS_-lMG0BMbCd9un9le8vouZM7w5YERdH3LEIceFJrxGZ5oUcF36McA0zdp5T2dM3932VNTwgIvh1PXuRV5igJbxABp-j9kEzS9RkVgMjd288v4hLrWspk0FCZzs7p1X4Qm2V4uVVQbRg7wQ.RkYGoIA5EiroBlNaECs3yw/editing_sdk.js?pin_id=5c60cb79007714add1781d888dc0bc5a" type="text/javascript"></script>
+        <script src="/codelet/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIiwia2lkIjoia2V5In0..sd79c5yaN5WSN1ri.u_p567edgSY6u61PrXYegV4w3TOP9GSnNH3jpqnuVSg6UZCJL6Ejddeume6T39ZXAV1INex_UtagaBbsARtU6ECqRNju-YP4QnjWueuBv_vHPKnmJg5g4jgsjbiZgOMQubl3bkRje9U2pwTymkaYdxhV6Nykb6h716ypGbBEYu4rnNPb5nhtQzNTJnF_Ol8f7MkvE5e6dCixsN3ueknoCbuPoPeA3awq8XDD01zHqZr6kYfeIkXwWLBX5h8OlX8x6NWC6zNUOEcV5ZsrJFf6vZn8RI8rzmvmfJ4jZquXiI9qJgAth3B1X3GB7sAqNC_Z1OQ6ko7gfQkxhxrNBcPS_-lMG0BMbCd9un9le8vouZM7w5YERdH3LEIceFJrxGZ5oUcF36McA0zdp5T2dM3932VNTwgIvh1PXuRV5igJbxABp-j9kEzS9RkVgMjd288v4hLrWspk0FCZzs7p1X4Qm2V4uVVQbRg7wQ.RkYGoIA5EiroBlNaECs3yw/resizing_sdk.js?pin_id=5c60cb79007714add1781d888dc0bc5a" type="text/javascript"></script>
+    </head>
+    <body>
+        <main class="shell canva-container">
+            <header class="intro canva-header">
+                <p class="eyebrow canva-text">PHOTOSYNTHESIS · LIGHT REACTIONS</p>
+                <h1 id="page-title">전자 흐름, 두 가지 길</h1>
+                <p class="canva-text">타이라코이드막에 박힌 광계와 단백질 복합체를 살펴보세요. 같은 단계에서 두 경로를 나란히 비교하며, 빛나는 구성 요소와 이동 경로를 따라가 보세요.</p>
+            </header>
+            <div class="legend canva-list" aria-label="시각 요소 범례">
+                <span class="chip canva-tag">
+                    <span style="color:var(--light)">☀ ↓</span>빛에너지
+                </span>
+                <span class="chip canva-tag">
+                    <span style="color:var(--electron)">e⁻ →</span>전자
+                </span>
+                <span class="chip canva-tag">
+                    <span style="color:var(--proton)">H⁺ →</span>H⁺ 이동·기울기
+                </span>
+                <span class="chip canva-tag">
+                    <span style="color:var(--atp)">→ ATP</span>ATP 합성
+                </span>
+                <span class="chip canva-tag">
+                    <span style="color:var(--nadph)">→ NADPH</span>NADPH 생성
+                </span>
+            </div>
+            <section class="controlbar canva-panel" aria-label="시뮬레이션 조작">
+                <button id="reset-btn" class="canva-button" type="button">
+                    <i data-lucide="rotate-ccw"></i>처음
+                </button>
+                <button id="prev-btn" class="canva-button" type="button">
+                    <i data-lucide="skip-back"></i>이전
+                </button>
+                <button id="play-btn" class="primary canva-button" type="button">
+                    <i data-lucide="play"></i>
+                    <span>재생</span>
+                </button>
+                <button id="next-btn" class="canva-button" type="button">
+                    다음<i data-lucide="skip-forward"></i>
+                </button>
+                <label class="speed-label" for="speed">재생 속도</label>
+                <select id="speed" class="canva-dropdown">
+                    <option value="2300">보통</option>
+                    <option value="3500">느리게</option>
+                    <option value="1200">빠르게</option>
+                </select>
+                <span id="step-count" class="step-count canva-text" aria-live="polite">1 / 8 단계</span>
+            </section>
+            <nav class="timeline canva-tabs" aria-label="단계 선택" id="timeline"></nav>
+            <div class="lanes">
+                <section class="lane canva-panel" aria-labelledby="non-title">
+                    <div class="lane-head">
+                        <div>
+                            <h2 id="non-title">비순환적 전자흐름</h2>
+                            <p>물에서 시작해 NADP⁺에서 끝나는 한 방향의 길</p>
+                        </div>
+                        <span class="route-badge canva-tag">PSII + PSI</span>
+                    </div>
+                    <div class="model-scroll">
+                        <div class="model canva-panel" role="img" aria-label="스트로마와 내강 사이의 타이라코이드막에 광계 II, 전자전달계, 광계 I, ATP 합성효소가 박혀 있는 비순환적 전자흐름 모형">
+                            <span class="zone top">스트로마 · NADP⁺ 환원 / ATP 생성</span>
+                            <span class="zone bottom">틸라코이드 내강 · H⁺ 축적</span>
+                            <div class="membrane"></div>
+                            <svg class="model-paths" viewBox="0 0 650 480" preserveAspectRatio="none" aria-hidden="true">
+                                <defs>
+                                    <marker id="electron-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M0 0 L10 5 L0 10 Z" fill="#65d9f4"/>
+                                    </marker>
+                                    <marker id="proton-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M0 0 L10 5 L0 10 Z" fill="#f49cbd"/>
+                                    </marker>
+                                    <marker id="light-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M0 0 L10 5 L0 10 Z" fill="#ffd66b"/>
+                                    </marker>
+                                    <marker id="nad-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M0 0 L10 5 L0 10 Z" fill="#c5a5ff"/>
+                                    </marker>
+                                    <marker id="atp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M0 0 L10 5 L0 10 Z" fill="#b8ed78"/>
+                                    </marker>
+                                </defs>
+                                <path id="a-n1" class="path electron" d="M 84 355 Q 108 310 119 265"/>
+                                <path id="a-n2" class="path electron" d="M 163 194 Q 181 133 207 124"/>
+                                <path id="a-n3" class="path electron" d="M 244 132 Q 270 168 294 212"/>
+                                <path id="a-n4" class="path electron" d="M 333 207 Q 370 150 417 120"/>
+                                <path id="a-n5" class="path electron" d="M 461 124 Q 488 148 509 207"/>
+                                <path id="a-n7" class="path electron" d="M 545 199 Q 568 150 590 125"/>
+                                <path id="a-n-light2" class="path lightpath" d="M 136 62 L 143 171"/>
+                                <path id="a-n-light1" class="path lightpath" d="M 421 62 L 435 171"/>
+                                <path id="a-n-pump" class="path proton" d="M 301 192 L 301 348"/>
+                                <path id="a-n-waterh" class="path proton" d="M 85 370 Q 160 411 245 368"/>
+                                <path id="a-n6" class="path proton" d="M 563 356 L 563 185"/>
+                                <path id="a-n-atp" class="path atppath" d="M 565 175 L 565 89"/>
+                                <path id="a-n-nad" class="path nadpath" d="M 584 193 L 590 136"/>
+                            </svg>
+                            <div id="n-sun2" class="sunbeam" style="left:15%;top:69px">☀ 빛 ↓</div>
+                            <div id="n-sun1" class="sunbeam" style="left:59%;top:69px">☀ 빛 ↓</div>
+                            <div id="n-water" class="molecule water" style="left:5%;top:345px">
+                                H₂O → O₂ + H⁺ + e⁻<small>물의 광분해 · 내강 쪽</small>
+                            </div>
+                            <div id="n-psii" class="complex" style="left:17%;">
+                                <div class="antenna">
+                                    <i></i>
+                                    <i></i>
+                                    <i></i>
+                                </div>
+                                <strong>광계 II</strong>
+                                <strong class="core">P680</strong>
+                                <small>안테나 색소</small>
+                            </div>
+                            <div id="n-accept2" class="molecule acceptor" style="left:30%;top:102px">
+                                e⁻<small>PSII 1차 전자수용체</small>
+                            </div>
+                            <div id="n-chain2" class="complex chain" style="left:43%;">
+                                <strong>전자전달계</strong>
+                                <small>H⁺ 펌핑</small>
+                            </div>
+                            <div id="n-psi" class="complex" style="left:60%;">
+                                <div class="antenna">
+                                    <i></i>
+                                    <i></i>
+                                    <i></i>
+                                </div>
+                                <strong>광계 I</strong>
+                                <strong class="core">P700</strong>
+                                <small>안테나 색소</small>
+                            </div>
+                            <div id="n-accept1" class="molecule acceptor" style="left:63%;top:98px">
+                                e⁻<small>PSI 1차 전자수용체</small>
+                            </div>
+                            <div id="n-carrier" class="molecule acceptor" style="left:75%;top:190px">
+                                전자 전달<small>환원 쪽으로 이동</small>
+                            </div>
+                            <div id="n-nadph" class="molecule nad" style="right:2%;top:98px">
+                                NADP⁺ → NADPH<small>e⁻와 H⁺ 받아 환원</small>
+                            </div>
+                            <div id="n-gradient" class="protons" style="left:27%;top:366px">H⁺　H⁺　H⁺　H⁺</div>
+                            <div id="n-atp" class="complex atpase" style="left:82%;">
+                                <strong>ATP</strong>
+                                <small>합성효소</small>
+                            </div>
+                            <div id="n-atp-output" class="molecule output" style="right:5%;top:62px">ADP + Pi → ATP</div>
+                            <div class="model-note">막 위: 스트로마 · 막 아래: H⁺가 쌓이는 내강</div>
+                        </div>
+                    </div>
+                    <div class="explain canva-card" aria-live="polite">
+                        <div class="micro">비순환적 · 현재 반응</div>
+                        <h3 id="non-step-title"></h3>
+                        <p id="non-step-body"></p>
+                    </div>
+                    <div class="products canva-list" aria-label="비순환적 경로의 생성물">
+                        <span id="non-o2" class="product oxygen canva-tag">O₂ 방출</span>
+                        <span id="non-atp-product" class="product atp canva-tag">ATP 생성</span>
+                        <span id="non-nadph-product" class="product nadph canva-tag">NADPH 생성</span>
+                    </div>
+                </section>
+                <section class="lane cyclic canva-panel" aria-labelledby="cyc-title">
+                    <div class="lane-head">
+                        <div>
+                            <h2 id="cyc-title">순환적 전자흐름</h2>
+                            <p>광계 I에서 출발한 전자가 다시 P700으로 돌아오는 길</p>
+                        </div>
+                        <span class="route-badge canva-tag">PSI ONLY</span>
+                    </div>
+                    <div class="model-scroll">
+                        <div class="model canva-panel" role="img" aria-label="타이라코이드막의 광계 I에서 나온 전자가 전자전달계를 거쳐 P700으로 돌아오고, 내강의 수소 이온이 ATP 합성효소를 통과하는 순환적 전자흐름 모형">
+                            <span class="zone top">스트로마 · 전자가 P700으로 복귀</span>
+                            <span class="zone bottom">틸라코이드 내강 · H⁺ 축적</span>
+                            <div class="membrane"></div>
+                            <svg class="model-paths" viewBox="0 0 650 480" preserveAspectRatio="none" aria-hidden="true">
+                                <defs>
+                                    <marker id="electron-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M0 0 L10 5 L0 10 Z" fill="#65d9f4"/>
+                                    </marker>
+                                    <marker id="proton-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M0 0 L10 5 L0 10 Z" fill="#f49cbd"/>
+                                    </marker>
+                                    <marker id="light-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M0 0 L10 5 L0 10 Z" fill="#ffd66b"/>
+                                    </marker>
+                                    <marker id="atp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M0 0 L10 5 L0 10 Z" fill="#b8ed78"/>
+                                    </marker>
+                                </defs>
+                                <path id="a-c1" class="path lightpath" d="M 167 69 L 174 174"/>
+                                <path id="a-c2" class="path electron" d="M 210 188 Q 238 136 283 121"/>
+                                <path id="a-c3" class="path electron" d="M 335 128 Q 375 157 406 210"/>
+                                <path id="a-c-return" class="path electron" d="M 419 203 Q 406 89 309 77 Q 217 54 180 177"/>
+                                <path id="a-c-pump" class="path proton" d="M 425 197 L 425 359"/>
+                                <path id="a-c4" class="path proton" d="M 557 359 L 557 187"/>
+                                <path id="a-c-atp" class="path atppath" d="M 559 177 L 559 91"/>
+                            </svg>
+                            <div id="c-light" class="sunbeam" style="left:22%;top:69px">☀ 빛 ↓</div>
+                            <div id="c-psi" class="complex" style="left:24%;">
+                                <div class="antenna">
+                                    <i></i>
+                                    <i></i>
+                                    <i></i>
+                                </div>
+                                <strong>광계 I</strong>
+                                <strong class="core">P700</strong>
+                                <small>안테나 색소</small>
+                            </div>
+                            <div id="c-accept" class="molecule acceptor" style="left:43%;top:100px">
+                                e⁻<small>1차 전자수용체</small>
+                            </div>
+                            <div id="c-chain" class="complex chain" style="left:61%;">
+                                <strong>전자전달계</strong>
+                                <small>H⁺ 펌핑</small>
+                            </div>
+                            <div id="c-return" class="molecule acceptor" style="left:38%;top:54px">
+                                ↶ e⁻ 복귀<small>다시 P700으로</small>
+                            </div>
+                            <div id="c-gradient" class="protons" style="left:32%;top:365px">H⁺　H⁺　H⁺　H⁺</div>
+                            <div id="c-atp" class="complex atpase" style="left:81%;">
+                                <strong>ATP</strong>
+                                <small>합성효소</small>
+                            </div>
+                            <div id="c-atp-output" class="molecule output" style="right:5%;top:62px">ADP + Pi → ATP</div>
+                            <div class="model-note">PSII·물의 광분해 없음 · NADP⁺ 환원 없음</div>
+                        </div>
+                    </div>
+                    <div class="explain canva-card" aria-live="polite">
+                        <div class="micro">순환적 · 현재 반응</div>
+                        <h3 id="cyc-step-title"></h3>
+                        <p id="cyc-step-body"></p>
+                    </div>
+                    <div class="products canva-list" aria-label="순환적 경로의 생성물">
+                        <span id="cyc-atp-product" class="product atp canva-tag">ATP 생성</span>
+                        <span class="product canva-tag">NADPH 생성 없음</span>
+                        <span class="product canva-tag">O₂ 방출 없음</span>
+                    </div>
+                </section>
+            </div>
+            <section class="compare canva-section" aria-labelledby="compare-title">
+                <h2 id="compare-title">한눈에 비교하기</h2>
+                <table class="canva-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">비교 항목</th>
+                            <th scope="col">비순환적 전자흐름</th>
+                            <th scope="col">순환적 전자흐름</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>참여 광계</td>
+                            <td>광계 II(P680)와 광계 I(P700)</td>
+                            <td>광계 I(P700)만 참여</td>
+                        </tr>
+                        <tr>
+                            <td>전자 이동</td>
+                            <td>H₂O → P680 → 전자전달계 → P700 → NADP⁺</td>
+                            <td>P700 → 전자수용체 → 전자전달계 → P700</td>
+                        </tr>
+                        <tr>
+                            <td>전자 공급·종착점</td>
+                            <td>물에서 공급받고 NADP⁺에 전달</td>
+                            <td>방출한 전자가 P700으로 복귀</td>
+                        </tr>
+                        <tr>
+                            <td>최종 산물</td>
+                            <td>ATP, NADPH, O₂</td>
+                            <td>ATP (NADPH·O₂ 생성 없음)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+            <section class="meaning canva-section" aria-labelledby="meaning-title">
+                <h2 id="meaning-title">두 경로가 함께 필요한 이유</h2>
+                <p>
+                    탄소고정반응에서 <strong>포도당 1분자</strong>가 합성되려면 <strong>NADPH 약 12분자와 ATP 약 18분자</strong>가 필요합니다. 비순환적 전자흐름은 둘 다 만들지만 필요한 NADPH:ATP 비율을 충분히 맞추지 못할 수 있습니다. 순환적 전자흐름은 NADPH를 만들지 않고 ATP를 추가로 공급해 이를 보완합니다.
+                </p>
+                <div class="meaning-grid canva-list">
+                    <div class="meaning-item canva-card">
+                        <b>비순환적 전자흐름</b>NADPH + ATP 생성
+     
+                    </div>
+                    <div class="meaning-item canva-card">
+                        <b>순환적 전자흐름</b>ATP 추가 생성, NADPH 생성 없음
+     
+                    </div>
+                    <div class="meaning-item canva-card">
+                        <b>두 경로의 협력</b>탄소고정반응에 필요한 ATP와 NADPH 공급
+     
+                    </div>
+                </div>
+            </section>
+            <footer class="footer canva-footer">모형은 위치와 이동을 이해하기 위한 개념적 표현입니다. ATP는 틸라코이드 내강에서 스트로마로 흐르는 H⁺의 에너지를 이용해 합성됩니다.</footer>
+        </main>
+        <script>
+            const stages = [{
+                label: "빛 흡수",
+                n: ["빛이 P680을 깨우다", "광계 II의 안테나 색소가 흡수한 빛에너지를 P680에 전달합니다.", ["n-sun2", "a-n-light2", "n-psii"]],
+                c: ["빛이 P700을 깨우다", "광계 I의 안테나 색소가 빛을 흡수하고 에너지를 P700에 전달합니다.", ["c-light", "a-c1", "c-psi"]]
+            }, {
+                label: "전자 방출",
+                n: ["PSII의 전자 포획", "P680에서 나온 고에너지 전자가 광계 II의 1차 전자수용체로 이동합니다.", ["n-psii", "a-n2", "n-accept2"]],
+                c: ["P700의 전자 방출", "P700의 고에너지 전자가 1차 전자수용체로 이동합니다.", ["c-psi", "a-c2", "c-accept"]]
+            }, {
+                label: "전자 보충",
+                n: ["물의 광분해", "내강 쪽에서 물이 분해되어 전자가 P680을 보충합니다. O₂가 방출되고 H⁺는 내강에 더해집니다.", ["n-water", "a-n1", "n-psii", "a-n-waterh", "n-gradient"]],
+                c: ["전자수용체 환원", "P700에서 전달된 전자를 받아 1차 전자수용체가 환원됩니다. 물은 분해되지 않습니다.", ["c-accept"]]
+            }, {
+                label: "전자전달계",
+                n: ["PSII에서 PSI로", "전자전달계를 지나는 전자의 에너지는 스트로마의 H⁺를 내강 쪽으로 이동시키는 데 쓰입니다.", ["n-accept2", "a-n3", "n-chain2", "a-n4", "n-psi", "a-n-pump"]],
+                c: ["순환 전자전달", "전자는 전자전달계를 지나며 에너지를 방출합니다. NADP⁺로 전달되지 않습니다.", ["c-accept", "a-c3", "c-chain", "a-c-pump"]]
+            }, {
+                label: "H⁺ 기울기",
+                n: ["막을 사이에 둔 H⁺ 기울기", "물의 광분해와 전자전달계의 작용으로 틸라코이드 내강에 H⁺가 축적됩니다.", ["n-water", "n-chain2", "a-n-pump", "n-gradient"]],
+                c: ["H⁺ 농도기울기 형성", "전자전달계의 에너지를 이용해 내강에 H⁺가 축적됩니다.", ["c-chain", "a-c-pump", "c-gradient"]]
+            }, {
+                label: "ATP 합성",
+                n: ["ATP 생성", "내강의 H⁺가 ATP 합성효소를 통해 스트로마로 돌아오면서 ATP가 합성됩니다.", ["n-gradient", "a-n6", "n-atp", "a-n-atp", "n-atp-output"]],
+                c: ["ATP 생성", "내강의 H⁺가 ATP 합성효소를 통해 스트로마로 돌아오면서 ATP가 합성됩니다.", ["c-gradient", "a-c4", "c-atp", "a-c-atp", "c-atp-output"]]
+            }, {
+                label: "광계 I",
+                n: ["P700의 재여기", "광계 I의 안테나 색소가 빛을 흡수합니다. P700에서 나온 전자는 1차 전자수용체로 가고, PSII 쪽에서 온 전자가 P700을 보충합니다.", ["n-psi", "n-sun1", "a-n-light1", "a-n5", "n-accept1"]],
+                c: ["전자가 P700으로 복귀", "전자전달계를 거친 전자가 P700으로 돌아와 산화된 P700을 환원시킵니다.", ["c-chain", "a-c-return", "c-return", "c-psi"]]
+            }, {
+                label: "최종 결과",
+                n: ["NADPH 완성", "광계 I에서 나온 전자가 NADP⁺ 환원에 사용됩니다. NADP⁺가 전자와 H⁺를 받아 NADPH가 됩니다.", ["n-accept1", "a-n5", "n-carrier", "a-n7", "a-n-nad", "n-nadph"]],
+                c: ["다시 반복할 준비", "돌아온 전자는 다시 빛을 받으면 같은 경로를 순환할 수 있습니다. 산물은 ATP이며 O₂와 NADPH는 생성되지 않습니다.", ["c-return", "a-c-return", "c-psi", "c-atp", "c-atp-output"]]
+            }];
+            let current = 0
+              , timer = null;
+            const $ = id => document.getElementById(id);
+            const timeline = $("timeline");
+            stages.forEach( (s, i) => {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = "canva-button";
+                b.textContent = `${i + 1} ${s.label}`;
+                b.setAttribute("aria-label", `${i + 1}단계 ${s.label}`);
+                b.addEventListener("click", () => {
+                    pause();
+                    current = i;
+                    render()
+                }
+                );
+                timeline.appendChild(b)
+            }
+            );
+            function render() {
+                document.querySelectorAll(".complex,.molecule,.sunbeam,.protons,.path").forEach(el => el.classList.remove("active"));
+                const s = stages[current];
+                [["non", s.n], ["cyc", s.c]].forEach( ([prefix,data]) => {
+                    $(prefix + "-step-title").textContent = data[0];
+                    $(prefix + "-step-body").textContent = data[1];
+                    data[2].forEach(id => {
+                        const el = $(id);
+                        if (el)
+                            el.classList.add("active")
+                    }
+                    )
+                }
+                );
+                [...timeline.children].forEach( (b, i) => {
+                    b.classList.toggle("active", i === current);
+                    b.classList.toggle("done", i < current);
+                    b.setAttribute("aria-current", i === current ? "step" : "false")
+                }
+                );
+                $("step-count").textContent = `${current + 1} / ${stages.length} 단계`;
+                $("non-o2").classList.toggle("on", current >= 2);
+                $("non-atp-product").classList.toggle("on", current >= 5);
+                $("cyc-atp-product").classList.toggle("on", current >= 5);
+                $("non-nadph-product").classList.toggle("on", current >= 7);
+            }
+            function pause() {
+                if (timer) {
+                    clearInterval(timer);
+                    timer = null
+                }
+                const b = $("play-btn");
+                b.innerHTML = '<i data-lucide="play"></i><span>재생</span>';
+                b.setAttribute("aria-label", "재생");
+                lucide.createIcons()
+            }
+            function play() {
+                if (timer)
+                    return;
+                if (current === stages.length - 1) {
+                    current = 0;
+                    render()
+                }
+                const b = $("play-btn");
+                b.innerHTML = '<i data-lucide="pause"></i><span>일시정지</span>';
+                b.setAttribute("aria-label", "일시정지");
+                lucide.createIcons();
+                timer = setInterval( () => {
+                    if (current < stages.length - 1) {
+                        current++;
+                        render()
+                    } else
+                        pause()
+                }
+                , Number($("speed").value))
+            }
+            $("play-btn").addEventListener("click", () => timer ? pause() : play());
+            $("reset-btn").addEventListener("click", () => {
+                pause();
+                current = 0;
+                render()
+            }
+            );
+            $("prev-btn").addEventListener("click", () => {
+                pause();
+                current = Math.max(0, current - 1);
+                render()
+            }
+            );
+            $("next-btn").addEventListener("click", () => {
+                pause();
+                current = Math.min(stages.length - 1, current + 1);
+                render()
+            }
+            );
+            $("speed").addEventListener("change", () => {
+                if (timer) {
+                    pause();
+                    play()
+                }
+            }
+            );
+            render();
+            lucide.createIcons();
+        </script>
+    </body>
+</html>

@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="./style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pen</title>
+  </head>
+  <body>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calvin Cycle Molecular Simulator</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101923;color:#edf5f1;
+ font-family:Arial,"Noto Sans KR",sans-serif
+}
+header{
+ text-align:center;padding:25px 12px;
+ background:#192d39;border-bottom:1px solid #385064
+}
+header h1{color:#79e3a4;letter-spacing:3px;margin:0}
+header p{color:#aebfca;font-size:13px}
+main{max-width:1200px;margin:auto;padding:18px}
+.panel{
+ background:#1c2c3c;border:1px solid #394f60;
+ border-radius:14px;padding:18px;margin-bottom:16px
+}
+h2{font-size:18px;color:#8ce3ae;margin-top:0}
+.sub{font-size:13px;color:#aebfca;line-height:1.7}
+button{
+ padding:11px 15px;border:0;border-radius:8px;
+ margin:4px;background:#354e63;color:white;
+ font-weight:bold;cursor:pointer
+}
+button:hover{filter:brightness(1.2)}
+.green{background:#168553}
+.red{background:#a84951}
+.blue{background:#286b9e}
+.gold{background:#9b762d}
+.controls{margin:12px 0}
+.status{
+ padding:10px 13px;background:#263c4c;
+ border-radius:8px;font-size:13px;color:#b9d9c7
+}
+select{
+ background:#293f51;color:white;padding:10px;
+ border:1px solid #52677a;border-radius:7px
+}
+
+/* 전체 회로 */
+.diagram{
+ position:relative;
+ background:#152536;border-radius:12px;
+ padding:15px;overflow:hidden
+}
+.diagram svg{width:100%;height:auto;display:block}
+.route{
+ fill:none;stroke:#7adca1;stroke-width:5;
+ stroke-linecap:round;stroke-dasharray:10 7;
+ animation:flow 2s linear infinite
+}
+@keyframes flow{to{stroke-dashoffset:-34}}
+.node{
+ fill:#243b4d;stroke:#648099;stroke-width:2
+}
+.node-label{fill:#fff;font-size:17px;font-weight:bold}
+.node-small{fill:#c4d5df;font-size:12px}
+.center{fill:#183c35;stroke:#75dca0;stroke-width:2}
+.center-text{fill:#8de7b1;font-size:20px;font-weight:bold}
+
+/* 분자 구조 */
+.molecule-area{
+ display:grid;grid-template-columns:repeat(2,1fr);
+ gap:12px;margin-top:15px
+}
+.molecule-card{
+ background:#253a4c;border-radius:11px;
+ padding:14px;text-align:center
+}
+.molecule-card h3{margin:3px;color:#dcece4;font-size:15px}
+.molecule-card svg{width:100%;max-width:250px;height:90px}
+.molecule-card p{font-size:12px;color:#b9cbd6;line-height:1.6}
+.molecule-count{font-size:25px;color:#7ee5a4;font-weight:bold}
+.carbon{fill:#e5b75e;stroke:#fff0c5;stroke-width:2}
+.phosphate{fill:#4b9ee2;stroke:#c5e3ff;stroke-width:2}
+.bond{stroke:#e6edf1;stroke-width:4}
+.group-label{fill:#bfe1ff;font-size:11px;font-weight:bold}
+
+/* 에너지 */
+.energy-grid{
+ display:grid;grid-template-columns:repeat(4,1fr);gap:10px
+}
+.energy-card{
+ background:#253b4d;padding:14px;border-radius:10px
+}
+.energy-card small{color:#bacbd7}
+.energy-card strong{display:block;font-size:25px;margin-top:7px}
+.atp{color:#f3c35f}
+.adp{color:#efa1a1}
+.nadph{color:#69bcf7}
+.nadp{color:#d1a4f5}
+.energy-arrow{
+ text-align:center;color:#c4d3dd;font-size:12px;margin-top:8px
+}
+.explain{
+ background:#223d35;border-left:4px solid #65d99a;
+ padding:15px;border-radius:8px;
+ line-height:1.8;font-size:14px;margin-top:13px
+}
+.equation{
+ background:#142231;padding:14px;border-radius:9px;
+ text-align:center;color:#a9eac0;line-height:2;
+ margin-top:12px;font-size:14px
+}
+@media(max-width:650px){
+ main{padding:10px}
+ .energy-grid{grid-template-columns:repeat(2,1fr)}
+ .molecule-area{grid-template-columns:1fr}
+ .diagram{padding:5px}
+}
+</style>
+</head>
+
+<body>
+<header>
+<h1>CALVIN CYCLE</h1>
+<p>광합성의 탄소 고정 과정 · 분자 구조 시뮬레이션</p>
+</header>
+
+<main>
+
+<section class="panel">
+<h2>01. 실험 환경 설정</h2>
+<p class="sub">
+이산화탄소와 빛의 공급을 조절하여 캘빈 회로의 변화를 관찰하세요.
+</p>
+
+<div class="controls">
+<button id="co2Btn" class="green" onclick="toggleCO2()">CO₂ 공급 ON</button>
+<button id="lightBtn" class="gold" onclick="toggleLight()">빛 공급 ON</button>
+<button class="blue" onclick="normal()">정상 환경</button>
+<button class="red" onclick="resetAll()">초기화</button>
+</div>
+
+<div class="status" id="environment">
+정상 환경: CO₂와 빛이 모두 공급됩니다.
+</div>
+
+<div style="margin-top:15px">
+<label class="sub">회로 기준 분자 수 선택 </label>
+<select id="scale" onchange="changeScale()">
+<option value="3">CO₂ 3분자 기준</option>
+<option value="6">CO₂ 6분자 기준</option>
+</select>
+</div>
+</section>
+
+<section class="panel">
+<h2>02. 캘빈 회로 전체 구조</h2>
+<p class="sub">
+분자들이 어떤 순서로 변화하는지 화살표를 따라 확인하세요.
+노란색 원은 탄소(C), 파란색 원은 인산기(P)를 나타냅니다.
+</p>
+
+<div class="diagram">
+<svg viewBox="0 0 800 530">
+
+<defs>
+ <marker id="arrow" markerWidth="9" markerHeight="9"
+ refX="7" refY="4" orient="auto">
+ <path d="M0 0 L8 4 L0 8" fill="#7adca1"/>
+ </marker>
+</defs>
+
+<!-- 회로 화살표 -->
+<path class="route" d="M400 85 Q650 65 660 235"
+ marker-end="url(#arrow)"/>
+<path class="route" d="M660 295 Q650 460 410 445"
+ marker-end="url(#arrow)"/>
+<path class="route" d="M350 445 Q130 465 135 285"
+ marker-end="url(#arrow)"/>
+<path class="route" d="M135 220 Q145 65 380 85"
+ marker-end="url(#arrow)"/>
+
+<!-- 중심 -->
+<circle class="center" cx="400" cy="265" r="90"/>
+<text class="center-text" x="400" y="258" text-anchor="middle">CALVIN</text>
+<text class="center-text" x="400" y="286" text-anchor="middle">CYCLE</text>
+<text class="node-small" x="400" y="310" text-anchor="middle">캘빈 회로</text>
+
+<!-- 상단 탄소 고정 -->
+<rect class="node" x="290" y="15" width="220" height="90" rx="13"/>
+<text class="node-label" x="400" y="39" text-anchor="middle">① 탄소 고정</text>
+<text class="node-small" x="400" y="62" text-anchor="middle">CO₂ + RuBP</text>
+<text class="node-small" x="400" y="81" text-anchor="middle">RuBisCO 작용</text>
+
+<!-- 오른쪽 환원 -->
+<rect class="node" x="550" y="210" width="230" height="110" rx="13"/>
+<text class="node-label" x="665" y="237" text-anchor="middle">② 3-PGA의 환원</text>
+<text class="node-small" x="665" y="260" text-anchor="middle">ATP → ADP</text>
+<text class="node-small" x="665" y="280" text-anchor="middle">NADPH → NADP⁺</text>
+<text class="node-small" x="665" y="300" text-anchor="middle">PGAL 생성</text>
+
+<!-- 아래쪽 PGAL -->
+<rect class="node" x="285" y="410" width="230" height="105" rx="13"/>
+<text class="node-label" x="400" y="437" text-anchor="middle">PGAL 분배</text>
+<text class="node-small" x="400" y="462" text-anchor="middle">일부는 RuBP 재생</text>
+<text class="node-small" x="400" y="482" text-anchor="middle">나머지는 회로 밖으로</text>
+
+<!-- 왼쪽 재생 -->
+<rect class="node" x="15" y="210" width="230" height="110" rx="13"/>
+<text class="node-label" x="130" y="237" text-anchor="middle">③ RuBP 재생</text>
+<text class="node-small" x="130" y="262" text-anchor="middle">PGAL + ATP</text>
+<text class="node-small" x="130" y="282" text-anchor="middle">ATP → ADP</text>
+<text class="node-small" x="130" y="302" text-anchor="middle">RuBP 재생</text>
+
+<!-- CO2 유입 -->
+<path d="M400 0 L400 13" stroke="#b8cbd8" stroke-width="3"/>
+<text x="400" y="12" fill="#f4c35f" font-size="13"
+ text-anchor="middle" dy="-1">CO₂</text>
+
+<!-- 포도당 배출 -->
+<path d="M400 515 L400 528" stroke="#e7bc63" stroke-width="4"/>
+<text x="415" y="526" fill="#f1c96e" font-size="12">PGAL 배출</text>
+
+</svg>
+</div>
+
+<div class="controls">
+<button class="green" onclick="nextStep()">다음 반응 단계 →</button>
+<button class="blue" onclick="runCycle()">전체 회로 실행</button>
+</div>
+
+<div class="explain" id="explanation">
+<b>① 탄소 고정</b><br>
+루비스코가 CO₂와 RuBP의 결합을 촉진합니다.
+</div>
+</section>
+
+<section class="panel">
+<h2>03. 분자 구조 자세히 보기</h2>
+<p class="sub">
+각 분자의 탄소 원자 개수와 인산기의 위치를 비교하세요.
+아래 구조는 분자의 탄소 골격과 인산기를 강조한 모식도입니다.
+</p>
+
+<div class="molecule-area">
+
+<div class="molecule-card">
+<h3>리불로스 2인산 (RuBP)</h3>
+<div id="ruStructure"></div>
+<div class="molecule-count" id="ruCount">3</div>
+<p>5탄당 · 탄소 5개 · 인산기 2개<br>탄소 고정 단계의 CO₂ 수용체</p>
+</div>
+
+<div class="molecule-card">
+<h3>3-인산글리세르산 (3-PGA)</h3>
+<div id="pgaStructure"></div>
+<div class="molecule-count" id="pgaCount">0</div>
+<p>3탄소 화합물 · 인산기 1개<br>탄소 고정의 생성물</p>
+</div>
+
+<div class="molecule-card">
+<h3>포스포글리세르알데하이드 (PGAL)</h3>
+<div id="pgalStructure"></div>
+<div class="molecule-count" id="pgalCount">0</div>
+<p>3탄소 화합물 · 인산기 1개<br>환원 단계의 생성물</p>
+</div>
+
+<div class="molecule-card">
+<h3>포도당 (Glucose)</h3>
+<div id="glucoseStructure"></div>
+<div class="molecule-count" id="glucoseCount">0</div>
+<p>6탄소 화합물<br>PGAL 2분자의 탄소 골격에 해당</p>
+</div>
+
+</div>
+</section>
+
+<section class="panel">
+<h2>04. ATP와 NADPH 변화</h2>
+<p class="sub">
+ATP와 NADPH는 캘빈 회로에 필요한 에너지를 제공하며,
+반응 과정에서 ADP와 NADP⁺로 전환됩니다.
+</p>
+
+<div class="energy-grid">
+<div class="energy-card">
+<small>ATP</small>
+<strong class="atp" id="atp">9</strong>
+<div class="energy-arrow">에너지 제공</div>
+</div>
+<div class="energy-card">
+<small>ADP</small>
+<strong class="adp" id="adp">0</strong>
+<div class="energy-arrow">ATP 소비 후 생성</div>
+</div>
+<div class="energy-card">
+<small>NADPH</small>
+<strong class="nadph" id="nadph">6</strong>
+<div class="energy-arrow">환원력 제공</div>
+</div>
+<div class="energy-card">
+<small>NADP⁺</small>
+<strong class="nadp" id="nadp">0</strong>
+<div class="energy-arrow">NADPH 산화 후 생성</div>
+</div>
+</div>
+
+<div class="equation" id="energyEquation">
+환원 단계: ATP 6분자 → ADP 6분자<br>
+NADPH 6분자 → NADP⁺ 6분자<br>
+RuBP 재생: ATP 3분자 → ADP 3분자
+</div>
+</section>
+
+<section class="panel">
+<h2>05. 환경 변화에 따른 농도 변화</h2>
+<div class="explain" id="analysis">
+정상적인 환경에서는 탄소 고정, 환원, RuBP 재생이 진행됩니다.
+</div>
+</section>
+
+<section class="panel">
+<h2>06. 전체 반응 정리</h2>
+<div class="equation" id="summary">
+CO₂ 3분자 + RuBP 3분자<br>
+→ 3-PGA 6분자<br>
+→ PGAL 6분자<br>
+→ PGAL 1분자 순생성 + RuBP 3분자 재생
+</div>
+<p class="sub">
+※ PGAL 1분자의 순생성은 포도당 1분자 합성에 필요한 양의 절반입니다.
+PGAL 2분자가 모여 포도당 1분자에 해당하는 탄소 골격을 제공합니다.
+</p>
+</section>
+
+</main>
+
+<script>
+let co2=true;
+let light=true;
+let scale=3;
+let stage=0;
+let completed=false;
+
+// 탄소 골격과 인산기 모식도 생성
+function molecule(carbonCount,phosphateCount,labels){
+ let width=carbonCount*39+25;
+ let start=(280-width)/2+12;
+ let svg=`<svg viewBox="0 0 280 90">`;
+
+ for(let i=0;i<carbonCount;i++){
+   let x=start+i*39;
+   if(i>0){
+     svg+=`<line class="bond" x1="${x-39+12}" y1="43" x2="${x-12}" y2="43"/>`;
+   }
+   svg+=`<circle class="carbon" cx="${x}" cy="43" r="13"/>`;
+   svg+=`<text x="${x}" y="47" font-size="11" text-anchor="middle" fill="#27313a">C</text>`;
+ }
+
+ if(phosphateCount===2){
+   let x1=start-25;
+   let x2=start+(carbonCount-1)*39+25;
+   svg+=`<line class="bond" x1="${x1+8}" y1="43" x2="${start-13}" y2="43"/>`;
+   svg+=`<line class="bond" x1="${start+(carbonCount-1)*39+13}" y1="43" x2="${x2-8}" y2="43"/>`;
+   svg+=`<circle class="phosphate" cx="${x1}" cy="43" r="13"/>`;
+   svg+=`<circle class="phosphate" cx="${x2}" cy="43" r="13"/>`;
+   svg+=`<text class="group-label" x="${x1}" y="47" text-anchor="middle">P</text>`;
+   svg+=`<text class="group-label" x="${x2}" y="47" text-anchor="middle">P</text>`;
+ }else if(phosphateCount===1){
+   let x=start+carbonCount*39-15;
+   svg+=`<line class="bond" x1="${start+(carbonCount-1)*39+13}" y1="43" x2="${x-13}" y2="43"/>`;
+   svg+=`<circle class="phosphate" cx="${x}" cy="43" r="13"/>`;
+   svg+=`<text class="group-label" x="${x}" y="47" text-anchor="middle">P</text>`;
+ }
+ svg+=`</svg>`;
+ return svg;
+}
+
+function drawMolecules(){
+ document.getElementById("ruStructure").innerHTML=molecule(5,2);
+ document.getElementById("pgaStructure").innerHTML=molecule(3,1);
+ document.getElementById("pgalStructure").innerHTML=molecule(3,1);
+ document.getElementById("glucoseStructure").innerHTML=molecule(6,0);
+}
+
+function set(id,value){
+ document.getElementById(id).textContent=value;
+}
+
+function render(){
+ let co=scale;
+ let rubp=co;
+ let pga=0;
+ let pgal=0;
+ let glucose=0;
+
+ let atp=3*co;
+ let adp=0;
+ let nadph=2*co;
+ let nadp=0;
+
+ if(stage>=1 && co2 && light){
+   rubp=0;pga=2*co;
+ }
+ if(stage>=2 && co2 && light){
+   pga=0;pgal=2*co;
+   atp=co;adp=2*co;
+   nadph=0;nadp=2*co;
+ }
+ if(stage>=3 && co2 && light){
+   rubp=co;pgal=co/3;
+   atp=0;adp=3*co;
+ }
+ if(completed && co2 && light){
+   rubp=co;pga=0;pgal=co/3;glucose=co/6;
+ }
+
+ // 환경 차단 시의 정성적 농도 상태
+ if(!co2 && light){
+   rubp=co*2;pga=0;pgal=0;
+ }
+ if(co2 && !light){
+   rubp=Math.max(0,co*0.3);
+   pga=2*co;pgal=0;
+ }
+ if(!co2 && !light){
+   rubp=co;pga=0;pgal=0;
+ }
+
+ set("ruCount",rubp);
+ set("pgaCount",pga);
+ set("pgalCount",pgal);
+ set("glucoseCount",glucose);
+
+ set("atp",atp);
+ set("adp",adp);
+ set("nadph",nadph);
+ set("nadp",nadp);
+
+ set("co2Btn","CO₂ 공급 "+(co2?"ON":"OFF"));
+ set("lightBtn","빛 공급 "+(light?"ON":"OFF"));
+
+ document.getElementById("co2Btn").textContent="CO₂ 공급 "+(co2?"ON":"OFF");
+ document.getElementById("lightBtn").textContent="빛 공급 "+(light?"ON":"OFF");
+
+ document.getElementById("co2Btn").className=co2?"green":"red";
+ document.getElementById("lightBtn").className=light?"gold":"red";
+
+ let env=co2&&light?
+ "정상 환경: CO₂와 빛이 모두 공급됩니다.":
+ !co2&&light?
+ "CO₂ 공급 차단: 탄소 고정이 중단됩니다.":
+ co2&&!light?
+ "빛 차단: 명반응 산물 공급이 중단됩니다.":
+ "CO₂와 빛이 모두 차단되었습니다.";
+
+ set("environment",env);
+
+ let analysis="";
+ if(!co2&&light){
+ analysis="<b>CO₂ 공급 차단</b><br>탄소 고정이 중단되어 RuBP가 CO₂와 결합하지 못합니다. 따라서 RuBP는 소비되지 않고 축적되는 반면, 기존 3-PGA는 환원 과정에서 소비되어 농도가 낮아지는 경향을 보입니다.";
+ }else if(co2&&!light){
+ analysis="<b>빛 차단</b><br>명반응이 중단되어 ATP와 NADPH가 새롭게 생성되지 않습니다. 기존 ATP와 NADPH가 소모된 뒤 환원과 RuBP 재생이 제한됩니다. 따라서 3-PGA가 일시적으로 축적되고 RuBP 농도는 감소하는 경향을 보입니다.";
+ }else if(!co2&&!light){
+ analysis="<b>CO₂와 빛 모두 차단</b><br>탄소 고정과 명반응 산물의 공급이 모두 중단됩니다. 물질의 변화는 차단 직전의 농도와 반응 진행 정도에 따라 달라집니다.";
+ }else{
+ analysis="<b>정상 환경</b><br>CO₂가 RuBP와 결합하고 루비스코가 탄소 고정을 촉진합니다. ATP와 NADPH가 사용되어 PGAL이 생성되며 일부 PGAL은 RuBP 재생에 이용됩니다.";
+ }
+ document.getElementById("analysis").innerHTML=analysis;
+
+ let steps=[1,2,3,4];
+ steps.forEach((n)=>{
+   let el=document.getElementById("s"+n);
+   if(el)el.classList.toggle("active",n===stage+1);
+ });
+}
+
+function toggleCO2(){
+ co2=!co2;stage=0;completed=false;render();
+ explain();
+}
+function toggleLight(){
+ light=!light;stage=0;completed=false;render();
+ explain();
+}
+function normal(){
+ co2=true;light=true;stage=0;completed=false;render();explain();
+}
+function resetAll(){
+ co2=true;light=true;stage=0;completed=false;render();explain();
+}
+function changeScale(){
+ scale=Number(document.getElementById("scale").value);
+ stage=0;completed=false;render();explain();
+}
+
+function explain(){
+ document.getElementById("explanation").innerHTML=
+ "<b>① 탄소 고정</b><br>루비스코가 CO₂와 RuBP의 결합을 촉진합니다.";
+}
+
+function nextStep(){
+ if(!co2||!light){
+  document.getElementById("explanation").innerHTML=
+  "정상적인 회로 진행을 위해 CO₂와 빛을 모두 공급하세요.";
+  return;
+ }
+ if(stage<3)stage++;
+ else completed=true;
+ render();
+
+ let messages=[
+ "",
+ `<b>① 탄소 고정</b><br>${scale} CO₂와 ${scale} RuBP가 반응합니다. 루비스코의 작용으로 3-PGA ${2*scale}분자가 생성됩니다.`,
+ `<b>② 3-PGA의 환원</b><br>3-PGA ${2*scale}분자가 ATP ${2*scale}분자와 NADPH ${2*scale}분자를 사용하여 PGAL ${2*scale}분자로 환원됩니다. ADP와 NADP⁺가 생성됩니다.`,
+ `<b>③ RuBP 재생</b><br>PGAL ${5*scale/3}분자가 ATP ${scale}분자를 사용하여 RuBP ${scale}분자로 재생됩니다. 나머지 PGAL ${scale/3}분자는 순생성물로 남습니다.`,
+ `<b>④ 회로 완료</b><br>PGAL ${scale/3}분자가 순생성되었습니다. CO₂ ${scale}분자 기준으로 포도당 합성에 필요한 양의 절반 또는 전체에 해당합니다.`
+ ];
+ document.getElementById("explanation").innerHTML=messages[stage]||messages[4];
+ if(completed){
+  document.getElementById("explanation").innerHTML=messages[4];
+ }
+}
+
+function runCycle(){
+ if(!co2||!light){
+ document.getElementById("explanation").innerHTML=
+ "CO₂와 빛을 모두 공급해야 정상적인 전체 회로를 실행할 수 있습니다.";
+ return;
+ }
+ stage=3;completed=true;render();
+ document.getElementById("explanation").innerHTML=
+ `<b>전체 회로 완료!</b><br>CO₂ ${scale}분자가 고정되어 PGAL ${2*scale}분자가 만들어집니다. 이 중 ${5*scale/3}분자는 RuBP 재생에 사용되고 ${scale/3}분자는 순생성됩니다.`;
+}
+
+drawMolecules();
+render();
+</script>
+</body>
+</html>
