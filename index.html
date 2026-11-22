@@ -3,272 +3,359 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fcf6ed">
 <title>세포와 물질대사 시뮬레이션</title>
 
 <style>
-  * { box-sizing: border-box; }
+:root {
+  color-scheme: light;
+  --ink: #352b4a;
+  --muted: #665a71;
+  --paper: #fcf6ed;
+}
 
-  body {
-    margin: 0;
-    min-height: 100vh;
-    color: #302545;
-    background:
-      radial-gradient(ellipse at 0% 0%, #ffe7d7, transparent 50%),
-      radial-gradient(ellipse at 100% 0%, #eae3ff, transparent 55%),
-      #fbf5eb;
-    font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-  }
+* { box-sizing: border-box; }
 
-  main {
-    width: min(1120px, calc(100% - 32px));
-    margin: auto;
-    padding: 52px 0 64px;
-  }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  background:
+    radial-gradient(ellipse at 9% 0%, #ffe7d8, transparent 42%),
+    radial-gradient(ellipse at 96% 9%, #e9e6ff, transparent 39%),
+    var(--paper);
+}
 
-  h1 {
-    margin: 0 0 30px;
-    text-align: center;
-    font-size: clamp(2rem, 5.5vw, 3.8rem);
-    font-weight: 900;
-    letter-spacing: -.065em;
-    word-break: keep-all;
-  }
+main {
+  width: min(1120px, calc(100% - 48px));
+  margin: auto;
+  padding: 58px 0 72px;
+}
 
-  .guide {
-    display: flex;
-    align-items: center;
-    gap: 22px;
-    max-width: 740px;
-    margin: 0 auto 42px;
-  }
+.hero { text-align: center; margin: 0 0 31px; }
 
-  .face {
-    position: relative;
-    flex: 0 0 auto;
-    width: 94px;
-    aspect-ratio: 1;
-    overflow: hidden;
-    border: 4px solid #fffaf5;
-    border-radius: 50%;
-    background: #dce7ff;
-    box-shadow: 0 4px 0 #cfc4e6;
-  }
+h1 {
+  max-width: 820px;
+  margin: 0 auto;
+  font-size: clamp(2.1rem, 5.2vw, 4rem);
+  font-weight: 900;
+  line-height: 1.13;
+  letter-spacing: -.065em;
+  text-wrap: balance;
+}
 
-  /* 원본 사진에서 이성세포 얼굴이 보이는 위치 */
-  .face img {
-    position: absolute;
-    width: 215%;
-    left: -53%;
-    top: -16%;
-  }
+.guide {
+  display: flex;
+  align-items: center;
+  gap: 23px;
+  max-width: 715px;
+  margin: 31px auto 45px;
+}
 
-  .bubble {
-    position: relative;
-    flex: 1;
-    padding: 15px 21px;
-    border: 1px solid #e2d8eb;
-    border-radius: 20px;
-    background: #fffdf8;
-    box-shadow: 0 5px 0 #eee3eb;
-  }
+.mascot {
+  display: block;
+  flex: none;
+  width: clamp(112px, 17vw, 173px);
+  height: auto;
+  border: 3px solid #fffdf9;
+  border-radius: 19px;
+  box-shadow: 0 5px 0 #e3d9e9, 0 0 0 1px #d8cde4;
+}
 
-  .bubble::before {
-    content: "";
-    position: absolute;
-    left: -7px;
-    top: 32px;
-    width: 12px;
-    height: 12px;
-    transform: rotate(45deg);
-    border-left: 1px solid #e2d8eb;
-    border-bottom: 1px solid #e2d8eb;
-    background: #fffdf8;
-  }
+.bubble {
+  position: relative;
+  flex: 1;
+  padding: 16px 22px;
+  border: 1px solid #e3d9e9;
+  border-radius: 19px;
+  background: #fffdf9;
+  box-shadow: 0 5px 0 #eee5ed;
+}
 
-  .bubble strong { color: #534078; }
-  .bubble p {
-    margin: 6px 0 0;
-    color: #60556b;
-    line-height: 1.55;
-    word-break: keep-all;
-  }
+.bubble::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 30px;
+  width: 12px;
+  height: 12px;
+  border-left: 1px solid #e3d9e9;
+  border-bottom: 1px solid #e3d9e9;
+  background: #fffdf9;
+  transform: rotate(45deg);
+}
 
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-items: start;
-    gap: 20px;
-  }
+.bubble strong { color: #51437c; font-size: .94rem; }
 
-  .card {
-    overflow: hidden;
-    border: 1px solid #dfd4e0;
-    border-radius: 24px;
-    background: #fffdf8;
-    box-shadow: 0 6px 0 #e9dde6;
-  }
+.bubble p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: .96rem;
+  line-height: 1.6;
+  word-break: keep-all;
+}
 
-  .mito { --accent: #843f47; --soft: #ffded3; --fill: #ffa38f; }
-  .chloro { --accent: #285f43; --soft: #dcefd5; --fill: #a0d691; }
-  .cell { --accent: #554184; --soft: #e8def8; --fill: #c0aceb; }
+.areas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
 
-  summary { cursor: pointer; list-style: none; }
-  summary::-webkit-details-marker { display: none; }
+.area {
+  overflow: hidden;
+  border: 1px solid #ddd4df;
+  border-radius: 25px;
+  background: #fffdf8;
+  box-shadow: 0 6px 0 #e9dfe4, 0 12px 28px #50404e0c;
+}
 
-  .illustration {
-    display: grid;
-    place-items: center;
-    height: 145px;
-    background:
-      radial-gradient(ellipse at center, #ffffff85 0 32%, transparent 33%),
-      var(--soft);
-  }
+.mito { --color: #813f43; --wash: #ffded3; --shell: #f39785; --inside: #ffb4a3; }
+.chloro { --color: #255d42; --wash: #def0d6; --shell: #8ccd88; --inside: #aee1a0; }
+.whole { --color: #524383; --wash: #e9e0fa; --shell: #af9ae3; --inside: #d1bdf3; }
 
-  .icon {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 110px;
-    height: 58px;
-    transform: rotate(-18deg);
-    border: 3px solid var(--accent);
-    border-radius: 48%;
-    background: var(--fill);
-    box-shadow: inset 0 0 0 4px #ffffff45, 0 5px 0 #44305233;
-  }
+summary { cursor: pointer; list-style: none; }
+summary::-webkit-details-marker { display: none; }
 
-  .mito .icon i {
-    width: 13px;
-    height: 28px;
-    border: 2px solid var(--accent);
-    border-bottom: 0;
-    border-radius: 8px 8px 0 0;
-  }
-  .mito .icon i:nth-child(2) { transform: rotate(180deg); }
+summary:focus-visible, a:focus-visible {
+  outline: 3px solid #554181;
+  outline-offset: -4px;
+}
 
-  .chloro .icon i {
-    width: 16px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 -6px var(--accent), 0 6px var(--accent);
-  }
-  .chloro .icon i:nth-child(2) { margin-top: -10px; }
+.art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 148px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 55%, #ffffffa0 0 49px, transparent 50px),
+              var(--wash);
+}
 
-  .cell .icon { width: 77px; height: 77px; }
-  .cell .icon i:first-child {
-    width: 27px;
-    height: 27px;
-    border: 2px solid var(--accent);
-    border-radius: 50%;
-    background: #8d74bc;
-  }
-  .cell .icon i:not(:first-child) {
-    position: absolute;
-    width: 8px;
-    height: 5px;
-    border-radius: 50%;
-    background: #fff3ff;
-  }
-  .cell .icon i:nth-child(2) { top: 16px; right: 14px; }
-  .cell .icon i:nth-child(3) { bottom: 16px; left: 14px; }
+.art::before, .art::after {
+  content: "";
+  position: absolute;
+  width: 184px;
+  height: 95px;
+  border: 1px solid #ffffffb0;
+  border-radius: 50%;
+  transform: rotate(-15deg);
+}
 
-  .label {
-    display: flex;
-    flex-direction: column;
-    min-height: 173px;
-    padding: 18px 20px 14px;
-  }
+.art::after { width: 199px; height: 107px; transform: rotate(15deg); }
 
-  .place, .count { color: var(--accent); font-size: .86rem; font-weight: 800; }
-  .title { margin-top: 5px; font-size: 1.2rem; letter-spacing: -.035em; }
-  .topics { margin: 7px 0 13px; color: #60556b; line-height: 1.5; font-size: .87rem; }
+.organelle {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 115px;
+  height: 66px;
+  border: 3px solid var(--color);
+  border-radius: 54% 47% 49% 50%;
+  background: var(--inside);
+  box-shadow: inset 0 0 0 5px var(--shell), 0 7px 0 #40204c24;
+  transform: rotate(-15deg);
+}
 
-  .card-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: auto;
-  }
+.mito .organelle i {
+  width: 14px;
+  height: 33px;
+  border: 3px solid var(--color);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  transform: rotate(-9deg);
+}
 
-  .toggle {
-    display: grid;
-    place-items: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    color: var(--accent);
-    background: var(--soft);
-  }
-  .toggle::before {
-    content: "";
-    width: 7px;
-    height: 7px;
-    border: solid currentColor;
-    border-width: 0 2px 2px 0;
-    transform: translateY(-2px) rotate(45deg);
-  }
-  details[open] .toggle::before { transform: translateY(2px) rotate(225deg); }
+.mito .organelle i:nth-child(2) { margin-top: 12px; transform: rotate(171deg); }
 
-  .works { padding: 0 16px 16px; }
-  .group { padding-top: 12px; border-top: 1px solid #eae1ec; }
-  .group + .group { margin-top: 10px; }
-  .group h2 { margin: 0 4px 5px; font-size: .88rem; color: var(--accent); }
-  .group ul { list-style: none; margin: 0; padding: 0; }
+.chloro .organelle { width: 109px; height: 68px; transform: rotate(-19deg); }
 
-  .work {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 6px;
-    border-radius: 8px;
-    color: #302545;
-    text-decoration: none;
-    font-size: .9rem;
-    line-height: 1.4;
-  }
-  .work:hover { background: var(--soft); }
-  .work small { display: block; color: #60556b; margin-top: 2px; }
-  summary:focus-visible, a:focus-visible { outline: 3px solid #674a93; outline-offset: -3px; }
+.chloro .organelle i {
+  width: 19px;
+  height: 5px;
+  border: 1px solid #276345;
+  border-radius: 50%;
+  background: #488954;
+  box-shadow: 0 -6px 0 #4c8857, 0 6px 0 #4c8857;
+}
 
-  @media (max-width: 680px) {
-    main { padding-top: 33px; }
-    .guide { gap: 14px; margin-bottom: 28px; }
-    .face { width: 69px; }
-    .bubble { padding: 12px 15px; }
-    .bubble p { font-size: .88rem; }
-    .cards { grid-template-columns: 1fr; max-width: 500px; margin: auto; }
-    .illustration { height: 112px; }
-    .label { min-height: 0; }
-  }
+.chloro .organelle i:nth-child(2) { margin-top: -16px; }
+
+.whole .organelle {
+  width: 83px;
+  height: 82px;
+  border-radius: 44% 53% 45% 52%;
+  transform: rotate(10deg);
+}
+
+.whole .organelle i:first-child {
+  width: 30px;
+  height: 29px;
+  margin-left: 5px;
+  border: 2px solid var(--color);
+  border-radius: 50%;
+  background: radial-gradient(circle at 63% 40%, #7d61b0 0 4px, #a083d4 5px);
+}
+
+.whole .organelle i:nth-child(2), .whole .organelle i:nth-child(3) {
+  position: absolute;
+  width: 11px;
+  height: 7px;
+  border: 1px solid #6e5a9b;
+  border-radius: 50%;
+  background: #f9e5fc;
+}
+
+.whole .organelle i:nth-child(2) { left: 15px; bottom: 16px; }
+.whole .organelle i:nth-child(3) { right: 12px; top: 17px; }
+
+.spark {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--color);
+  opacity: .55;
+  clip-path: polygon(50% 0, 62% 37%, 100% 50%, 62% 63%, 50% 100%, 37% 63%, 0 50%, 37% 37%);
+}
+
+.s1 { left: 27%; top: 27%; }
+.s2 { right: 24%; bottom: 26%; width: 16px; height: 16px; }
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 184px;
+  padding: 21px 21px 15px;
+}
+
+.place { color: var(--color); font-weight: 750; font-size: .85rem; }
+
+.card-body strong {
+  margin-top: 5px;
+  font-size: clamp(1.2rem, 2.1vw, 1.55rem);
+  letter-spacing: -.045em;
+}
+
+.topics {
+  margin: 8px 0 14px;
+  color: var(--muted);
+  font-size: .88rem;
+  line-height: 1.52;
+  word-break: keep-all;
+}
+
+.card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  color: var(--color);
+  font-size: .83rem;
+  font-weight: 750;
+}
+
+.toggle {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  border-radius: 50%;
+  background: var(--wash);
+}
+
+.toggle::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid;
+  border-bottom: 2px solid;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+[open] .toggle::before { transform: translateY(2px) rotate(225deg); }
+summary:hover .toggle { background: var(--color); color: white; }
+
+.works { padding: 0 13px 14px; }
+.group { padding: 12px 4px 0; border-top: 1px solid #eee6eb; }
+.group + .group { margin-top: 9px; }
+.group h2 { color: var(--color); font-size: .87rem; margin: 0 5px 6px; letter-spacing: -.02em; }
+.group ul { list-style: none; margin: 0; padding: 0; }
+.group li + li { margin-top: 3px; }
+
+.group a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 6px;
+  border-radius: 9px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: .91rem;
+  font-weight: 700;
+  line-height: 1.38;
+  word-break: keep-all;
+}
+
+.group a:hover { background: var(--wash); }
+
+.group small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .74rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.launch { flex: none; color: var(--color); font-weight: 750; }
+
+@media (max-width: 800px) {
+  main { padding-top: 44px; }
+  .areas { grid-template-columns: 1fr; max-width: 570px; margin: auto; }
+  .hero { margin-bottom: 26px; }
+  .guide { max-width: 570px; margin-bottom: 32px; }
+  .card-body { min-height: 0; }
+  .art { height: 117px; }
+}
+
+@media (max-width: 430px) {
+  main { width: calc(100% - 30px); padding-top: 35px; }
+  .guide { gap: 13px; }
+  .mascot { width: 97px; border-radius: 14px; }
+  .bubble { padding: 11px 13px; }
+  .bubble p { font-size: .87rem; }
+}
 </style>
 </head>
 
 <body>
 <main>
-  <h1>세포와 물질대사 시뮬레이션</h1>
+  <header class="hero">
+    <h1>세포와 물질대사 시뮬레이션</h1>
+  </header>
 
-  <aside class="guide" aria-label="이성세포의 안내">
-    <div class="face">
-      <img src="./reason-cell.png" alt="이성세포의 얼굴">
-    </div>
+  <aside class="guide" aria-label="이성세포 안내">
+    <img class="mascot" src="./reason-cell.png" width="466" height="352"
+         alt="책상에서 마이크로 안내하는 이성세포">
     <div class="bubble">
       <strong>이성세포</strong>
-      <p>어서 와! 탐구하고 싶은 카드를 누르면 시뮬레이션 목록이 열려.
-         반응이 어디서, 어떤 순서로 일어나는지 살펴보자.</p>
+      <p>어서 와! 탐구하고 싶은 주제의 카드를 누르면 작품 목록이 열려.
+         시뮬레이션을 실행하고 반응이 어디서, 어떤 순서로 일어나는지 살펴봐.</p>
     </div>
   </aside>
 
-  <div class="cards" id="cards"></div>
+  <div class="areas" id="areas"></div>
 </main>
 
 <script>
 const areas = [
   {
-    style: 'mito',
+    id: 'mito',
     place: '마이토콘드리아',
     title: '세포호흡과 발효',
     topics: '해당과정 · 피루브산 산화 · TCA 회로 · 산화적 인산화 · 발효',
@@ -276,31 +363,44 @@ const areas = [
       ['세포호흡 전체 과정', [
         ['세포호흡', '20118, 20121'],
         ['세포호흡', '20122'],
+        ['세포호흡', '20324, 20904'],
         ['세포호흡', '20327, 20417'],
-        ['세포호흡', '20505, 20810']
+        ['세포호흡', '20505, 20810'],
+        ['세포호흡', '20612, 20613'],
+        ['세포호흡', '20627, 20628'],
+        ['세포호흡', '20918'],
+        ['세포호흡', '21024']
       ]],
-      ['해당과정과 산화적 인산화', [
-        ['해당과정, 산화적인산화', '20120, 20124', '해당과정과 산화적 인산화']
+      ['해당과정 · 산화적 인산화', [
+        ['해당과정', '20305, 20307'],
+        ['해당과정', '20323'],
+        ['해당과정, 산화적인산화', '20120, 20124', '해당과정과 산화적 인산화'],
+        ['산화적 인산화', '20728']
       ]],
-      ['피루브산 산화와 TCA 회로', [
+      ['피루브산 산화 · TCA 회로', [
         ['피루브산 산화와 TCA 회로', '20304, 20306, 20315, 20820'],
         ['TCA 회로', '20104, 20316'],
+        ['TCA 회로', '20113, 20114'],
+        ['TCA 회로', '20117'],
         ['TCA 회로', '20311, 20319']
       ]],
       ['발효', [
+        ['세포호흡, 발효', '20802', '세포호흡과 발효'],
         ['세포호흡과 발효', '20818, 20921'],
         ['알코올 발효', '20111']
       ]]
     ]
   },
   {
-    style: 'chloro',
+    id: 'chloro',
     place: '엽록체',
     title: '광합성',
     topics: '명반응 · 탄소 고정 반응',
     groups: [
       ['광합성 전체 과정', [
+        ['광합성', '20103, 20115'],
         ['광합성', '20105, 20426'],
+        ['광합성', '20123'],
         ['광합성', '20125, 21014'],
         ['광합성', '20308, 20519'],
         ['광합성', '20406'],
@@ -309,187 +409,106 @@ const areas = [
         ['광합성', '20822, 20914']
       ]],
       ['명반응', [
+        ['명반응', '20125, 20709'],
         ['명반응', '20309, 20318, 20321'],
-        ['명반응', '20813, 20828']
+        ['명반응', '20813, 20828'],
+        ['명반응', '20908']
+      ]],
+      ['탄소 고정 반응', [
+        ['탄소 고정 반응', '21012']
+      ]],
+      ['광합성 색소 분리', [
+        ['시금치 크로마토그래피', '20325'],
+        ['청경채 크로마토그래피', '20116']
       ]]
     ]
   },
   {
-    style: 'cell',
+    id: 'whole',
     place: '세포',
     title: '세포호흡과 광합성 비교',
     topics: '전자전달계 · 물질대사 경로',
     groups: [
       ['전자전달계', [
-        ['전자전달계 비교', '20126, 20326']
+        ['전자전달계 비교', '20126, 20326'],
+        ['전자전달계 비교', '20902']
       ]],
       ['물질대사 경로', [
-        ['피루브산 산화와 TCA 회로, 탄소고정 반응', '20718, 21024',
-         '피루브산 산화와 TCA 회로 · 탄소 고정 반응']
+        [
+          '피루브산 산화와 TCA 회로, 탄소고정 반응',
+          '20718, 21024',
+          '피루브산 산화와 TCA 회로 · 탄소 고정 반응'
+        ]
       ]]
     ]
   }
 ];
 
-const cards = document.querySelector('#cards');
+const container = document.getElementById('areas');
 
 for (const area of areas) {
   const card = document.createElement('details');
-  card.className = 'card ' + area.style;
-  const count = area.groups.reduce((sum, [, works]) => sum + works.length, 0);
+  card.id = area.id;
+  card.className = `area ${area.id}`;
+
+  const count = area.groups.reduce((total, [, entries]) => total + entries.length, 0);
 
   card.innerHTML = `
     <summary>
-      <span class="illustration" aria-hidden="true">
-        <span class="icon"><i></i><i></i><i></i></span>
+      <span class="art" aria-hidden="true">
+        <span class="spark s1"></span>
+        <span class="spark s2"></span>
+        <span class="organelle"><i></i><i></i><i></i></span>
       </span>
-      <span class="label">
+      <span class="card-body">
         <span class="place">${area.place}</span>
-        <strong class="title">${area.title}</strong>
+        <strong>${area.title}</strong>
         <span class="topics">${area.topics}</span>
-        <span class="card-bottom">
-          <span class="count">작품 ${count}개</span>
+        <span class="card-foot">
+          <span>작품 ${count}개</span>
           <span class="toggle" aria-hidden="true"></span>
         </span>
       </span>
     </summary>
     <div class="works"></div>`;
 
-  const panel = card.querySelector('.works');
-  for (const [heading, works] of area.groups) {
+  const works = card.querySelector('.works');
+
+  for (const [heading, entries] of area.groups) {
     const section = document.createElement('section');
     section.className = 'group';
+
     const title = document.createElement('h2');
     title.textContent = heading;
     const list = document.createElement('ul');
 
-    for (const [fileTitle, ids, label = fileTitle] of works) {
+    for (const [fileTitle, ids, label = fileTitle] of entries) {
       const item = document.createElement('li');
       const link = document.createElement('a');
-      const text = document.createElement('span');
+      const name = document.createElement('span');
       const credit = document.createElement('small');
       const arrow = document.createElement('span');
 
-      link.className = 'work';
-      link.href = './' + encodeURIComponent(`${fileTitle} 시뮬레이션(${ids}).html`);
-      text.textContent = `${label} 시뮬레이션`;
+      const filename = `${fileTitle} 시뮬레이션(${ids}).html`;
+      link.href = './' + encodeURIComponent(filename);
+      name.textContent = label;
       credit.textContent = ids;
-      arrow.textContent = '↗';
+      arrow.className = 'launch';
       arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = '↗';
 
-      text.append(credit);
-      link.append(text, arrow);
+      name.append(credit);
+      link.append(name, arrow);
       item.append(link);
       list.append(item);
     }
 
     section.append(title, list);
-    panel.append(section);
+    works.append(section);
   }
-  cards.append(card);
+
+  container.append(card);
 }
-</script>
- <script>
-(() => {
-  const additions = {
-    mito: {
-      '세포호흡 전체 과정': [
-        ['세포호흡', '20324, 20904'],
-        ['세포호흡', '20612, 20613'],
-        ['세포호흡', '20627, 20628'],
-        ['세포호흡', '20918'],
-        ['세포호흡', '21024']
-      ],
-      '해당과정 · 산화적 인산화': [
-        ['해당과정', '20305, 20307'],
-        ['해당과정', '20323'],
-        ['산화적 인산화', '20728']
-      ],
-      '피루브산 산화 · TCA 회로': [
-        ['TCA 회로', '20113, 20114'],
-        ['TCA 회로', '20117']
-      ],
-      '발효': [
-        ['세포호흡, 발효', '20802', '세포호흡과 발효']
-      ]
-    },
-    chloro: {
-      '광합성 전체 과정': [
-        ['광합성', '20103, 20115'],
-        ['광합성', '20123']
-      ],
-      '명반응': [
-        ['명반응', '20125, 20709'],
-        ['명반응', '20908']
-      ],
-      '탄소 고정 반응': [
-        ['탄소 고정 반응', '21012']
-      ],
-      '광합성 색소 분리': [
-        ['시금치 크로마토그래피', '20325'],
-        ['청경채 크로마토그래피', '20116']
-      ]
-    },
-    whole: {
-      '전자전달계': [
-        ['전자전달계 비교', '20902']
-      ]
-    }
-  };
-
-  for (const [cardId, groups] of Object.entries(additions)) {
-    const card = document.getElementById(cardId);
-    const works = card.querySelector('.works');
-    const existingLinks = new Set(
-      Array.from(works.querySelectorAll('a'), link => link.href)
-    );
-
-    for (const [heading, entries] of Object.entries(groups)) {
-      let section = Array.from(works.querySelectorAll('.group'))
-        .find(group => group.querySelector('h3').textContent === heading);
-
-      if (!section) {
-        section = document.createElement('section');
-        section.className = 'group';
-        const title = document.createElement('h3');
-        title.textContent = heading;
-        section.append(title, document.createElement('ul'));
-        works.append(section);
-      }
-
-      const list = section.querySelector('ul');
-
-      for (const [fileTitle, ids, label = fileTitle] of entries) {
-        const link = document.createElement('a');
-        link.href = './' + encodeURIComponent(
-          `${fileTitle} 시뮬레이션(${ids}).html`
-        );
-
-        if (existingLinks.has(link.href)) continue;
-
-        const item = document.createElement('li');
-        const name = document.createElement('span');
-        const credit = document.createElement('small');
-        const arrow = document.createElement('span');
-
-        name.textContent = label;
-        credit.textContent = ids;
-        arrow.className = 'launch';
-        arrow.setAttribute('aria-hidden', 'true');
-        arrow.textContent = '↗';
-
-        name.append(credit);
-        link.append(name, arrow);
-        item.append(link);
-        list.append(item);
-        existingLinks.add(link.href);
-      }
-    }
-
-    card.querySelector('.card-foot > span:first-child').textContent =
-      `작품 ${works.querySelectorAll('li').length}개`;
-  }
-})();
 </script>
 </body>
 </html>
